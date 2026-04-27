@@ -37,3 +37,12 @@ next-env.d.ts
 # sitemap output (regenerated on each build)
 public/sitemap*.xml
 public/robots.txt
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
