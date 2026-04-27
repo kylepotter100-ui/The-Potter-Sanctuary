@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+// Strokes ordered bottom-to-top so the pen walks up the logo:
+// ground leaves → stem → spathe → back petals → front petals → trumpet → ruffles → stamens → anthers.
 const SEGMENTS = [
   "M152 380 C 130 360, 100 350, 70 360 C 56 365, 60 380, 78 380 C 110 382, 134 384, 152 384 Z",
   "M152 380 C 174 360, 206 348, 234 358 C 248 363, 244 380, 226 380 C 196 384, 172 384, 152 384 Z",
@@ -25,6 +27,20 @@ const SEGMENTS = [
   "M166 168 L 166 169",
 ];
 
+// The total intro budget — page reveals after this elapses.
+const TOTAL_MS = 5000;
+// When the pen starts moving, relative to mount.
+const START_DELAY_MS = 200;
+// How long the pen takes to walk the entire logo.
+const DRAW_MS = 3500;
+// When the title fades in.
+const TITLE_AT_MS = START_DELAY_MS + DRAW_MS + 250;
+
+// easeInOutCubic — calm in, calm out, with a steady middle stretch.
+function ease(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 export default function Intro() {
   const introRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -38,65 +54,93 @@ export default function Intro() {
 
     document.body.classList.add("locked");
 
-    const segs = svg.querySelectorAll<SVGPathElement>(".seg");
-    segs.forEach((p) => {
-      const len = p.getTotalLength();
-      p.style.setProperty("--len", String(len));
+    const segs = Array.from(svg.querySelectorAll<SVGPathElement>(".seg"));
+    const lens = segs.map((p) => p.getTotalLength());
+    const total = lens.reduce((sum, l) => sum + l, 0);
+
+    // Hide every segment up-front so nothing flashes before the first frame.
+    segs.forEach((p, i) => {
+      p.style.strokeDasharray = String(lens[i]);
+      p.style.strokeDashoffset = String(lens[i]);
     });
 
-    const totalDrawMs = 2400;
-    const startNibMs = 250;
-
-    const t1 = window.setTimeout(() => intro.classList.add("drawing"), 250);
-
-    const nibStart = performance.now() + startNibMs;
-    const nibEnd = nibStart + totalDrawMs;
     let raf = 0;
+    let originTs: number | null = null;
 
-    const stepNib = (now: number) => {
-      if (now < nibStart) {
-        raf = requestAnimationFrame(stepNib);
-        return;
-      }
-      if (now > nibEnd) {
-        nib.style.opacity = "0";
-        return;
-      }
-      const t = (now - nibStart) / totalDrawMs;
-      nib.style.opacity = "1";
-      const svgRect = svg.getBoundingClientRect();
+    function placeNib(seg: SVGPathElement, distInSeg: number) {
+      if (!svg || !nib) return;
       const stage = svg.parentElement;
       if (!stage) return;
+      const pt = seg.getPointAtLength(distInSeg);
+      const svgRect = svg.getBoundingClientRect();
       const stageRect = stage.getBoundingClientRect();
-      const sx = svgRect.left - stageRect.left + svgRect.width * 0.5;
-      const sy = svgRect.top - stageRect.top + svgRect.height * 0.96;
-      const ex = svgRect.left - stageRect.left + svgRect.width * 0.5;
-      const ey = svgRect.top - stageRect.top + svgRect.height * 0.36;
-      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      const x = sx + (ex - sx) * e + Math.sin(t * Math.PI * 3) * 4;
-      const y = sy + (ey - sy) * e;
+      // viewBox is 0 0 300 420 — scale into the rendered svg box.
+      const x =
+        svgRect.left - stageRect.left + (pt.x / 300) * svgRect.width;
+      const y =
+        svgRect.top - stageRect.top + (pt.y / 420) * svgRect.height;
       nib.style.left = `${x}px`;
       nib.style.top = `${y}px`;
-      raf = requestAnimationFrame(stepNib);
-    };
-    raf = requestAnimationFrame(stepNib);
+      nib.style.opacity = "1";
+    }
 
-    const t2 = window.setTimeout(
+    function tick(now: number) {
+      if (originTs === null) originTs = now;
+      const elapsed = now - originTs - START_DELAY_MS;
+
+      if (elapsed < 0) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      const t = Math.min(1, elapsed / DRAW_MS);
+      const distance = ease(t) * total;
+
+      let cumulative = 0;
+      let activeIdx = -1;
+      let activeDist = 0;
+      for (let i = 0; i < segs.length; i++) {
+        const len = lens[i];
+        if (distance <= cumulative) {
+          segs[i].style.strokeDashoffset = String(len);
+        } else if (distance >= cumulative + len) {
+          segs[i].style.strokeDashoffset = "0";
+        } else {
+          const local = distance - cumulative;
+          segs[i].style.strokeDashoffset = String(len - local);
+          activeIdx = i;
+          activeDist = local;
+        }
+        cumulative += len;
+      }
+
+      if (activeIdx >= 0) {
+        placeNib(segs[activeIdx], activeDist);
+      } else if (t >= 1 && nib) {
+        nib.style.opacity = "0";
+      }
+
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      }
+    }
+    raf = requestAnimationFrame(tick);
+
+    const titleTimer = window.setTimeout(
       () => intro.classList.add("titles"),
-      250 + totalDrawMs + 200
+      TITLE_AT_MS
     );
 
-    const t3 = window.setTimeout(() => {
+    const doneTimer = window.setTimeout(() => {
       intro.classList.add("done");
       const page = document.getElementById("page");
       if (page) page.classList.add("show");
       document.body.classList.remove("locked");
-    }, 5000);
+    }, TOTAL_MS);
 
     return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
+      window.clearTimeout(titleTimer);
+      window.clearTimeout(doneTimer);
       cancelAnimationFrame(raf);
       document.body.classList.remove("locked");
     };
