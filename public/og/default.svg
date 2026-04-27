@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9CA98A"/>
+      <stop offset="1" stop-color="#7A8A6B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g transform="translate(100,150)" fill="none" stroke="#EFE8D6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M152 380 C 130 360, 100 350, 70 360 C 56 365, 60 380, 78 380 C 110 382, 134 384, 152 384 Z"/>
+    <path d="M152 380 C 174 360, 206 348, 234 358 C 248 363, 244 380, 226 380 C 196 384, 172 384, 152 384 Z"/>
+    <path d="M152 384 C 152 340, 152 280, 156 220"/>
+    <path d="M156 150 C 144 110, 144 80, 156 56 C 168 80, 168 110, 156 150 Z"/>
+    <path d="M156 150 C 124 130, 102 102, 96 76 C 110 78, 138 102, 156 150 Z"/>
+    <path d="M156 150 C 188 130, 210 102, 216 76 C 202 78, 174 102, 156 150 Z"/>
+    <path d="M156 150 C 122 158, 92 156, 70 142 C 88 130, 122 134, 156 150 Z"/>
+    <path d="M156 150 C 190 158, 220 156, 242 142 C 224 130, 190 134, 156 150 Z"/>
+    <path d="M156 150 C 138 188, 138 214, 150 222 C 162 214, 174 188, 156 150 Z"/>
+    <path d="M138 138 C 138 118, 178 116, 182 134 C 184 156, 178 174, 158 176 C 140 176, 134 158, 138 138 Z"/>
+  </g>
+  <g fill="#EFE8D6">
+    <text x="500" y="280" font-family="Cormorant Garamond, serif" font-size="84" font-weight="300">The Potter</text>
+    <text x="500" y="370" font-family="Cormorant Garamond, serif" font-size="84" font-style="italic" font-weight="300">Sanctuary</text>
+    <text x="500" y="430" font-family="Lora, serif" font-size="20" letter-spacing="6">PLANT-BASED BODY THERAPY  ·  BECK ROW, SUFFOLK</text>
+  </g>
+</svg>
