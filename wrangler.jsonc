@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "main": ".open-next/worker.js",
-  "name": "the-potter-sanctuary-main",
+  "name": "the-potter-sanctuary",
   "compatibility_date": "2026-04-27",
   "compatibility_flags": [
     "nodejs_compat"
