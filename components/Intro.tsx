@@ -1,7 +1,7 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
-import BrandMark from "./BrandMark";
 
 // Timeline (ms from mount):
 // 0     intro overlay paints with logo + title hidden
@@ -49,7 +49,14 @@ export default function Intro() {
     <div id="intro" ref={introRef} aria-hidden="true">
       <div className="intro-stage">
         <div className="intro-logo">
-          <BrandMark />
+          <Image
+            src="/Sanctuary logo.png"
+            alt="The Potter Sanctuary daffodil emblem"
+            width={272}
+            height={382}
+            priority
+            sizes="(max-width: 600px) 60vw, 280px"
+          />
         </div>
         <div className="intro-title">
           <span className="t1 serif">
