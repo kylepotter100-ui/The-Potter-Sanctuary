@@ -12,7 +12,7 @@ export type Service = {
   priceLabel: string;
   shortDesc: string;
   longDesc: string[];
-  imageLabel: { l1: string; l2: string };
+  image: { src: string; width: number; height: number; alt: string };
   reverse: boolean;
   bookingId: string;
   seo: {
@@ -43,9 +43,11 @@ export const services: Service[] = [
       "Long, flowing strokes warm the muscles from the soles of the feet to the crown of the head. The whipped, plant-based oils settle into the skin without leaving a film, so you go home softened, scented gently, and quietly elsewhere.",
       "Best for first-time visitors, anyone who works at a screen, and anyone craving a pure relaxing aromatherapy treatment near Mildenhall delivered by a fully trained Clarins therapist.",
     ],
-    imageLabel: {
-      l1: "image — full-body massage",
-      l2: "aromatherapy oils · linen drape",
+    image: {
+      src: "/aromatherapy.jpg",
+      width: 1024,
+      height: 1024,
+      alt: "Full body aromatherapy massage in progress at The Potter Sanctuary, with plant-based essential oils on linen drapes.",
     },
     reverse: false,
     bookingId: "full-body-aromatherapy",
@@ -83,9 +85,11 @@ export const services: Service[] = [
       "We work medium-to-firm pressure through the upper back and shoulders, ease the bridge of the neck, and finish with a slow scalp release that lingers long after you leave the studio.",
       "Recommended as a regular monthly tension relief massage in Beck Row — a quiet hour for anyone searching for a reliable back massage near Mildenhall, or a restorative scalp massage treatment in Suffolk.",
     ],
-    imageLabel: {
-      l1: "image — back, neck & scalp",
-      l2: "close hands · golden oil",
+    image: {
+      src: "/back-neck-scalp.jpg",
+      width: 2500,
+      height: 1533,
+      alt: "Back, neck and scalp massage being delivered at The Potter Sanctuary in Beck Row, Suffolk.",
     },
     reverse: true,
     bookingId: "back-neck-scalp",
@@ -122,9 +126,11 @@ export const services: Service[] = [
       "The combination of heat and weight gives a depth of release unlike a standard massage — particularly recommended for stubborn lower back tension, tired legs, and anyone in need of deep relaxation hot stone therapy in Suffolk after a stretched week.",
       "All oils used are plant-based and made in small batches by PrecyseByNature. The studio takes one guest at a time, so the pace is genuinely unhurried from arrival to herbal tea.",
     ],
-    imageLabel: {
-      l1: "image — hot stones laid on body",
-      l2: "smooth basalt · candlelight",
+    image: {
+      src: "/hot-stone-full-body.webp",
+      width: 1024,
+      height: 585,
+      alt: "Heated basalt stones laid along the body for the hot stones full body treatment in Suffolk.",
     },
     reverse: false,
     bookingId: "hot-stones-full",
@@ -160,9 +166,11 @@ export const services: Service[] = [
       "Stones are layered along the spine and worked outward with medium-to-firm pressure. Heat softens the fascia so deeper strokes land without bracing, and the result is a noticeable release that holds for days.",
       "A focused alternative to the full body session for anyone short on time but still in need of a hot stone back massage in Suffolk delivered with care, by a fully trained Clarins therapist.",
     ],
-    imageLabel: {
-      l1: "image — back hot-stone work",
-      l2: "layered stones · linen",
+    image: {
+      src: "/hot-stone-back.jpg",
+      width: 1280,
+      height: 853,
+      alt: "Hot stones layered along the back during a targeted hot stone back massage in Beck Row, Suffolk.",
     },
     reverse: true,
     bookingId: "hot-stones-back",

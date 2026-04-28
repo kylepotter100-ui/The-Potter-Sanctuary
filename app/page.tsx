@@ -53,10 +53,14 @@ export default function HomePage() {
           </div>
           <div className="hero-visual">
             <div className="hero-frame">
-              <div className="ph-label">
-                <div className="l1">image — treatment room</div>
-                <div className="l2">soft natural light · linen · stoneware</div>
-              </div>
+              <Image
+                src="/hero.jpg"
+                alt="A treatment room at The Potter Sanctuary, Beck Row — soft natural light over linen and stoneware."
+                fill
+                priority
+                sizes="(max-width: 600px) 92vw, (max-width: 960px) 88vw, 560px"
+                style={{ objectFit: "cover" }}
+              />
             </div>
           </div>
           <div className="hero-meta">
@@ -154,10 +158,13 @@ export default function HomePage() {
                 id={`svc-${i + 1}`}
               >
                 <div className="svc-img">
-                  <div className="ph-label">
-                    <div className="l1">{s.imageLabel.l1}</div>
-                    <div className="l2">{s.imageLabel.l2}</div>
-                  </div>
+                  <Image
+                    src={s.image.src}
+                    alt={s.image.alt}
+                    fill
+                    sizes="(max-width: 960px) 100vw, 50vw"
+                    style={{ objectFit: "cover" }}
+                  />
                 </div>
                 <div>
                   <div className="svc-num">{s.number}</div>
