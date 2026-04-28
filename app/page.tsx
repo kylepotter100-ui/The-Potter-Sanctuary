@@ -201,14 +201,7 @@ export default function HomePage() {
         {/* PRODUCTS */}
         <section className="section bone" id="products">
           <div className="container">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 60,
-                alignItems: "end",
-              }}
-            >
+            <div className="products-intro">
               <div>
                 <div className="eyebrow">Made by PrecyseByNature</div>
                 <h2 className="section-title">
@@ -221,7 +214,6 @@ export default function HomePage() {
                   lineHeight: 1.8,
                   opacity: 0.85,
                   maxWidth: 480,
-                  justifySelf: "end",
                 }}
               >
                 Whipped, slow-stirred and infused in small batches. Plant-based
@@ -274,58 +266,20 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 60,
-                padding: "36px 40px",
-                border: "1px solid rgba(58,63,49,.15)",
-                borderRadius: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 30,
-                flexWrap: "wrap",
-                background: "var(--cream-soft)",
-              }}
-            >
+            <div className="shop-cta">
               <div>
                 <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Shop the range
                 </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
-                    fontWeight: 300,
-                    fontSize: 30,
-                    lineHeight: 1.2,
-                    letterSpacing: "-0.005em",
-                  }}
-                >
+                <div className="shop-cta-headline">
                   The full PrecyseByNature collection
                 </div>
-                <div style={{ marginTop: 8, fontSize: 14, opacity: 0.7 }}>
+                <div className="shop-cta-note">
                   Direct link coming soon — bookmark for launch.
                 </div>
               </div>
               {/* TODO: replace href with the live PrecyseByNature shop URL once available. */}
-              <a
-                href="#"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 12,
-                  background: "var(--sage-deep)",
-                  color: "var(--cream)",
-                  textDecoration: "none",
-                  fontFamily: "var(--font-sans), 'Lora', serif",
-                  fontSize: 11,
-                  letterSpacing: "0.28em",
-                  textTransform: "uppercase",
-                  padding: "16px 28px",
-                  borderRadius: 999,
-                  transition: "background .2s",
-                }}
-              >
+              <a href="#" className="shop-cta-link">
                 Visit the shop <span aria-hidden="true">→</span>
               </a>
             </div>
