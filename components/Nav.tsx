@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import BrandMark from "./BrandMark";
 
 type Props = {
   homeAnchors?: boolean;
@@ -23,7 +23,14 @@ export default function Nav({ homeAnchors = false }: Props) {
   return (
     <nav className={`top${scrolled ? " scrolled" : ""}`} id="nav">
       <Link href="/" className="brand" aria-label="The Potter Sanctuary, home">
-        <BrandMark />
+        <Image
+          src="/Sanctuary logo.png"
+          alt=""
+          width={272}
+          height={382}
+          priority
+          className="brand-logo"
+        />
         <span className="name">The Potter Sanctuary</span>
       </Link>
       <div className="links">
@@ -39,3 +46,4 @@ export default function Nav({ homeAnchors = false }: Props) {
     </nav>
   );
 }
+

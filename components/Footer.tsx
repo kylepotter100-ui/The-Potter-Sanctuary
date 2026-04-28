@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Link from "next/link";
-import BrandMark from "./BrandMark";
 import { siteConfig } from "@/lib/site";
 import { services } from "@/lib/services";
 
@@ -10,7 +10,12 @@ export default function Footer() {
       <div className="grid">
         <div>
           <div className="brand-mark">
-            <BrandMark />
+            <Image
+              src="/Sanctuary logo.png"
+              alt=""
+              width={272}
+              height={382}
+            />
             <span>The Potter Sanctuary</span>
           </div>
           <p style={{ maxWidth: 340 }}>
