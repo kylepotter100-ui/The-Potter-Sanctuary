@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Nav from "@/components/Nav";
@@ -64,10 +65,14 @@ export default async function ServicePage({
           </div>
           <div className="hero-visual">
             <div className="hero-frame">
-              <div className="ph-label">
-                <div className="l1">{service.imageLabel.l1}</div>
-                <div className="l2">{service.imageLabel.l2}</div>
-              </div>
+              <Image
+                src={service.image.src}
+                alt={service.image.alt}
+                fill
+                priority
+                sizes="(max-width: 600px) 92vw, (max-width: 960px) 88vw, 560px"
+                style={{ objectFit: "cover" }}
+              />
             </div>
           </div>
           <div className="hero-meta">
@@ -94,10 +99,13 @@ export default async function ServicePage({
         <section className="section cream" id="detail">
           <div className="container philo">
             <div className="img">
-              <div className="ph-label">
-                <div className="l1">{service.imageLabel.l1}</div>
-                <div className="l2">{service.imageLabel.l2}</div>
-              </div>
+              <Image
+                src={service.image.src}
+                alt={service.image.alt}
+                fill
+                sizes="(max-width: 960px) 100vw, 45vw"
+                style={{ objectFit: "cover" }}
+              />
             </div>
             <div>
               <div className="eyebrow">What to expect</div>
@@ -179,10 +187,13 @@ export default async function ServicePage({
                 className={`service${i % 2 === 1 ? " reverse" : ""}`}
               >
                 <div className="svc-img">
-                  <div className="ph-label">
-                    <div className="l1">{s.imageLabel.l1}</div>
-                    <div className="l2">{s.imageLabel.l2}</div>
-                  </div>
+                  <Image
+                    src={s.image.src}
+                    alt={s.image.alt}
+                    fill
+                    sizes="(max-width: 960px) 100vw, 50vw"
+                    style={{ objectFit: "cover" }}
+                  />
                 </div>
                 <div>
                   <div className="svc-num">{s.number}</div>
