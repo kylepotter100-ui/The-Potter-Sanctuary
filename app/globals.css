@@ -85,27 +85,35 @@
     flex-direction: column;
     align-items: center;
   }
-  .intro-svg {
+  .intro-logo {
+    width: min(280px, 52vw);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 1000ms ease, transform 1000ms ease;
+  }
+  #intro.logo-in .intro-logo {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .intro-logo svg {
     width: 100%;
     height: auto;
     display: block;
   }
-  .intro-svg path,
-  .intro-svg line {
-    fill: none;
-    stroke: var(--cream);
-    stroke-width: 1.6;
+  .intro-logo svg path,
+  .intro-logo svg line {
+    stroke-width: 2.4;
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
   }
   .intro-title {
-    margin-top: 34px;
+    margin-top: 28px;
     text-align: center;
     color: var(--cream);
     opacity: 0;
     transform: translateY(8px);
-    transition: opacity 900ms ease, transform 900ms ease;
+    transition: opacity 700ms ease, transform 700ms ease;
   }
   #intro.titles .intro-title {
     opacity: 1;
@@ -125,28 +133,6 @@
     font-weight: 400;
     letter-spacing: 0.42em;
     font-size: 14px;
-  }
-  .draw {
-    stroke-dasharray: var(--len);
-    stroke-dashoffset: var(--len);
-  }
-  .nib {
-    position: absolute;
-    left: 50%;
-    top: 100%;
-    width: 14px;
-    height: 14px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    opacity: 0;
-  }
-  .nib::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: var(--cream);
-    box-shadow: 0 0 12px rgba(239, 232, 214, 0.55);
   }
 
   /* ===== Page chrome ===== */
