@@ -11,7 +11,7 @@ export default function Footer() {
         <div>
           <div className="brand-mark">
             <Image
-              src="/Sanctuary logo.png"
+              src="/sanctuary-logo.png"
               alt=""
               width={272}
               height={382}
