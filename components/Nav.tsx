@@ -24,7 +24,7 @@ export default function Nav({ homeAnchors = false }: Props) {
     <nav className={`top${scrolled ? " scrolled" : ""}`} id="nav">
       <Link href="/" className="brand" aria-label="The Potter Sanctuary, home">
         <Image
-          src="/Sanctuary logo.png"
+          src="/sanctuary-logo.png"
           alt=""
           width={272}
           height={382}

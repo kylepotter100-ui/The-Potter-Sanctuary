@@ -50,7 +50,7 @@ export default function Intro() {
       <div className="intro-stage">
         <div className="intro-logo">
           <Image
-            src="/Sanctuary logo.png"
+            src="/sanctuary-logo.png"
             alt="The Potter Sanctuary daffodil emblem"
             width={272}
             height={382}
