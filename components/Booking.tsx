@@ -29,17 +29,11 @@ const MONTHS = [
   "December",
 ];
 const DOWS = ["S", "M", "T", "W", "T", "F", "S"];
-const SLOT_TIMES = [
-  "09:30",
-  "10:30",
-  "11:30",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-];
+
+type AvailabilityData = {
+  slotsByDay: Record<number, string[]>;
+  blockedDates: string[];
+};
 
 function startOfDay(d: Date) {
   const r = new Date(d);
@@ -88,6 +82,31 @@ export default function Booking({ preselectId }: Props) {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityData | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+
+  // Pull live availability + blocked dates from the admin-controlled tables so
+  // the calendar mirrors what the studio has set up.
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/availability", { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as AvailabilityData;
+        if (!cancelled) {
+          setAvailability(data);
+          setAvailabilityError(null);
+        }
+      } catch {
+        if (!cancelled) setAvailabilityError("Couldn't load live availability.");
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Listen for external "preselect" events from the homepage service cards.
   useEffect(() => {
@@ -116,6 +135,11 @@ export default function Booking({ preselectId }: Props) {
     !/\S+@\S+\.\S+/.test(email);
 
   const dateLabel = date ? formatLongDate(date) : "";
+
+  const blockedSet = useMemo(
+    () => new Set(availability?.blockedDates ?? []),
+    [availability]
+  );
 
   const calCells = useMemo(() => {
     const first = new Date(viewYear, viewMonth, 1);
@@ -146,8 +170,11 @@ export default function Booking({ preselectId }: Props) {
       const dt = new Date(viewYear, viewMonth, d);
       const dow = dt.getDay();
       const isPast = dt < today;
-      const closed = dow === 0 || dow === 1;
-      const disabled = isPast || closed;
+      const closedByDay = !availability
+        ? dow === 0 || dow === 1
+        : !(availability.slotsByDay[dow]?.length);
+      const isBlocked = blockedSet.has(isoDate(dt));
+      const disabled = isPast || closedByDay || isBlocked;
       const isToday = dt.getTime() === today.getTime();
       const isSelected = !!date && dt.getTime() === date.getTime();
       cells.push({
@@ -175,16 +202,16 @@ export default function Booking({ preselectId }: Props) {
       }
     }
     return cells;
-  }, [viewYear, viewMonth, today, date]);
+  }, [viewYear, viewMonth, today, date, availability, blockedSet]);
 
   const slotState = useMemo(() => {
     if (!date) return [] as Array<{ time: string; disabled: boolean }>;
-    const seed = date.getDate();
-    return SLOT_TIMES.map((t, i) => ({
-      time: t,
-      disabled: (seed * 7 + i * 3) % 5 === 0,
-    }));
-  }, [date]);
+    if (!availability) return [];
+    if (blockedSet.has(isoDate(date))) return [];
+    const dow = date.getDay();
+    const slots = availability.slotsByDay[dow] ?? [];
+    return slots.map((t) => ({ time: t, disabled: false }));
+  }, [date, availability, blockedSet]);
 
   function shiftMonth(delta: number) {
     let m = viewMonth + delta;
@@ -317,6 +344,11 @@ export default function Booking({ preselectId }: Props) {
               {date ? dateLabel : "Select a date to see times"}
             </div>
             <div className="slots">
+              {date && availability && slotState.length === 0 && (
+                <div className="hint" style={{ gridColumn: "1 / -1" }}>
+                  No availability on this day.
+                </div>
+              )}
               {slotState.map((s) => (
                 <button
                   key={s.time}
@@ -330,6 +362,11 @@ export default function Booking({ preselectId }: Props) {
                 </button>
               ))}
             </div>
+            {availabilityError && (
+              <div className="hint" style={{ marginTop: 10 }}>
+                {availabilityError}
+              </div>
+            )}
           </div>
         </div>
         {date && (

@@ -86,7 +86,7 @@ export default async function BookingsPage() {
             </thead>
             <tbody>
               {rows.map((b) => (
-                <tr key={b.id}>
+                <tr key={b.id} className={`row-${b.status}`}>
                   <td data-label="Date">{formatDate(b.booking_date)}</td>
                   <td data-label="Time">{formatTime(b.booking_time)}</td>
                   <td data-label="Name">
