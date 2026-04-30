@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import BookingConfirmation from "@/emails/BookingConfirmation";
+import OwnerNotification from "@/emails/OwnerNotification";
+import { supabaseAdmin } from "@/lib/supabase";
+import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
 
 type Payload = {
   date: string;
@@ -13,39 +18,8 @@ type Payload = {
   message?: string;
 };
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function renderHtml(p: Payload) {
-  const rows: Array<[string, string]> = [
-    ["When", `${p.dateLabel} · ${p.time}`],
-    ["Treatment", p.service.name],
-    ["Duration", p.service.duration],
-    ["Price", `£${p.service.price}`],
-    ["Guest", `${p.fname} ${p.lname}`],
-    ["Gender", p.gender ?? "—"],
-    ["Phone", p.phone],
-    ["Email", p.email],
-  ];
-  if (p.message && p.message.trim()) rows.push(["Message", p.message]);
-  const rowsHtml = rows
-    .map(
-      ([k, v]) =>
-        `<tr><td style="padding:8px 14px 8px 0;color:#5A6149;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;font-family:Lora,serif;">${escapeHtml(
-          k
-        )}</td><td style="padding:8px 0;font-family:'Cormorant Garamond',serif;font-size:16px;color:#3A3F31;">${escapeHtml(
-          v
-        )}</td></tr>`
-    )
-    .join("");
-  return `<!doctype html><html><body style="background:#EFE8D6;padding:24px;font-family:Lora,serif;color:#3A3F31;"><div style="max-width:560px;margin:0 auto;background:#FBF7EC;padding:32px;border-radius:8px;border:1px solid rgba(58,63,49,0.1);"><h1 style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;margin:0 0 18px;">New booking enquiry</h1><table style="width:100%;border-collapse:collapse;">${rowsHtml}</table></div></body></html>`;
-}
+const FROM = "The Potter Sanctuary <bookings@thepottersanctuary.co.uk>";
+const OWNER_TO = "hello@thepottersanctuary.co.uk";
 
 export async function POST(req: Request) {
   let payload: Payload;
@@ -59,57 +33,115 @@ export async function POST(req: Request) {
     payload?.date,
     payload?.time,
     payload?.service?.name,
+    payload?.service?.svc,
     payload?.fname,
     payload?.lname,
     payload?.phone,
     payload?.email,
   ];
-  if (required.some((v) => !v) || !/\S+@\S+\.\S+/.test(payload.email)) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  if (
+    required.some((v) => !v) ||
+    !/\S+@\S+\.\S+/.test(payload.email) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(payload.date) ||
+    !/^\d{2}:\d{2}(:\d{2})?$/.test(payload.time)
+  ) {
+    return NextResponse.json(
+      { error: "Missing or invalid required fields" },
+      { status: 400 }
+    );
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.BOOKING_EMAIL_TO;
-  const from = process.env.BOOKING_EMAIL_FROM;
-
-  if (!apiKey || !to || !from) {
-    console.error("[booking] missing email env vars", {
-      hasKey: !!apiKey,
-      hasTo: !!to,
-      hasFrom: !!from,
-    });
+  if (!supabaseAdmin) {
     return NextResponse.json(
-      { error: "Email is not configured on the server" },
+      { error: "Booking storage is not configured on the server" },
       { status: 500 }
     );
   }
 
-  const subject = `Booking — ${payload.service.name} · ${payload.dateLabel} · ${payload.time}`;
-  const html = renderHtml(payload);
+  const slotTime = payload.time.length === 5 ? `${payload.time}:00` : payload.time;
 
-  const resp = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      reply_to: payload.email,
-      subject,
-      html,
-    }),
-  });
+  const { data: inserted, error: insertError } = await supabaseAdmin
+    .from("bookings")
+    .insert({
+      customer_first_name: payload.fname,
+      customer_last_name: payload.lname,
+      customer_email: payload.email,
+      customer_phone: payload.phone,
+      customer_gender: payload.gender ?? null,
+      treatment_id: payload.service.svc,
+      treatment_name: payload.service.name,
+      treatment_price: Math.round(payload.service.price),
+      booking_date: payload.date,
+      booking_time: slotTime,
+      message: payload.message?.trim() || null,
+      status: "pending",
+    })
+    .select("id")
+    .single();
 
-  if (!resp.ok) {
-    const text = await resp.text();
-    console.error("[booking] resend error", resp.status, text);
+  if (insertError) {
+    console.error("[booking] supabase insert failed", insertError);
     return NextResponse.json(
-      { error: "Could not send booking email" },
-      { status: 502 }
+      { error: "Could not save your booking. Please try again." },
+      { status: 500 }
     );
   }
 
-  return NextResponse.json({ ok: true });
+  // Email sending is best-effort: if Resend is misconfigured or fails, the
+  // booking is already saved and the user gets a success response. We log the
+  // failure so the studio can chase up via the admin panel.
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("[booking] RESEND_API_KEY missing — booking saved without email");
+    return NextResponse.json({ ok: true, id: inserted.id });
+  }
+
+  const resend = new Resend(apiKey);
+
+  const dateLong = formatLongDate(payload.date);
+  const timeNice = formatTime12h(payload.time);
+
+  try {
+    const results = await Promise.all([
+      resend.emails.send({
+        from: FROM,
+        to: payload.email,
+        replyTo: OWNER_TO,
+        subject: "Your reservation at The Potter Sanctuary",
+        react: BookingConfirmation({
+          firstName: payload.fname,
+          treatmentName: payload.service.name,
+          bookingDate: dateLong,
+          bookingTime: timeNice,
+          treatmentPrice: payload.service.price,
+        }),
+      }),
+      resend.emails.send({
+        from: FROM,
+        to: OWNER_TO,
+        replyTo: payload.email,
+        subject: `New booking — ${payload.service.name} — ${payload.fname} ${payload.lname}`,
+        react: OwnerNotification({
+          firstName: payload.fname,
+          lastName: payload.lname,
+          phone: payload.phone,
+          customerEmail: payload.email,
+          treatmentName: payload.service.name,
+          bookingDate: dateLong,
+          bookingTime: timeNice,
+          treatmentPrice: payload.service.price,
+          gender: payload.gender ?? "—",
+          message: payload.message ?? "",
+          timestamp: formatTimestamp(),
+        }),
+      }),
+    ]);
+    for (const r of results) {
+      if (r.error) console.error("[booking] resend send error", r.error);
+    }
+  } catch (err) {
+    console.error("[booking] email dispatch threw", err);
+  }
+
+  return NextResponse.json({ ok: true, id: inserted.id });
 }
