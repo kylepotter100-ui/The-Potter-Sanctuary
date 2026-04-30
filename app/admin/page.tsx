@@ -1,11 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const expired = searchParams.get("reason") === "expired";
+
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +29,7 @@ export default function AdminLoginPage() {
         return;
       }
       if (res.status === 401) {
-        setError("That password isn't right.");
+        setError("That password isn't right. Please try again.");
       } else {
         const body = await res.json().catch(() => ({}));
         setError(body.error ?? "Something went wrong, try again.");
@@ -52,8 +55,17 @@ export default function AdminLoginPage() {
         </div>
         <h1>Welcome back</h1>
         <p className="sub">Enter the studio password to continue.</p>
-        <form onSubmit={onSubmit}>
-          {error && <div className="error-text">{error}</div>}
+        <form onSubmit={onSubmit} noValidate>
+          {expired && !error && (
+            <div className="info-text" role="status">
+              Your session has expired — please sign in again.
+            </div>
+          )}
+          {error && (
+            <div className="error-text" role="alert" aria-live="polite">
+              {error}
+            </div>
+          )}
           <div className="field">
             <label htmlFor="password">Password</label>
             <input
@@ -70,7 +82,18 @@ export default function AdminLoginPage() {
             {submitting ? "Opening…" : "Enter sanctuary"}
           </button>
         </form>
+        <p className="login-help">
+          Forgotten your password? Contact your website manager.
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="login-screen" />}>
+      <LoginForm />
+    </Suspense>
   );
 }
