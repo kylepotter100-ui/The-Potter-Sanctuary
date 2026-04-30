@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
 const VALID = new Set(["pending", "confirmed", "cancelled"]);
-const FROM = "The Potter Sanctuary <bookings@thepottersanctuary.co.uk>";
+const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
 const REPLY_TO = "hello@thepottersanctuary.co.uk";
 
 export async function POST(

@@ -18,7 +18,7 @@ type Payload = {
   message?: string;
 };
 
-const FROM = "The Potter Sanctuary <bookings@thepottersanctuary.co.uk>";
+const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
 const OWNER_TO = "hello@thepottersanctuary.co.uk";
 
 export async function POST(req: Request) {
