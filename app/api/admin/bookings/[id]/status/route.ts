@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import BookingConfirmed from "@/emails/BookingConfirmed";
 import { supabaseAdmin } from "@/lib/supabase";
+import { formatLongDate, formatTime12h } from "@/lib/format";
 
 const VALID = new Set(["pending", "confirmed", "cancelled"]);
+const FROM = "The Potter Sanctuary <bookings@thepottersanctuary.co.uk>";
+const REPLY_TO = "hello@thepottersanctuary.co.uk";
 
 export async function POST(
   req: Request,
@@ -31,11 +36,42 @@ export async function POST(
     .from("bookings")
     .update({ status })
     .eq("id", id)
-    .select()
+    .select(
+      "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, status"
+    )
     .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Send the customer a confirmation email when the admin moves a booking to
+  // 'confirmed'. Best-effort — failures here don't fail the API call.
+  if (status === "confirmed" && data?.customer_email) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error("[admin status] RESEND_API_KEY missing — confirmation email skipped");
+    } else {
+      const resend = new Resend(apiKey);
+      try {
+        const result = await resend.emails.send({
+          from: FROM,
+          to: data.customer_email,
+          replyTo: REPLY_TO,
+          subject: "Your booking is confirmed — The Potter Sanctuary",
+          react: BookingConfirmed({
+            firstName: data.customer_first_name,
+            treatmentName: data.treatment_name,
+            bookingDate: formatLongDate(data.booking_date),
+            bookingTime: formatTime12h(data.booking_time),
+            treatmentPrice: data.treatment_price,
+          }),
+        });
+        if (result.error) console.error("[admin status] resend send error", result.error);
+      } catch (err) {
+        console.error("[admin status] email dispatch threw", err);
+      }
+    }
   }
 
   return NextResponse.json(data);
