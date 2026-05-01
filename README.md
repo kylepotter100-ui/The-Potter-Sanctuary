@@ -53,14 +53,38 @@ The dev server runs at <http://localhost:3000>.
 
 ### Environment variables
 
-| Variable                | Required | Description                                                                            |
-| ----------------------- | :------: | -------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL`  |    ✅    | Public origin of the site. Drives canonical URLs, OG tags, JSON-LD, and the sitemap.   |
-| `RESEND_API_KEY`        |    ✅    | API key from [Resend](https://resend.com). Used by the booking API route.              |
-| `BOOKING_EMAIL_TO`      |    ✅    | Inbox that receives booking enquiries (e.g. `hello@thepottersanctuary.co.uk`).         |
-| `BOOKING_EMAIL_FROM`    |    ✅    | Verified Resend sender address on a domain you've added & verified in Resend.          |
+| Variable                       | Required | Description                                                                                              |
+| ------------------------------ | :------: | -------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`         |    ✅    | Public origin of the site. Drives canonical URLs, OG tags, JSON-LD, and the sitemap.                     |
+| `NEXT_PUBLIC_SUPABASE_URL`     |    ✅    | Supabase project URL. Project Settings → API. Inlined at build time, so must be set when `npm run build` runs. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`|    ✅    | Supabase anon/public key. Project Settings → API. Browser-safe.                                          |
+| `SUPABASE_SERVICE_ROLE_KEY`    |    ✅    | Supabase service-role secret. Project Settings → API. **Server-only** — never expose to the browser.     |
+| `RESEND_API_KEY`               |    ✅    | API key from [Resend](https://resend.com). Used by the booking + admin status routes.                    |
+| `BOOKING_EMAIL_TO`             |    ✅    | Inbox that receives booking enquiries (e.g. `hello@thepottersanctuary.co.uk`).                           |
+| `BOOKING_EMAIL_FROM`           |    ✅    | Verified Resend sender address on a domain you've added & verified in Resend.                            |
+| `ADMIN_PASSWORD`               |    ✅    | Password for the `/admin` panel. Set to something long and random.                                       |
 
 `.env.example` contains the same keys with placeholder values.
+
+### Supabase Setup
+
+The admin panel and the public booking form both depend on Supabase. Before first use:
+
+1. **Create a project** at [supabase.com](https://supabase.com). London region recommended for UK latency.
+2. **Find your keys** in Supabase dashboard → **Project Settings → API**. You need the Project URL, the `anon` public key, and the `service_role` secret.
+3. **Run the schema.** Open Supabase dashboard → **SQL Editor** → paste the contents of `supabase/schema.sql` → Run. The script is idempotent — it creates the `availability`, `blocked_dates`, and `bookings` tables and seeds Tue–Sat 09:30–19:00 availability slots.
+4. **Set the environment variables locally** in `.env.local` (build-time inlining of `NEXT_PUBLIC_*` requires them at build time).
+5. **Set the runtime secrets in Cloudflare.** The Worker reads `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and `ADMIN_PASSWORD` at request time, so they must be present on the deployed Worker:
+
+   ```bash
+   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   npx wrangler secret put RESEND_API_KEY
+   npx wrangler secret put ADMIN_PASSWORD
+   ```
+
+   You can also set these via Cloudflare dashboard → **Workers & Pages → the-potter-sanctuary → Settings → Variables and Secrets** (mark each as "Encrypted").
+
+6. **Redeploy** with `npm run deploy`. The admin panel should now show real data instead of the "Supabase isn't configured yet" fallback.
 
 ---
 

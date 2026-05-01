@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import BookingActions from "@/components/BookingActions";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -18,6 +19,8 @@ type Booking = {
   booking_time: string;
   status: "pending" | "confirmed" | "cancelled";
 };
+
+type ConsultationLink = { booking_id: string | null };
 
 function formatDate(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
@@ -55,6 +58,15 @@ export default async function BookingsPage() {
 
   const rows = (data ?? []) as Booking[];
 
+  const { data: consults } = await supabaseAdmin
+    .from("consultation_responses")
+    .select("booking_id");
+  const consultedSet = new Set(
+    ((consults ?? []) as ConsultationLink[])
+      .map((c) => c.booking_id)
+      .filter((id): id is string => !!id)
+  );
+
   return (
     <>
       <AdminHeader active="bookings" />
@@ -81,30 +93,55 @@ export default async function BookingsPage() {
                 <th>Price</th>
                 <th>Phone</th>
                 <th>Status</th>
+                <th>Consultation</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((b) => (
-                <tr key={b.id}>
-                  <td data-label="Date">{formatDate(b.booking_date)}</td>
-                  <td data-label="Time">{formatTime(b.booking_time)}</td>
-                  <td data-label="Name">
-                    {b.customer_first_name} {b.customer_last_name}
-                    <br />
-                    <small style={{ opacity: 0.65 }}>{b.customer_email}</small>
-                  </td>
-                  <td data-label="Treatment">{b.treatment_name}</td>
-                  <td data-label="Price">£{b.treatment_price}</td>
-                  <td data-label="Phone">{b.customer_phone}</td>
-                  <td data-label="Status">
-                    <span className={`badge badge-${b.status}`}>{b.status}</span>
-                  </td>
-                  <td data-label="Actions">
-                    <BookingActions bookingId={b.id} current={b.status} />
-                  </td>
-                </tr>
-              ))}
+              {rows.map((b) => {
+                const completed = consultedSet.has(b.id);
+                return (
+                  <tr key={b.id} className={`row-${b.status}`}>
+                    <td data-label="Date">{formatDate(b.booking_date)}</td>
+                    <td data-label="Time">{formatTime(b.booking_time)}</td>
+                    <td data-label="Name">
+                      {b.customer_first_name} {b.customer_last_name}
+                      <br />
+                      <small style={{ opacity: 0.65 }}>{b.customer_email}</small>
+                    </td>
+                    <td data-label="Treatment">{b.treatment_name}</td>
+                    <td data-label="Price">£{b.treatment_price}</td>
+                    <td data-label="Phone">{b.customer_phone}</td>
+                    <td data-label="Status">
+                      <span className={`badge badge-${b.status}`}>{b.status}</span>
+                    </td>
+                    <td data-label="Consultation">
+                      {completed ? (
+                        <Link
+                          href={`/admin/bookings/${b.id}/consultation`}
+                          className="badge badge-confirmed"
+                          style={{ textDecoration: "none" }}
+                        >
+                          ✓ Completed
+                        </Link>
+                      ) : (
+                        <span
+                          className="badge"
+                          style={{
+                            background: "#f4e3c4",
+                            color: "#7a5b1a",
+                          }}
+                        >
+                          ⏳ Pending
+                        </span>
+                      )}
+                    </td>
+                    <td data-label="Actions">
+                      <BookingActions bookingId={b.id} current={b.status} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -1364,4 +1364,502 @@
     .intro-title .t1 { font-size: 36px; }
     .intro-title .t2 { font-size: 12px; letter-spacing: 0.36em; }
   }
+
+  /* ===== Login page ===== */
+  .login-page {
+    min-height: 100vh;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 460px;
+    background: #fff;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 14px;
+    padding: 44px 40px 36px;
+    box-shadow: 0 6px 24px rgba(58, 63, 49, 0.06);
+  }
+  .login-brand {
+    display: block;
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--sage-deep);
+    text-decoration: none;
+    text-align: center;
+    margin-bottom: 28px;
+    letter-spacing: 0.04em;
+  }
+  .login-card h1 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 30px;
+    color: var(--ink);
+    margin: 0 0 12px;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .login-lede {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    text-align: center;
+    margin: 0 0 26px;
+  }
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .login-form label {
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .login-form input {
+    padding: 12px 14px;
+    border: 1px solid rgba(28, 28, 28, 0.18);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--bone);
+    color: var(--ink);
+  }
+  .login-form input:focus {
+    outline: none;
+    border-color: var(--sage-deep);
+    background: #fff;
+  }
+  .login-btn {
+    margin-top: 6px;
+    background: var(--sage-deep);
+    color: #fff;
+    border: none;
+    padding: 14px 22px;
+    border-radius: 8px;
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .login-btn:hover:not(:disabled) {
+    background: var(--ink);
+  }
+  .login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .login-error {
+    background: #f7e3e2;
+    border: 1px solid #c98a86;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #5b201d;
+  }
+  .login-error-banner {
+    margin-bottom: 16px;
+  }
+  .login-success {
+    text-align: center;
+    padding: 8px 0;
+  }
+  .login-success .login-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--sage-deep);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 24px;
+  }
+  .login-success h2 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 26px;
+    color: var(--ink);
+    margin: 0 0 10px;
+  }
+  .login-success p {
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: 0 0 8px;
+    font-size: 15px;
+  }
+  .login-hint {
+    font-size: 13px !important;
+    opacity: 0.75;
+  }
+  .login-foot {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 13px;
+  }
+  .login-foot a {
+    color: var(--sage-deep);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+  }
+  .login-foot a:hover {
+    text-decoration: underline;
+  }
+
+  /* ===== Sign-in prompt on booking ===== */
+  .signin-prompt {
+    background: var(--bone);
+    border: 1px solid var(--sage-soft);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .signin-prompt .head {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 19px;
+    color: var(--ink);
+  }
+  .signin-prompt .sub {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .signin-prompt .actions {
+    margin-top: 4px;
+  }
+  .signin-prompt .signin-link {
+    display: inline-block;
+    background: var(--sage-deep);
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 15px;
+  }
+  .signin-prompt .signin-link:hover {
+    background: var(--ink);
+  }
+  .signin-welcome {
+    background: var(--bone);
+    border: 1px solid var(--sage-soft);
+    border-radius: 10px;
+    padding: 14px 22px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .signin-welcome .greeting {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .signin-welcome .signout-link {
+    background: none;
+    border: none;
+    color: var(--sage-deep);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .signin-welcome .signout-link:hover {
+    color: var(--ink);
+  }
+
+  /* ===== Account & Questionnaire pages ===== */
+  .account-page,
+  .questionnaire-page {
+    min-height: 100vh;
+    background: var(--cream);
+    padding: 60px 20px;
+  }
+  .account-shell,
+  .questionnaire-shell {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .account-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .account-header h1 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 36px;
+    color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .account-header .email {
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .account-section {
+    background: #fff;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 12px;
+    padding: 26px 28px;
+    margin-bottom: 18px;
+  }
+  .account-section h2 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 22px;
+    color: var(--sage-deep);
+    margin: 0 0 14px;
+  }
+  .account-empty {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .account-bookings-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .account-bookings-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bone);
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 8px;
+    flex-wrap: wrap;
+  }
+  .account-bookings-list .b-when {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .account-bookings-list .b-treatment {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .account-actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .account-link {
+    color: var(--sage-deep);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .account-link:hover { text-decoration: underline; }
+  .badge-consult {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .badge-consult.done {
+    background: var(--sage-pale);
+    color: var(--sage-deep);
+  }
+  .badge-consult.pending {
+    background: #f4e3c4;
+    color: #7a5b1a;
+  }
+  .submit-btn-link {
+    background: var(--sage-deep);
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  }
+  .submit-btn-link:hover { background: var(--ink); }
+
+  /* ===== Questionnaire form ===== */
+  .questionnaire-shell h1 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 36px;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+  .questionnaire-shell .lede {
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 30px;
+  }
+  .q-section {
+    background: #fff;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin-bottom: 18px;
+  }
+  .q-section h2 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 24px;
+    color: var(--sage-deep);
+    margin: 0 0 18px;
+  }
+  .q-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+  }
+  .q-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .q-field.full { grid-column: 1 / -1; }
+  .q-field label {
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .q-field input,
+  .q-field textarea,
+  .q-field select {
+    padding: 10px 12px;
+    border: 1px solid rgba(28, 28, 28, 0.18);
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--bone);
+    color: var(--ink);
+  }
+  .q-field input:focus,
+  .q-field textarea:focus {
+    outline: none;
+    border-color: var(--sage-deep);
+    background: #fff;
+  }
+  .q-field input[readonly] {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--ink-soft);
+  }
+  .q-field textarea { min-height: 80px; resize: vertical; }
+  .q-checks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 22px;
+  }
+  .q-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .q-check input { width: 16px; height: 16px; }
+  .q-radio-row {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .q-radio-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--ink);
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: inherit;
+  }
+  .q-consent {
+    background: var(--bone);
+    border: 1px solid rgba(28, 28, 28, 0.12);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .q-submit {
+    background: var(--sage-deep);
+    color: #fff;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 8px;
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .q-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .q-submit:hover:not(:disabled) { background: var(--ink); }
+  .q-success {
+    text-align: center;
+    background: #fff;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 12px;
+    padding: 50px 30px;
+  }
+  .q-success .icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--sage-deep);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 22px;
+    font-size: 28px;
+  }
+  .q-success h1 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 30px;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  .q-success p {
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin: 0 auto;
+    max-width: 440px;
+  }
+
+  @media (max-width: 600px) {
+    .q-grid { grid-template-columns: 1fr; }
+    .q-checks { grid-template-columns: 1fr; }
+    .login-card { padding: 32px 24px 28px; }
+    .account-section { padding: 22px 20px; }
+    .q-section { padding: 22px 20px; }
+  }
 }

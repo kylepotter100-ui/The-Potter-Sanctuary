@@ -1,5 +1,5 @@
 module.exports = {
-  siteUrl: 'https://the-potter-sanctuary.com',
+  siteUrl: 'https://www.thepottersanctuary.co.uk',
   generateRobotsTxt: true,
   sitemapSize: 7000,
 }
