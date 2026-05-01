@@ -146,6 +146,7 @@ export async function POST(req: Request) {
 
   const dateLong = formatLongDate(payload.date);
   const timeNice = formatTime12h(payload.time);
+  const siteUrl = new URL(req.url).origin;
 
   try {
     const [customerHtml, ownerHtml] = await Promise.all([
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
           bookingTime: timeNice,
           treatmentPrice: payload.service.price,
           bookingId: inserted.id,
+          siteUrl,
         })
       ),
       render(
