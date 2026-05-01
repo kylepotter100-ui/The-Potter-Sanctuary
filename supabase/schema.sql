@@ -107,7 +107,11 @@ CREATE INDEX IF NOT EXISTS consultation_booking_id_idx  ON public.consultation_r
 -- Tuesday–Saturday (2..6), every 30 minutes from 09:30 to 19:00 inclusive.
 -- Re-running is safe thanks to the unique constraint.
 INSERT INTO public.availability (day_of_week, slot_time, is_active)
-SELECT day, slot, true
-FROM generate_series(2, 6) AS day
-CROSS JOIN generate_series('09:30'::time, '19:00'::time, interval '30 minutes') AS slot
+SELECT
+  day,
+  (('09:30'::time) + (slot_number * interval '30 minutes')) AS slot_time,
+  true
+FROM
+  generate_series(2, 6) AS day,
+  generate_series(0, 19) AS slot_number
 ON CONFLICT (day_of_week, slot_time) DO NOTHING;
