@@ -1,9 +1,9 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
-  Hr,
   Html,
   Preview,
   Section,
@@ -16,10 +16,10 @@ type Props = {
   bookingDate: string;
   bookingTime: string;
   treatmentPrice: number;
+  bookingId: string;
 };
 
 const SAGE = "#8A9E85";
-const SAGE_DEEP = "#6E8068";
 const CREAM = "#F5F0E8";
 const BONE = "#FBF7EC";
 const INK = "#1C1C1C";
@@ -29,19 +29,25 @@ const LINE = "rgba(28,28,28,0.12)";
 const SERIF = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const SANS = "'Lora', Georgia, serif";
 
+const SITE = "https://www.thepottersanctuary.co.uk";
+
 export default function BookingConfirmation({
   firstName,
   treatmentName,
   bookingDate,
   bookingTime,
   treatmentPrice,
+  bookingId,
 }: Props) {
+  const consultationUrl = `${SITE}/questionnaire?booking=${encodeURIComponent(
+    bookingId
+  )}`;
+
   return (
     <Html lang="en">
       <Head />
       <Preview>
-        Your reservation request at The Potter Sanctuary — {bookingDate} at{" "}
-        {bookingTime}
+        Your reservation at The Potter Sanctuary — {bookingDate} at {bookingTime}
       </Preview>
       <Body
         style={{
@@ -55,150 +61,214 @@ export default function BookingConfirmation({
       >
         <Container
           style={{
-            maxWidth: 560,
+            maxWidth: 600,
             margin: "0 auto",
-            padding: "32px 16px",
+            padding: 0,
           }}
         >
-          <Section style={{ padding: "8px 8px 4px" }}>
+          {/* HEADER */}
+          <Section
+            style={{
+              background: SAGE,
+              padding: "28px 24px",
+              textAlign: "center" as const,
+            }}
+          >
             <Heading
               as="h1"
               style={{
                 fontFamily: SERIF,
                 fontWeight: 400,
-                color: SAGE,
-                fontSize: 30,
-                lineHeight: 1.15,
-                letterSpacing: "0.005em",
+                color: "#ffffff",
+                fontSize: 28,
                 margin: 0,
+                letterSpacing: "0.02em",
+                lineHeight: 1.15,
               }}
             >
               The Potter Sanctuary
             </Heading>
           </Section>
 
+          {/* THANK YOU */}
           <Section
             style={{
               background: "#ffffff",
-              border: `1px solid ${LINE}`,
-              borderRadius: 10,
-              padding: "28px 28px 24px",
-              marginTop: 18,
+              padding: "32px 32px 8px",
             }}
           >
             <Text
               style={{
                 fontFamily: SERIF,
                 fontSize: 22,
-                lineHeight: 1.3,
                 color: INK,
                 margin: "0 0 14px",
+                lineHeight: 1.3,
               }}
             >
               Dear {firstName},
             </Text>
-
             <Text
               style={{
                 fontSize: 15,
                 lineHeight: 1.7,
                 color: INK_SOFT,
-                margin: "0 0 14px",
+                margin: "0 0 8px",
               }}
             >
-              Thank you for choosing The Potter Sanctuary. We've received your
-              reservation request and look forward to welcoming you. You'll
-              receive a final confirmation from us shortly.
+              Thank you for booking your time at The Potter Sanctuary. Your
+              reservation is confirmed.
             </Text>
+          </Section>
 
+          {/* BOOKING DETAILS BOX */}
+          <Section
+            style={{
+              background: "#ffffff",
+              padding: "8px 32px 4px",
+            }}
+          >
             <Section
               style={{
                 background: BONE,
                 border: `1px solid ${LINE}`,
-                borderRadius: 8,
-                padding: "18px 20px",
-                margin: "22px 0",
+                borderRadius: 10,
+                padding: "20px 22px",
               }}
             >
               <DetailRow label="Treatment" value={treatmentName} />
               <DetailRow label="Date" value={bookingDate} />
               <DetailRow label="Time" value={bookingTime} />
-              <DetailRow label="Investment" value={`£${treatmentPrice}`} last />
+              <DetailRow label="Investment" value={`£${treatmentPrice}`} />
+              <DetailRow
+                label="Location"
+                value="The Potter Sanctuary, Beck Row, Suffolk"
+                last
+              />
             </Section>
+          </Section>
 
-            <Text
+          {/* CONSULTATION SECTION */}
+          <Section
+            style={{
+              background: "#ffffff",
+              padding: "26px 32px 4px",
+            }}
+          >
+            <Heading
+              as="h2"
               style={{
-                fontSize: 14,
-                lineHeight: 1.7,
-                color: INK_SOFT,
-                margin: "0 0 12px",
+                fontFamily: SERIF,
+                fontWeight: 400,
+                fontSize: 22,
+                color: SAGE,
+                margin: "0 0 10px",
+                lineHeight: 1.25,
               }}
             >
-              Please arrive a few minutes before your session. No preparation is
-              required — simply come as you are.
-            </Text>
-
+              Before your session
+            </Heading>
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 15,
                 lineHeight: 1.7,
                 color: INK_SOFT,
-                margin: "0 0 12px",
+                margin: "0 0 20px",
               }}
             >
-              Should you need to cancel or reschedule, please do so at least 24
-              hours before your appointment.
+              To help us tailor your treatment, please complete your brief
+              consultation form. This takes just a few minutes.
             </Text>
-
+            <Section style={{ textAlign: "center" as const, margin: "0 0 12px" }}>
+              <Button
+                href={consultationUrl}
+                style={{
+                  background: SAGE,
+                  color: "#ffffff",
+                  fontFamily: SERIF,
+                  fontSize: 17,
+                  textDecoration: "none",
+                  padding: "14px 28px",
+                  borderRadius: 8,
+                  letterSpacing: "0.02em",
+                  display: "inline-block",
+                }}
+              >
+                Complete Your Consultation Questionnaire
+              </Button>
+            </Section>
             <Text
               style={{
-                fontSize: 14,
-                lineHeight: 1.7,
+                fontSize: 12,
+                fontStyle: "italic",
+                lineHeight: 1.6,
                 color: INK_SOFT,
+                textAlign: "center" as const,
                 margin: "0 0 4px",
               }}
             >
-              To get in touch, simply reply to this email or contact us at
-              hello@thepottersanctuary.co.uk.
+              Please complete this at least 12 hours before your appointment.
+              Without it, there is a risk your treatment may not be able to
+              commence.
             </Text>
+          </Section>
 
-            <Hr
+          {/* CLOSING */}
+          <Section
+            style={{
+              background: "#ffffff",
+              padding: "28px 32px 36px",
+            }}
+          >
+            <Text
               style={{
-                borderColor: LINE,
-                margin: "22px 0 14px",
+                fontSize: 15,
+                lineHeight: 1.7,
+                color: INK_SOFT,
+                margin: "0 0 8px",
               }}
-            />
-
+            >
+              We look forward to caring for you.
+            </Text>
             <Text
               style={{
                 fontFamily: SERIF,
-                fontSize: 16,
-                fontStyle: "italic",
-                color: SAGE_DEEP,
+                fontSize: 17,
+                color: INK,
                 margin: 0,
+                fontStyle: "italic",
               }}
             >
-              With warmth,
-              <br />
               The Potter Sanctuary
             </Text>
           </Section>
 
+          {/* FOOTER */}
           <Section
             style={{
               background: SAGE,
-              borderRadius: 10,
-              padding: "20px 24px",
-              marginTop: 18,
+              padding: "20px 28px",
               textAlign: "center" as const,
             }}
           >
             <Text
               style={{
-                fontFamily: SERIF,
-                fontSize: 16,
+                fontSize: 12,
+                color: "#ffffff",
+                margin: "0 0 6px",
+                lineHeight: 1.6,
+                opacity: 0.95,
+              }}
+            >
+              To get in touch, simply reply to this email or contact us at
+              hello@thepottersanctuary.co.uk
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
                 color: "#ffffff",
                 margin: 0,
+                opacity: 0.85,
                 letterSpacing: "0.02em",
               }}
             >
@@ -241,7 +311,7 @@ function DetailRow({
               color: INK_SOFT,
               fontFamily: SANS,
               padding: "4px 12px 4px 0",
-              width: 120,
+              width: 130,
               verticalAlign: "top",
             }}
           >
