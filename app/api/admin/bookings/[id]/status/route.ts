@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { render } from "@react-email/render";
 import BookingConfirmed from "@/emails/BookingConfirmed";
 import { supabaseAdmin } from "@/lib/supabase";
 import { formatLongDate, formatTime12h } from "@/lib/format";
@@ -54,22 +55,30 @@ export async function POST(
     } else {
       const resend = new Resend(apiKey);
       try {
-        const result = await resend.emails.send({
-          from: FROM,
-          to: data.customer_email,
-          replyTo: REPLY_TO,
-          subject: "Your booking is confirmed — The Potter Sanctuary",
-          react: BookingConfirmed({
+        const html = await render(
+          BookingConfirmed({
             firstName: data.customer_first_name,
             treatmentName: data.treatment_name,
             bookingDate: formatLongDate(data.booking_date),
             bookingTime: formatTime12h(data.booking_time),
             treatmentPrice: data.treatment_price,
-          }),
+          })
+        );
+        const result = await resend.emails.send({
+          from: FROM,
+          to: data.customer_email,
+          replyTo: REPLY_TO,
+          subject: "Your booking is confirmed — The Potter Sanctuary",
+          html,
         });
-        if (result.error) console.error("[admin status] resend send error", result.error);
+        if (result.error) {
+          console.error("[admin status] Resend error:", JSON.stringify(result.error));
+        }
       } catch (err) {
-        console.error("[admin status] email dispatch threw", err);
+        console.error(
+          "[admin status] Resend error:",
+          JSON.stringify(err, Object.getOwnPropertyNames(err as object))
+        );
       }
     }
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { render } from "@react-email/render";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -147,27 +148,19 @@ export async function POST(req: Request) {
   const timeNice = formatTime12h(payload.time);
 
   try {
-    const results = await Promise.all([
-      resend.emails.send({
-        from: FROM,
-        to: payload.email,
-        replyTo: OWNER_TO,
-        subject: "Your reservation at The Potter Sanctuary",
-        react: BookingConfirmation({
+    const [customerHtml, ownerHtml] = await Promise.all([
+      render(
+        BookingConfirmation({
           firstName: payload.fname,
           treatmentName: payload.service.name,
           bookingDate: dateLong,
           bookingTime: timeNice,
           treatmentPrice: payload.service.price,
           bookingId: inserted.id,
-        }),
-      }),
-      resend.emails.send({
-        from: FROM,
-        to: OWNER_TO,
-        replyTo: payload.email,
-        subject: `New booking — ${payload.service.name} — ${payload.fname} ${payload.lname}`,
-        react: OwnerNotification({
+        })
+      ),
+      render(
+        OwnerNotification({
           firstName: payload.fname,
           lastName: payload.lname,
           phone: payload.phone,
@@ -179,14 +172,36 @@ export async function POST(req: Request) {
           gender: payload.gender ?? "—",
           message: payload.message ?? "",
           timestamp: formatTimestamp(),
-        }),
+        })
+      ),
+    ]);
+
+    const results = await Promise.all([
+      resend.emails.send({
+        from: FROM,
+        to: payload.email,
+        replyTo: OWNER_TO,
+        subject: "Your reservation at The Potter Sanctuary",
+        html: customerHtml,
+      }),
+      resend.emails.send({
+        from: FROM,
+        to: OWNER_TO,
+        replyTo: payload.email,
+        subject: `New booking — ${payload.service.name} — ${payload.fname} ${payload.lname}`,
+        html: ownerHtml,
       }),
     ]);
     for (const r of results) {
-      if (r.error) console.error("[booking] resend send error", r.error);
+      if (r.error) {
+        console.error("[booking] Resend error:", JSON.stringify(r.error));
+      }
     }
   } catch (err) {
-    console.error("[booking] email dispatch threw", err);
+    console.error(
+      "[booking] Resend error:",
+      JSON.stringify(err, Object.getOwnPropertyNames(err as object))
+    );
   }
 
   return NextResponse.json({ ok: true, id: inserted.id });
