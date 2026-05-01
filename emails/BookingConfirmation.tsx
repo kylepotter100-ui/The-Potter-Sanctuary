@@ -5,6 +5,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Section,
   Text,
@@ -17,6 +18,7 @@ type Props = {
   bookingTime: string;
   treatmentPrice: number;
   bookingId: string;
+  siteUrl: string;
 };
 
 const SAGE = "#8A9E85";
@@ -29,8 +31,6 @@ const LINE = "rgba(28,28,28,0.12)";
 const SERIF = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const SANS = "'Lora', Georgia, serif";
 
-const SITE = "https://www.thepottersanctuary.co.uk";
-
 export default function BookingConfirmation({
   firstName,
   treatmentName,
@@ -38,10 +38,12 @@ export default function BookingConfirmation({
   bookingTime,
   treatmentPrice,
   bookingId,
+  siteUrl,
 }: Props) {
-  const consultationUrl = `${SITE}/questionnaire?booking=${encodeURIComponent(
+  const consultationUrl = `${siteUrl}/questionnaire?booking=${encodeURIComponent(
     bookingId
   )}`;
+  const logoUrl = `${siteUrl}/sanctuary-logo.png`;
 
   return (
     <Html lang="en">
@@ -70,24 +72,58 @@ export default function BookingConfirmation({
           <Section
             style={{
               background: SAGE,
-              padding: "28px 24px",
-              textAlign: "center" as const,
+              padding: "24px 24px",
             }}
           >
-            <Heading
-              as="h1"
+            <table
+              role="presentation"
+              cellPadding={0}
+              cellSpacing={0}
+              align="center"
               style={{
-                fontFamily: SERIF,
-                fontWeight: 400,
-                color: "#ffffff",
-                fontSize: 28,
-                margin: 0,
-                letterSpacing: "0.02em",
-                lineHeight: 1.15,
+                borderCollapse: "collapse",
+                margin: "0 auto",
               }}
             >
-              The Potter Sanctuary
-            </Heading>
+              <tbody>
+                <tr>
+                  <td
+                    style={{
+                      verticalAlign: "middle",
+                      paddingRight: 14,
+                    }}
+                  >
+                    <Img
+                      src={logoUrl}
+                      alt="The Potter Sanctuary"
+                      height={60}
+                      style={{
+                        height: 60,
+                        width: "auto",
+                        display: "block",
+                        border: 0,
+                      }}
+                    />
+                  </td>
+                  <td style={{ verticalAlign: "middle" }}>
+                    <Heading
+                      as="h1"
+                      style={{
+                        fontFamily: SERIF,
+                        fontWeight: 400,
+                        color: "#ffffff",
+                        fontSize: 28,
+                        margin: 0,
+                        letterSpacing: "0.02em",
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      The Potter Sanctuary
+                    </Heading>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </Section>
 
           {/* THANK YOU */}
