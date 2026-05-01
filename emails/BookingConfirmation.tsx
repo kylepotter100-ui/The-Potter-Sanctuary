@@ -143,11 +143,23 @@ export default function BookingConfirmation({
                 fontSize: 14,
                 lineHeight: 1.7,
                 color: INK_SOFT,
-                margin: "0 0 4px",
+                margin: "0 0 12px",
               }}
             >
               Should you need to cancel or reschedule, please do so at least 24
               hours before your appointment.
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 1.7,
+                color: INK_SOFT,
+                margin: "0 0 4px",
+              }}
+            >
+              To get in touch, simply reply to this email or contact us at
+              hello@thepottersanctuary.co.uk.
             </Text>
 
             <Hr

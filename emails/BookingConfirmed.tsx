@@ -133,9 +133,8 @@ export default function BookingConfirmed({
                 margin: "0 0 12px",
               }}
             >
-              Should anything come up, or if you have a question before your
-              visit, please simply reply to this email — we're always happy to
-              hear from you.
+              To get in touch, simply reply to this email or contact us at
+              hello@thepottersanctuary.co.uk.
             </Text>
 
             <Hr
