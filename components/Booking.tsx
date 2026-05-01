@@ -125,6 +125,55 @@ export default function Booking({ preselectId }: Props) {
     return () => window.removeEventListener("tps:preselect", onPreselect);
   }, []);
 
+  // Pre-fill the form from the signed-in customer's profile (delivered by
+  // SignInPrompt's /api/me fetch via a custom event so we share one round-trip).
+  useEffect(() => {
+    type CustomerDetails = {
+      email: string;
+      full_name: string | null;
+      first_name: string | null;
+      last_name: string | null;
+      phone_number: string | null;
+      gender: string | null;
+    };
+    const onDetails = (e: Event) => {
+      const c = (e as CustomEvent<CustomerDetails>).detail;
+      if (!c) return;
+      const fn = c.first_name || (c.full_name ? c.full_name.split(" ")[0] : "");
+      const ln =
+        c.last_name ||
+        (c.full_name ? c.full_name.split(" ").slice(1).join(" ") : "");
+      setFname((prev) => prev || fn);
+      setLname((prev) => prev || ln);
+      setEmail((prev) => prev || c.email || "");
+      setPhone((prev) => prev || c.phone_number || "");
+      setGender((prev) => prev || c.gender || null);
+    };
+    window.addEventListener("tps:customer-details", onDetails);
+    // Also fetch directly in case the prompt fired before we mounted.
+    let cancelled = false;
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { customer: null }))
+      .then((data: { customer: CustomerDetails | null }) => {
+        if (cancelled || !data.customer) return;
+        const c = data.customer;
+        const fn = c.first_name || (c.full_name ? c.full_name.split(" ")[0] : "");
+        const ln =
+          c.last_name ||
+          (c.full_name ? c.full_name.split(" ").slice(1).join(" ") : "");
+        setFname((prev) => prev || fn);
+        setLname((prev) => prev || ln);
+        setEmail((prev) => prev || c.email || "");
+        setPhone((prev) => prev || c.phone_number || "");
+        setGender((prev) => prev || c.gender || null);
+      })
+      .catch(() => {});
+    return () => {
+      window.removeEventListener("tps:customer-details", onDetails);
+      cancelled = true;
+    };
+  }, []);
+
   const next1Disabled = !date || !time;
   const next2Disabled = !service;
   const next3Disabled =

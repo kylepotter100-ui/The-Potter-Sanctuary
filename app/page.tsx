@@ -6,6 +6,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Ribbon from "@/components/Ribbon";
 import Booking from "@/components/Booking";
+import SignInPrompt from "@/components/SignInPrompt";
 import HeroCta from "@/components/HeroCta";
 import ServiceCardLink from "@/components/ServiceCardLink";
 import JsonLd from "@/components/JsonLd";
@@ -339,7 +340,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            <Booking />
+            <div className="booking-stack">
+              <SignInPrompt />
+              <Booking />
+            </div>
           </div>
         </section>
 

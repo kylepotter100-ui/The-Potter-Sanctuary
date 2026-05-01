@@ -17,6 +17,8 @@
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.4",
     "@react-email/components": "^1.0.12",
+    "@supabase/auth-helpers-nextjs": "^0.15.0",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
     "next": "15.5.15",
     "react": "19.0.0",

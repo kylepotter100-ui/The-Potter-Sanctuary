@@ -59,10 +59,55 @@ export async function POST(req: Request) {
   }
 
   const slotTime = payload.time.length === 5 ? `${payload.time}:00` : payload.time;
+  const emailLower = payload.email.toLowerCase();
+  const fullName = `${payload.fname} ${payload.lname}`.trim();
+
+  // Look up or create the customer record so every booking is linked to one.
+  let customerId: string | null = null;
+  const { data: existingCustomer } = await supabaseAdmin
+    .from("customers")
+    .select("id")
+    .eq("email", emailLower)
+    .maybeSingle();
+
+  if (existingCustomer) {
+    customerId = existingCustomer.id;
+    // Refresh the basic fields the customer just gave us.
+    await supabaseAdmin
+      .from("customers")
+      .update({
+        full_name: fullName,
+        first_name: payload.fname,
+        last_name: payload.lname,
+        phone_number: payload.phone,
+        gender: payload.gender ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", customerId);
+  } else {
+    const { data: newCustomer, error: customerError } = await supabaseAdmin
+      .from("customers")
+      .insert({
+        email: emailLower,
+        full_name: fullName,
+        first_name: payload.fname,
+        last_name: payload.lname,
+        phone_number: payload.phone,
+        gender: payload.gender ?? null,
+      })
+      .select("id")
+      .single();
+    if (customerError) {
+      console.error("[booking] customer insert failed", customerError);
+    } else {
+      customerId = newCustomer.id;
+    }
+  }
 
   const { data: inserted, error: insertError } = await supabaseAdmin
     .from("bookings")
     .insert({
+      customer_id: customerId,
       customer_first_name: payload.fname,
       customer_last_name: payload.lname,
       customer_email: payload.email,
@@ -114,6 +159,7 @@ export async function POST(req: Request) {
           bookingDate: dateLong,
           bookingTime: timeNice,
           treatmentPrice: payload.service.price,
+          bookingId: inserted.id,
         }),
       }),
       resend.emails.send({
