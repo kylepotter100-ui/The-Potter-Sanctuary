@@ -21,5 +21,12 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_SITE_URL": "https://www.thepottersanctuary.co.uk",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://YOUR-PROJECT-REF.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "PASTE_THE_ANON_KEY_HERE",
+    "BOOKING_EMAIL_TO": "hello@thepottersanctuary.co.uk",
+    "BOOKING_EMAIL_FROM": "hello@thepottersanctuary.co.uk"
   }
 }
