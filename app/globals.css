@@ -1923,7 +1923,8 @@
     color: var(--ink-soft);
   }
   .legal-shell p { margin: 0 0 16px; }
-  .legal-shell ul {
+  .legal-shell ul,
+  .legal-shell ol {
     margin: 0 0 18px;
     padding-left: 22px;
   }
@@ -2026,6 +2027,89 @@
       gap: 12px;
     }
     .cookie-banner-btn { width: 100%; }
+  }
+
+  /* ===== Homepage: upcoming sessions panel ===== */
+  .home-upcoming {
+    background: var(--bone);
+    border: 1px solid rgba(138, 158, 133, 0.45);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+    color: var(--ink);
+  }
+  .home-upcoming h3 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 22px;
+    margin: 0 0 14px;
+    color: var(--sage-deep);
+    letter-spacing: 0.005em;
+  }
+  .home-upcoming ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .home-upcoming li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(58, 63, 49, 0.12);
+  }
+  .home-upcoming li:first-child { border-top: none; padding-top: 0; }
+  .home-upcoming-when {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .home-upcoming-treatment {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .home-upcoming-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Generic badges for non-admin surfaces. Admin pages have their own
+     equivalents in admin.css. */
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-family: var(--font-sans), 'Lora', serif;
+  }
+  .badge-pending  { background: #f4e3c4; color: #6b3d0e; }
+  .badge-confirmed {
+    background: var(--sage);
+    color: #ffffff;
+  }
+  .badge-cancelled {
+    background: rgba(28, 28, 28, 0.08);
+    color: var(--ink-soft);
+    text-decoration: line-through;
+  }
+
+  @media (max-width: 600px) {
+    .home-upcoming li {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .home-upcoming-actions { width: 100%; justify-content: space-between; }
   }
 
   /* ===== Account: cancel booking row + toast ===== */

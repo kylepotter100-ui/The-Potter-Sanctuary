@@ -59,15 +59,26 @@ export default function TermsPage() {
         reschedule your appointment, as a courtesy to us and to allow other
         clients to book the slot.
       </p>
+      <p>You can cancel your booking in three ways:</p>
+      <ol>
+        <li>
+          Sign in to your account and use the &ldquo;Cancel booking&rdquo;
+          button shown next to your upcoming sessions on the home page or in
+          your account
+        </li>
+        <li>Reply to your booking confirmation email</li>
+        <li>
+          Contact us directly at{" "}
+          <a href="mailto:hello@thepottersanctuary.co.uk">
+            hello@thepottersanctuary.co.uk
+          </a>
+        </li>
+      </ol>
       <p>
         Cancellations made less than 12 hours before the appointment, or
         non-attendance without notice, may impact your ability to book future
         treatments. Repeated late cancellations may result in declined
         bookings.
-      </p>
-      <p>
-        To cancel, please use the cancellation option in your account, reply
-        to your confirmation email, or contact us directly.
       </p>
 
       <h2>Lateness</h2>
