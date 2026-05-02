@@ -10,6 +10,7 @@ type Props = {
 
 export default function Nav({ homeAnchors = false }: Props) {
   const [scrolled, setScrolled] = useState(false);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -18,7 +19,25 @@ export default function Nav({ homeAnchors = false }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const link = (anchor: string) => (homeAnchors ? `#${anchor}` : `/#${anchor}`);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { user: null }))
+      .then((data: { user?: { id: string } | null }) => {
+        if (!cancelled) setSignedIn(!!data.user);
+      })
+      .catch(() => {
+        if (!cancelled) setSignedIn(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Booking CTA still anchors to the homepage booking section. From any
+  // page other than `/`, send through ?scrollTo=booking so HashScroll
+  // smooths into the booking calendar after the nav lands.
+  const bookingHref = homeAnchors ? "#booking" : "/?scrollTo=booking";
 
   return (
     <nav className={`top${scrolled ? " scrolled" : ""}`} id="nav">
@@ -34,16 +53,18 @@ export default function Nav({ homeAnchors = false }: Props) {
         <span className="name">The Potter Sanctuary</span>
       </Link>
       <div className="links">
-        <Link href={link("philosophy")}>Philosophy</Link>
-        <Link href={link("services")}>Services</Link>
-        <Link href={link("products")}>Products</Link>
-        <Link href={link("booking")}>Booking</Link>
-        <Link href={link("contact")}>Contact</Link>
+        <Link href="/">Home</Link>
+        <Link href="/treatments">Treatments</Link>
+        <Link href="/visit">Visit</Link>
+        {signedIn === true ? (
+          <Link href="/account">Account</Link>
+        ) : signedIn === false ? (
+          <Link href="/login">Sign in</Link>
+        ) : null}
       </div>
-      <Link href={link("booking")} className="cta">
+      <Link href={bookingHref} className="cta">
         Book a Treatment
       </Link>
     </nav>
   );
 }
-
