@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_COOKIE_ENCODING, SUPABASE_COOKIE_OPTIONS } from "@/lib/supabase-cookie-config";
 
 let cached: SupabaseClient | null = null;
 
@@ -14,6 +15,9 @@ export function getSupabaseBrowserClient(): SupabaseClient {
       "Supabase env vars missing in browser bundle — NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY must be set at build time."
     );
   }
-  cached = createBrowserClient(url, anon);
+  cached = createBrowserClient(url, anon, {
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
+    cookieEncoding: SUPABASE_COOKIE_ENCODING,
+  });
   return cached;
 }

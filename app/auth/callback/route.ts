@@ -28,7 +28,10 @@ export async function GET(request: Request) {
     code
   );
   if (exchangeError) {
-    console.error("[auth callback] exchange failed", exchangeError);
+    console.error(
+      "[auth-callback]",
+      JSON.stringify(exchangeError, Object.getOwnPropertyNames(exchangeError))
+    );
     return NextResponse.redirect(
       new URL("/login?error=could_not_authenticate", url.origin)
     );
@@ -37,7 +40,13 @@ export async function GET(request: Request) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData?.user;
   if (userError || !user?.email) {
-    console.error("[auth callback] no user after exchange", userError);
+    console.error(
+      "[auth-callback]",
+      JSON.stringify(
+        userError ?? { message: "no user after exchange" },
+        userError ? Object.getOwnPropertyNames(userError) : undefined
+      )
+    );
     return NextResponse.redirect(
       new URL("/login?error=could_not_authenticate", url.origin)
     );
@@ -68,7 +77,10 @@ export async function GET(request: Request) {
         });
       }
     } catch (err) {
-      console.error("[auth callback] customer upsert failed", err);
+      console.error(
+        "[auth-callback]",
+        JSON.stringify(err, Object.getOwnPropertyNames(err as object))
+      );
     }
   }
 
