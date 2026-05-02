@@ -557,21 +557,17 @@
   border-radius: 12px;
   padding: 16px 18px;
   margin-bottom: 18px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
 }
 .admin-filters.is-pending { opacity: 0.75; }
-.admin-filters-row {
-  display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(220px, 2fr);
-  gap: 12px;
-  align-items: end;
-}
 .admin-filter {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 200px;
 }
 .admin-filter > span {
   font-size: 10px;
@@ -598,34 +594,30 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
 }
-.admin-filters-presets button {
+.admin-preset {
   background: transparent;
   border: 1px solid var(--admin-line);
   color: var(--admin-ink-soft);
   border-radius: 999px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   cursor: pointer;
   font-family: inherit;
 }
-.admin-filters-presets button:hover {
+.admin-preset:hover {
+  border-color: var(--admin-sage);
+  color: var(--admin-sage-deep);
+}
+.admin-preset.is-active {
   background: var(--admin-sage);
   color: #ffffff;
   border-color: var(--admin-sage);
 }
-.admin-filter-clear {
-  margin-left: auto;
-  border-color: rgba(176, 74, 63, 0.4) !important;
-  color: #b04a3f !important;
-}
-.admin-filter-clear:hover {
-  background: #b04a3f !important;
-  color: #ffffff !important;
-  border-color: #b04a3f !important;
+@media (max-width: 600px) {
+  .admin-filter { width: 100%; min-width: 0; }
 }
 
 /* ===== Clickable rows ===== */

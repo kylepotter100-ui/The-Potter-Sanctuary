@@ -21,17 +21,18 @@ export default async function AvailabilityPage() {
     );
   }
 
-  // Pull a 60-day window of upcoming bookings so the day view can show
-  // "Booked by [first name]" badges for already-taken slots.
+  // 90-day horizon covers the full window the admin can navigate without
+  // a refresh. Bookings + slot overrides + blocked dates all flow through.
   const todayIso = new Date().toISOString().slice(0, 10);
   const horizon = new Date();
-  horizon.setDate(horizon.getDate() + 60);
+  horizon.setDate(horizon.getDate() + 90);
   const horizonIso = horizon.toISOString().slice(0, 10);
 
   const [
     { data: availability },
     { data: blocked },
     { data: bookings },
+    { data: overrides, error: overridesErr },
   ] = await Promise.all([
     supabaseAdmin
       .from("availability")
@@ -48,18 +49,37 @@ export default async function AvailabilityPage() {
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),
+    supabaseAdmin
+      .from("slot_overrides")
+      .select("override_date, slot_time, is_active")
+      .gte("override_date", todayIso)
+      .lte("override_date", horizonIso),
   ]);
+
+  if (overridesErr) {
+    // Phase 4 schema may not be applied yet — surface so the admin notices.
+    console.error("[admin avail] slot_overrides read failed", overridesErr);
+  }
 
   return (
     <>
       <AdminHeader active="availability" />
       <main className="admin-main">
         <h1>Availability</h1>
-        <p className="lede">Manage opening hours and blackout dates.</p>
+        <p className="lede">Manage opening days, time slots, and blackout dates.</p>
+        {overridesErr && (
+          <div className="admin-card" style={{ marginBottom: 16 }}>
+            <strong>Schema update needed:</strong> the{" "}
+            <code>slot_overrides</code> table is missing. Run the SQL in{" "}
+            <code>supabase/schema.sql</code> and{" "}
+            <code>supabase/rls-policies.sql</code> in the Supabase SQL editor.
+          </div>
+        )}
         <AvailabilityPanel
           availability={availability ?? []}
           blocked={blocked ?? []}
           bookings={bookings ?? []}
+          overrides={overrides ?? []}
         />
       </main>
     </>

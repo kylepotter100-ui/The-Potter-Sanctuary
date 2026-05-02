@@ -24,11 +24,11 @@ type ConsultationLink = { booking_id: string | null };
 
 type Status = "active" | "pending" | "confirmed" | "cancelled" | "all";
 
+type Range = "today" | "week" | "month" | "next30" | "";
+
 type SearchParams = Promise<{
   status?: string;
-  from?: string;
-  to?: string;
-  q?: string;
+  range?: string;
 }>;
 
 function formatDate(iso: string): string {
@@ -44,8 +44,42 @@ function formatTime(t: string): string {
   return t.slice(0, 5);
 }
 
-function isoDateRegex(s: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function rangeBounds(r: Range): { from: string; to: string } | null {
+  if (!r) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  if (r === "today") {
+    const d = isoDate(now);
+    return { from: d, to: d };
+  }
+  if (r === "week") {
+    const monday = new Date(now);
+    const dow = monday.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    monday.setDate(monday.getDate() + diff);
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+    return { from: isoDate(monday), to: isoDate(sunday) };
+  }
+  if (r === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { from: isoDate(start), to: isoDate(end) };
+  }
+  if (r === "next30") {
+    const end = new Date(now);
+    end.setDate(end.getDate() + 30);
+    return { from: isoDate(now), to: isoDate(end) };
+  }
+  return null;
 }
 
 export default async function BookingsPage({
@@ -55,9 +89,8 @@ export default async function BookingsPage({
 }) {
   const params = await searchParams;
   const status = (params.status as Status | undefined) ?? "active";
-  const from = params.from && isoDateRegex(params.from) ? params.from : "";
-  const to = params.to && isoDateRegex(params.to) ? params.to : "";
-  const q = (params.q ?? "").trim();
+  const range = (params.range ?? "") as Range;
+  const bounds = rangeBounds(range);
 
   if (!supabaseAdmin) {
     return (
@@ -91,15 +124,8 @@ export default async function BookingsPage({
   }
   // 'all' applies no status filter.
 
-  if (from) query = query.gte("booking_date", from);
-  if (to) query = query.lte("booking_date", to);
-
-  if (q) {
-    // Match against name (first/last) or email — case-insensitive.
-    const escaped = q.replace(/[%,]/g, "");
-    query = query.or(
-      `customer_first_name.ilike.%${escaped}%,customer_last_name.ilike.%${escaped}%,customer_email.ilike.%${escaped}%`
-    );
+  if (bounds) {
+    query = query.gte("booking_date", bounds.from).lte("booking_date", bounds.to);
   }
 
   const { data, error } = await query;

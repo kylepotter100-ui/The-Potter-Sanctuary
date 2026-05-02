@@ -9,7 +9,13 @@ function safeNext(raw: string | null): string {
   // Only allow same-origin relative paths. Reject protocol-relative ("//foo")
   // and absolute URLs to avoid open-redirect.
   if (!raw.startsWith("/") || raw.startsWith("//")) return "/account";
-  return raw;
+  // Strip URL fragments. They survive in our own redirect chain just fine,
+  // but Supabase's verifier sometimes decodes `%23` to a literal `#`,
+  // which then chews up the appended `&code=…` and breaks PKCE. Use the
+  // `?scrollTo=` query convention (handled client-side by HashScroll)
+  // for any post-auth scroll targeting instead.
+  const hashIdx = raw.indexOf("#");
+  return hashIdx >= 0 ? raw.slice(0, hashIdx) : raw;
 }
 
 export async function GET(request: Request) {

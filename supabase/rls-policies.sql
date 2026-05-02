@@ -78,5 +78,13 @@ CREATE POLICY "Anyone can view blocked dates"
 ON public.blocked_dates FOR SELECT
 USING (true);
 
--- Note: All admin operations and writes to availability/blocked_dates
+-- Slot overrides (Phase 4) — per-date slot tweaks. Public read so the
+-- booking calendar can render them. Writes happen via supabaseAdmin.
+ALTER TABLE public.slot_overrides ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view slot overrides" ON public.slot_overrides;
+CREATE POLICY "Anyone can view slot overrides"
+ON public.slot_overrides FOR SELECT
+USING (true);
+
+-- Note: All admin operations and writes to availability/blocked_dates/slot_overrides
 -- happen via supabaseAdmin (service role) which bypasses RLS by design.
