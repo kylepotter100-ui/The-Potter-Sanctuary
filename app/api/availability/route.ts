@@ -84,7 +84,14 @@ export async function GET() {
     { slotsByDay, blockedDates, bookedSlots },
     {
       headers: {
-        "Cache-Control": "no-store, max-age=0, must-revalidate",
+        // Belt-and-suspenders no-cache: covers browsers, intermediaries,
+        // and Cloudflare's edge cache so a freshly-booked slot never gets
+        // served from a stale snapshot.
+        "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Cloudflare-CDN-Cache-Control": "no-store",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     }
   );

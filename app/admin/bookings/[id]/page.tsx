@@ -68,13 +68,22 @@ export default async function AdminBookingDetailPage({
     );
   }
 
-  const { data: booking } = await supabaseAdmin
+  // Use select("*") so the page still renders if the Phase 2 cancellation
+  // columns haven't been added yet — the table can have any superset of the
+  // columns we read below. supabaseAdmin is the service-role client, so this
+  // bypasses RLS by design (admin pages are gated by middleware).
+  const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
-    .select(
-      "id, customer_first_name, customer_last_name, customer_email, customer_phone, customer_gender, treatment_id, treatment_name, treatment_price, booking_date, booking_time, message, status, cancellation_reason, cancelled_at, cancelled_by, customer_id, created_at"
-    )
+    .select("*")
     .eq("id", id)
     .maybeSingle();
+
+  if (bookingError) {
+    console.error(
+      "[admin booking detail] booking query failed",
+      JSON.stringify(bookingError)
+    );
+  }
 
   if (!booking) {
     return (
@@ -87,18 +96,29 @@ export default async function AdminBookingDetailPage({
             </Link>
           </p>
           <h1>Booking not found</h1>
+          {bookingError && (
+            <p className="error-text">
+              Database error: {bookingError.message}
+            </p>
+          )}
         </main>
       </>
     );
   }
 
-  const { data: consult } = await supabaseAdmin
+  const { data: consult, error: consultError } = await supabaseAdmin
     .from("consultation_responses")
     .select("*")
     .eq("booking_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (consultError) {
+    console.error(
+      "[admin booking detail] consult query failed",
+      JSON.stringify(consultError)
+    );
+  }
 
   const conditions = consult
     ? ((consult.conditions as Record<string, boolean>) ?? {})
