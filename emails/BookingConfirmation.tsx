@@ -19,6 +19,7 @@ type Props = {
   treatmentPrice: number;
   bookingId: string;
   siteUrl: string;
+  includeConsultationCTA?: boolean;
 };
 
 const SAGE = "#8A9E85";
@@ -39,6 +40,7 @@ export default function BookingConfirmation({
   treatmentPrice,
   bookingId,
   siteUrl,
+  includeConsultationCTA = true,
 }: Props) {
   const consultationUrl = `${siteUrl}/questionnaire?booking=${encodeURIComponent(
     bookingId
@@ -185,69 +187,92 @@ export default function BookingConfirmation({
           </Section>
 
           {/* CONSULTATION SECTION */}
-          <Section
-            style={{
-              background: "#ffffff",
-              padding: "26px 32px 4px",
-            }}
-          >
-            <Heading
-              as="h2"
+          {includeConsultationCTA ? (
+            <Section
               style={{
-                fontFamily: SERIF,
-                fontWeight: 400,
-                fontSize: 22,
-                color: SAGE,
-                margin: "0 0 10px",
-                lineHeight: 1.25,
+                background: "#ffffff",
+                padding: "26px 32px 4px",
               }}
             >
-              Before your session
-            </Heading>
-            <Text
-              style={{
-                fontSize: 15,
-                lineHeight: 1.7,
-                color: INK_SOFT,
-                margin: "0 0 20px",
-              }}
-            >
-              To help us tailor your treatment, please complete your brief
-              consultation form. This takes just a few minutes.
-            </Text>
-            <Section style={{ textAlign: "center" as const, margin: "0 0 12px" }}>
-              <Button
-                href={consultationUrl}
+              <Heading
+                as="h2"
                 style={{
-                  background: SAGE,
-                  color: "#ffffff",
                   fontFamily: SERIF,
-                  fontSize: 17,
-                  textDecoration: "none",
-                  padding: "14px 28px",
-                  borderRadius: 8,
-                  letterSpacing: "0.02em",
-                  display: "inline-block",
+                  fontWeight: 400,
+                  fontSize: 22,
+                  color: SAGE,
+                  margin: "0 0 10px",
+                  lineHeight: 1.25,
                 }}
               >
-                Complete Your Consultation Questionnaire
-              </Button>
+                Before your session
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  color: INK_SOFT,
+                  margin: "0 0 20px",
+                }}
+              >
+                To help us tailor your treatment, please complete your brief
+                consultation form. This takes just a few minutes.
+              </Text>
+              <Section
+                style={{ textAlign: "center" as const, margin: "0 0 12px" }}
+              >
+                <Button
+                  href={consultationUrl}
+                  style={{
+                    background: SAGE,
+                    color: "#ffffff",
+                    fontFamily: SERIF,
+                    fontSize: 17,
+                    textDecoration: "none",
+                    padding: "14px 28px",
+                    borderRadius: 8,
+                    letterSpacing: "0.02em",
+                    display: "inline-block",
+                  }}
+                >
+                  Complete Your Consultation Questionnaire
+                </Button>
+              </Section>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontStyle: "italic",
+                  lineHeight: 1.6,
+                  color: INK_SOFT,
+                  textAlign: "center" as const,
+                  margin: "0 0 4px",
+                }}
+              >
+                Please complete this at least 12 hours before your appointment.
+                Without it, there is a risk your treatment may not be able to
+                commence.
+              </Text>
             </Section>
-            <Text
+          ) : (
+            <Section
               style={{
-                fontSize: 12,
-                fontStyle: "italic",
-                lineHeight: 1.6,
-                color: INK_SOFT,
-                textAlign: "center" as const,
-                margin: "0 0 4px",
+                background: "#ffffff",
+                padding: "26px 32px 4px",
               }}
             >
-              Please complete this at least 12 hours before your appointment.
-              Without it, there is a risk your treatment may not be able to
-              commence.
-            </Text>
-          </Section>
+              <Text
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  color: INK_SOFT,
+                  margin: 0,
+                }}
+              >
+                Your consultation details from your previous visit are on
+                file. We&apos;re looking forward to seeing you.
+              </Text>
+            </Section>
+          )}
 
           {/* CLOSING */}
           <Section

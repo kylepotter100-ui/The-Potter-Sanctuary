@@ -17,6 +17,10 @@ type Payload = {
   phone: string;
   email: string;
   message?: string;
+  // Returning customers tell us whether their consultation details are still
+  // current. true = no change (skip questionnaire CTA), false = needs new
+  // questionnaire, null/undefined = first-time booking (always send CTA).
+  detailsUnchanged?: boolean | null;
 };
 
 const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
@@ -133,6 +137,40 @@ export async function POST(req: Request) {
     );
   }
 
+  // If the customer told us their consultation details haven't changed, copy
+  // their most recent consultation_response and link it to this new booking.
+  // This means the questionnaire CTA can be omitted from the email and the
+  // therapist still sees a consultation tied to the booking.
+  let includeConsultationCTA = true;
+  if (payload.detailsUnchanged === true && customerId) {
+    const { data: prior } = await supabaseAdmin
+      .from("consultation_responses")
+      .select(
+        "conditions, allergies_specify, other_medical_conditions, under_medical_care, medical_care_explanation, focus_areas, areas_to_avoid, pressure_preference, had_professional_massage_before, experiences_stress_regularly, primary_reason, additional_info, consent_given, signature_name, consent_date"
+      )
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (prior) {
+      const { error: copyError } = await supabaseAdmin
+        .from("consultation_responses")
+        .insert({
+          customer_id: customerId,
+          booking_id: inserted.id,
+          ...prior,
+        });
+      if (copyError) {
+        console.error("[booking] consult copy failed", copyError);
+        // If we couldn't copy the prior consult, fall back to asking again.
+        includeConsultationCTA = true;
+      } else {
+        includeConsultationCTA = false;
+      }
+    }
+  }
+
   // Email sending is best-effort: if Resend is misconfigured or fails, the
   // booking is already saved and the user gets a success response. We log the
   // failure so the studio can chase up via the admin panel.
@@ -159,6 +197,7 @@ export async function POST(req: Request) {
           treatmentPrice: payload.service.price,
           bookingId: inserted.id,
           siteUrl,
+          includeConsultationCTA,
         })
       ),
       render(
