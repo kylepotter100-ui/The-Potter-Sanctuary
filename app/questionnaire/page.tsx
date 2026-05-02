@@ -48,6 +48,41 @@ export default async function QuestionnairePage({
   }
 
   const emailLower = user.email.toLowerCase();
+
+  // If the URL carries a booking id, check it belongs to the signed-in user.
+  // This stops someone with a magic link from viewing/editing another
+  // customer's booking by guessing the id.
+  if (bookingId) {
+    const { data: booking } = await supabaseAdmin
+      .from("bookings")
+      .select("id, customer_email")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (booking && booking.customer_email?.toLowerCase() !== emailLower) {
+      return (
+        <main className="questionnaire-page">
+          <div className="questionnaire-shell">
+            <h1>Wrong account</h1>
+            <p className="lede">
+              This booking is registered to a different email address. Please
+              sign in with the email address used for the booking.
+            </p>
+            <form
+              method="post"
+              action="/api/auth/signout"
+              style={{ marginTop: 24 }}
+            >
+              <button type="submit" className="login-btn">
+                Sign out and try again
+              </button>
+            </form>
+          </div>
+        </main>
+      );
+    }
+  }
+
   const { data: customer } = await supabaseAdmin
     .from("customers")
     .select(

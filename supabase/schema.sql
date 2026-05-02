@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS customer_id uuid REFERENCES public.customers(id) ON DELETE SET NULL;
 
+-- Cancellation metadata (Phase 2). Captures who cancelled, when, and why.
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS cancellation_reason text;
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS cancelled_at timestamptz;
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS cancelled_by text
+    CHECK (cancelled_by IN ('customer', 'owner') OR cancelled_by IS NULL);
+
 CREATE INDEX IF NOT EXISTS bookings_date_idx        ON public.bookings (booking_date);
 CREATE INDEX IF NOT EXISTS bookings_status_idx      ON public.bookings (status);
 CREATE INDEX IF NOT EXISTS bookings_customer_id_idx ON public.bookings (customer_id);

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
 import SignOutButton from "@/components/SignOutButton";
+import CancelBookingButton from "@/components/CancelBookingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,15 @@ type BookingRow = {
 
 type ConsultRow = { booking_id: string | null };
 
-export default async function AccountPage() {
+type SearchParams = Promise<{ cancelled?: string }>;
+
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
+  const sp = searchParams ? await searchParams : ({} as { cancelled?: string });
+  const justCancelled = sp.cancelled === "1";
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -101,6 +110,11 @@ export default async function AccountPage() {
   return (
     <main className="account-page">
       <div className="account-shell">
+        {justCancelled && (
+          <div role="status" className="account-toast">
+            Your booking has been cancelled.
+          </div>
+        )}
         <header className="account-header">
           <div>
             <h1>Welcome back, {displayName}.</h1>
@@ -132,16 +146,24 @@ export default async function AccountPage() {
                       </div>
                       <div className="b-treatment">{b.treatment_name}</div>
                     </div>
-                    {done ? (
-                      <span className="badge-consult done">✓ Completed</span>
-                    ) : (
-                      <Link
-                        href={`/questionnaire?booking=${b.id}`}
-                        className="submit-btn-link"
-                      >
-                        Submit consultation
-                      </Link>
-                    )}
+                    <div className="b-actions">
+                      {done ? (
+                        <span className="badge-consult done">✓ Completed</span>
+                      ) : (
+                        <Link
+                          href={`/questionnaire?booking=${b.id}`}
+                          className="submit-btn-link"
+                        >
+                          Submit consultation
+                        </Link>
+                      )}
+                      <CancelBookingButton
+                        bookingId={b.id}
+                        treatmentName={b.treatment_name}
+                        bookingDate={formatDate(b.booking_date)}
+                        bookingTime={formatTime(b.booking_time)}
+                      />
+                    </div>
                   </li>
                 );
               })}

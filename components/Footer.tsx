@@ -88,6 +88,13 @@ export default function Footer() {
       </div>
       <div className="bottom">
         <span>© {year} The Potter Sanctuary</span>
+        <nav className="footer-legal" aria-label="Legal">
+          <Link href="/legal/privacy">Privacy Policy</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/legal/terms">Terms of Service</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/legal/cookies">Cookies Policy</Link>
+        </nav>
         <span>Made with care · Plant-based</span>
       </div>
     </footer>
