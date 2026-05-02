@@ -550,6 +550,92 @@
   }
 }
 
+/* ===== Read-only questionnaire view (admin booking detail) ===== */
+.q-readonly { color: var(--admin-ink); }
+.q-readonly-section {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 18px;
+  margin: 26px 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--admin-sage);
+  background: var(--admin-cream-soft);
+  color: var(--admin-ink);
+}
+.q-readonly-section:first-child { margin-top: 0; }
+.q-readonly-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+  margin: 14px 0 8px;
+}
+.q-checklist {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px;
+}
+.q-checklist li {
+  font-size: 14px;
+  color: var(--admin-ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.q-checklist li.is-ticked {
+  color: var(--admin-ink);
+  font-weight: 500;
+}
+.q-checklist li > span {
+  font-size: 16px;
+  line-height: 1;
+  color: var(--admin-sage-deep);
+}
+.q-readonly-list {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 2fr;
+  gap: 8px 18px;
+  margin: 0 0 14px;
+}
+.q-readonly-list dt {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+  align-self: start;
+  padding-top: 4px;
+}
+.q-readonly-list dd {
+  margin: 0;
+  font-size: 15px;
+  color: var(--admin-ink);
+  line-height: 1.55;
+}
+.q-readonly-multiline { white-space: pre-wrap; }
+.q-readonly-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--admin-sage);
+  color: #ffffff;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.q-readonly-meta {
+  font-size: 11px;
+  color: var(--admin-ink-soft);
+  margin: 18px 0 0;
+  opacity: 0.7;
+}
+@media (max-width: 600px) {
+  .q-readonly-list { grid-template-columns: 1fr; gap: 4px 0; }
+  .q-readonly-list dd { margin-bottom: 12px; }
+  .q-checklist { grid-template-columns: 1fr; }
+}
+
 /* ===== Admin booking filters ===== */
 .admin-filters {
   background: #ffffff;

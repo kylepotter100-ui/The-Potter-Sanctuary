@@ -22,6 +22,11 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://www.thepottersanctuary.co.uk",
     "NEXT_PUBLIC_SUPABASE_URL": "https://kibdjvtpubxkgusupulr.supabase.co",

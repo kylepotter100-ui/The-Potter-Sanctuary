@@ -20,6 +20,35 @@ const HEALTH_CONDITIONS: Array<{ key: string; label: string }> = [
   { key: "allergies", label: "Allergies" },
 ];
 
+const FOCUS_AREAS: string[] = [
+  "Back",
+  "Neck",
+  "Shoulders",
+  "Legs",
+  "Arms",
+  "Feet",
+  "Full Body",
+];
+
+function CheckList({
+  items,
+  ticked,
+}: {
+  items: Array<{ key: string; label: string }>;
+  ticked: Record<string, boolean>;
+}) {
+  return (
+    <ul className="q-checklist">
+      {items.map((it) => (
+        <li key={it.key} className={ticked[it.key] ? "is-ticked" : ""}>
+          <span aria-hidden="true">{ticked[it.key] ? "☑" : "☐"}</span>
+          {it.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function fmtBool(v: boolean | null): string {
   if (v === null || v === undefined) return "—";
   return v ? "Yes" : "No";
@@ -123,8 +152,9 @@ export default async function AdminBookingDetailPage({
   const conditions = consult
     ? ((consult.conditions as Record<string, boolean>) ?? {})
     : {};
-  const checked = HEALTH_CONDITIONS.filter((c) => conditions[c.key]);
   const focusAreas = consult ? ((consult.focus_areas as string[]) ?? []) : [];
+  const focusTicked: Record<string, boolean> = {};
+  for (const f of focusAreas) focusTicked[f] = true;
 
   const canAct = booking.status === "pending" || booking.status === "confirmed";
 
@@ -218,99 +248,111 @@ export default async function AdminBookingDetailPage({
               No consultation submitted yet.
             </p>
           ) : (
-            <>
-              <h3 className="admin-subheading">Client Information</h3>
-              <p>
-                <strong>Name:</strong> {booking.customer_first_name}{" "}
-                {booking.customer_last_name}
-              </p>
-              <p>
-                <strong>Email:</strong> {booking.customer_email}
-              </p>
-              <p>
-                <strong>Phone:</strong> {booking.customer_phone}
-              </p>
+            <div className="q-readonly">
+              {/* SECTION 1 — Client Information */}
+              <h3 className="q-readonly-section">Section 1 — Client Information</h3>
+              <dl className="q-readonly-list">
+                <dt>Name</dt>
+                <dd>
+                  {booking.customer_first_name} {booking.customer_last_name}
+                </dd>
+                <dt>Email</dt>
+                <dd>{booking.customer_email}</dd>
+                <dt>Phone</dt>
+                <dd>{booking.customer_phone}</dd>
+              </dl>
 
-              <h3 className="admin-subheading">Health History</h3>
-              <p>
-                <strong>Conditions:</strong>{" "}
-                {checked.length === 0
-                  ? "None reported"
-                  : checked.map((c) => c.label).join(", ")}
-              </p>
-              {conditions.allergies && (
-                <p>
-                  <strong>Allergies (specified):</strong>{" "}
-                  {fmtText(consult.allergies_specify as string | null)}
-                </p>
-              )}
-              <p>
-                <strong>Other medical conditions:</strong>{" "}
-                {fmtText(consult.other_medical_conditions as string | null)}
-              </p>
-              <p>
-                <strong>Currently under medical care:</strong>{" "}
-                {fmtBool(consult.under_medical_care as boolean | null)}
-              </p>
-              {consult.under_medical_care && (
-                <p>
-                  <strong>Explanation:</strong>{" "}
-                  {fmtText(consult.medical_care_explanation as string | null)}
-                </p>
-              )}
+              {/* SECTION 2 — Health History */}
+              <h3 className="q-readonly-section">Section 2 — Health History</h3>
+              <p className="q-readonly-label">Conditions</p>
+              <CheckList items={HEALTH_CONDITIONS} ticked={conditions} />
+              {conditions.allergies ? (
+                <dl className="q-readonly-list">
+                  <dt>Allergies — please specify</dt>
+                  <dd>{fmtText(consult.allergies_specify as string | null)}</dd>
+                </dl>
+              ) : null}
+              <dl className="q-readonly-list">
+                <dt>Other medical conditions</dt>
+                <dd className="q-readonly-multiline">
+                  {fmtText(consult.other_medical_conditions as string | null)}
+                </dd>
+                <dt>Currently under medical care?</dt>
+                <dd>{fmtBool(consult.under_medical_care as boolean | null)}</dd>
+                {consult.under_medical_care ? (
+                  <>
+                    <dt>Explanation</dt>
+                    <dd className="q-readonly-multiline">
+                      {fmtText(consult.medical_care_explanation as string | null)}
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
 
-              <h3 className="admin-subheading">Massage Preferences</h3>
-              <p>
-                <strong>Focus areas:</strong>{" "}
-                {focusAreas.length === 0 ? "—" : focusAreas.join(", ")}
-              </p>
-              <p>
-                <strong>Areas to avoid:</strong>{" "}
-                {fmtText(consult.areas_to_avoid as string | null)}
-              </p>
-              <p>
-                <strong>Pressure preference:</strong>{" "}
-                {fmtText(consult.pressure_preference as string | null)}
-              </p>
-              <p>
-                <strong>Had professional massage before:</strong>{" "}
-                {fmtBool(
-                  consult.had_professional_massage_before as boolean | null
-                )}
-              </p>
+              {/* SECTION 3 — Massage Preferences */}
+              <h3 className="q-readonly-section">
+                Section 3 — Massage Preferences
+              </h3>
+              <p className="q-readonly-label">Focus areas</p>
+              <CheckList
+                items={FOCUS_AREAS.map((f) => ({ key: f, label: f }))}
+                ticked={focusTicked}
+              />
+              <dl className="q-readonly-list">
+                <dt>Areas to avoid</dt>
+                <dd className="q-readonly-multiline">
+                  {fmtText(consult.areas_to_avoid as string | null)}
+                </dd>
+                <dt>Pressure preference</dt>
+                <dd>
+                  <span className="q-readonly-pill">
+                    {fmtText(consult.pressure_preference as string | null)}
+                  </span>
+                </dd>
+                <dt>Had professional massage before?</dt>
+                <dd>
+                  {fmtBool(
+                    consult.had_professional_massage_before as boolean | null
+                  )}
+                </dd>
+              </dl>
 
-              <h3 className="admin-subheading">Lifestyle &amp; Wellness</h3>
-              <p>
-                <strong>Experiences stress regularly:</strong>{" "}
-                {fmtBool(consult.experiences_stress_regularly as boolean | null)}
-              </p>
-              <p>
-                <strong>Primary reason for visit:</strong>{" "}
-                {fmtText(consult.primary_reason as string | null)}
-              </p>
-              <p>
-                <strong>Additional info:</strong>{" "}
-                {fmtText(consult.additional_info as string | null)}
-              </p>
+              {/* SECTION 4 — Lifestyle & Wellness */}
+              <h3 className="q-readonly-section">
+                Section 4 — Lifestyle &amp; Wellness
+              </h3>
+              <dl className="q-readonly-list">
+                <dt>Experiences stress regularly?</dt>
+                <dd>
+                  {fmtBool(consult.experiences_stress_regularly as boolean | null)}
+                </dd>
+                <dt>Primary reason for visit</dt>
+                <dd className="q-readonly-multiline">
+                  {fmtText(consult.primary_reason as string | null)}
+                </dd>
+                <dt>Additional information</dt>
+                <dd className="q-readonly-multiline">
+                  {fmtText(consult.additional_info as string | null)}
+                </dd>
+              </dl>
 
-              <h3 className="admin-subheading">Consent</h3>
-              <p>
-                <strong>Consent given:</strong>{" "}
-                {fmtBool(consult.consent_given as boolean | null)}
-              </p>
-              <p>
-                <strong>Signed by:</strong>{" "}
-                {fmtText(consult.signature_name as string | null)}
-              </p>
-              <p>
-                <strong>Signed on:</strong>{" "}
-                {fmtShortDate(consult.consent_date as string | null)}
-              </p>
-              <p style={{ opacity: 0.6, fontSize: 12 }}>
+              {/* SECTION 5 — Consent & Signature */}
+              <h3 className="q-readonly-section">
+                Section 5 — Consent &amp; Signature
+              </h3>
+              <dl className="q-readonly-list">
+                <dt>Consent given</dt>
+                <dd>{fmtBool(consult.consent_given as boolean | null)}</dd>
+                <dt>Signed by</dt>
+                <dd>{fmtText(consult.signature_name as string | null)}</dd>
+                <dt>Signed on</dt>
+                <dd>{fmtShortDate(consult.consent_date as string | null)}</dd>
+              </dl>
+              <p className="q-readonly-meta">
                 Submitted{" "}
                 {new Date(consult.created_at as string).toLocaleString("en-GB")}
               </p>
-            </>
+            </div>
           )}
         </section>
 

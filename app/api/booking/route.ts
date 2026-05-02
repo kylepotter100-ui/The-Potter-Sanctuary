@@ -130,20 +130,26 @@ export async function POST(req: Request) {
     .single();
 
   if (insertError) {
-    console.error("[booking] supabase insert failed", insertError);
+    console.error(
+      "[booking] supabase insert failed",
+      JSON.stringify(insertError)
+    );
     return NextResponse.json(
       { error: "Could not save your booking. Please try again." },
       { status: 500 }
     );
   }
 
-  // If the customer told us their consultation details haven't changed, copy
-  // their most recent consultation_response and link it to this new booking.
-  // This means the questionnaire CTA can be omitted from the email and the
-  // therapist still sees a consultation tied to the booking.
+  // detailsUnchanged === true → returning customer says nothing changed,
+  //   copy their most recent consultation_response and link it to this new
+  //   booking; email skips the questionnaire CTA.
+  // detailsUnchanged === false → returning customer needs to update,
+  //   email keeps the CTA so they can fill in a fresh questionnaire.
+  // detailsUnchanged === null/undefined → first-time customer, always
+  //   include the CTA.
   let includeConsultationCTA = true;
   if (payload.detailsUnchanged === true && customerId) {
-    const { data: prior } = await supabaseAdmin
+    const { data: prior, error: priorErr } = await supabaseAdmin
       .from("consultation_responses")
       .select(
         "conditions, allergies_specify, other_medical_conditions, under_medical_care, medical_care_explanation, focus_areas, areas_to_avoid, pressure_preference, had_professional_massage_before, experiences_stress_regularly, primary_reason, additional_info, consent_given, signature_name, consent_date"
@@ -152,6 +158,9 @@ export async function POST(req: Request) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (priorErr) {
+      console.error("[booking] prior consult lookup failed", JSON.stringify(priorErr));
+    }
 
     if (prior) {
       const { error: copyError } = await supabaseAdmin
@@ -162,7 +171,7 @@ export async function POST(req: Request) {
           ...prior,
         });
       if (copyError) {
-        console.error("[booking] consult copy failed", copyError);
+        console.error("[booking] consult copy failed", JSON.stringify(copyError));
         // If we couldn't copy the prior consult, fall back to asking again.
         includeConsultationCTA = true;
       } else {
@@ -170,6 +179,8 @@ export async function POST(req: Request) {
       }
     }
   }
+  // For detailsUnchanged === false (or null/undefined) we leave
+  // includeConsultationCTA = true and don't touch consultation_responses.
 
   // Email sending is best-effort: if Resend is misconfigured or fails, the
   // booking is already saved and the user gets a success response. We log the

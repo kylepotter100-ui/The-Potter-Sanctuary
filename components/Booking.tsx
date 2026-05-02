@@ -331,6 +331,29 @@ export default function Booking({ preselectId }: Props) {
     setViewYear(y);
   }
 
+  function bookAnother() {
+    // Reset everything except the customer details we just typed in —
+    // those are valid for the next booking too. Refetch availability so
+    // the slot we just took is removed.
+    setStep(1);
+    setDate(null);
+    setTime(null);
+    setMessage("");
+    setDetailsUnchanged(null);
+    setSubmitError(null);
+    fetch("/api/availability", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: AvailabilityData | null) => {
+        if (data) setAvailability(data);
+      })
+      .catch(() => {});
+    // Scroll the booking card back to the top.
+    requestAnimationFrame(() => {
+      const card = document.getElementById("bookingCard");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   async function submit() {
     if (!date || !time || !service) return;
     setSubmitting(true);
@@ -760,6 +783,15 @@ export default function Booking({ preselectId }: Props) {
               </div>
             </div>
           )}
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="next"
+              onClick={bookAnother}
+            >
+              Book another session
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -21,11 +21,11 @@ export default async function AvailabilityPage() {
     );
   }
 
-  // 90-day horizon covers the full window the admin can navigate without
-  // a refresh. Bookings + slot overrides + blocked dates all flow through.
+  // 60-day horizon covers the next ~8 weeks the admin is realistically
+  // managing. Bookings + slot overrides + blocked dates flow through.
   const todayIso = new Date().toISOString().slice(0, 10);
   const horizon = new Date();
-  horizon.setDate(horizon.getDate() + 90);
+  horizon.setDate(horizon.getDate() + 60);
   const horizonIso = horizon.toISOString().slice(0, 10);
 
   const [
