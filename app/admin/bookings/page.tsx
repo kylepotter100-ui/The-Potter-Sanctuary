@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingFilters from "@/components/AdminBookingFilters";
+import AdminBookingRow from "@/components/AdminBookingRow";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ type ConsultationLink = { booking_id: string | null };
 
 type Status = "active" | "pending" | "confirmed" | "cancelled" | "all";
 
-type Range = "today" | "week" | "month" | "next30" | "";
+type Range = "today" | "week" | "month" | "next30" | "upcoming" | "";
 
 type SearchParams = Promise<{
   status?: string;
@@ -52,7 +53,7 @@ function isoDate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function rangeBounds(r: Range): { from: string; to: string } | null {
+function rangeBounds(r: Range): { from?: string; to?: string } | null {
   if (!r) return null;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -79,6 +80,10 @@ function rangeBounds(r: Range): { from: string; to: string } | null {
     end.setDate(end.getDate() + 30);
     return { from: isoDate(now), to: isoDate(end) };
   }
+  if (r === "upcoming") {
+    // From today onwards, no upper bound.
+    return { from: isoDate(now) };
+  }
   return null;
 }
 
@@ -89,7 +94,9 @@ export default async function BookingsPage({
 }) {
   const params = await searchParams;
   const status = (params.status as Status | undefined) ?? "active";
-  const range = (params.range ?? "") as Range;
+  // Default to "upcoming" so the admin lands on a focused list without
+  // needing to choose a preset.
+  const range = ((params.range as Range | undefined) ?? "upcoming") as Range;
   const bounds = rangeBounds(range);
 
   if (!supabaseAdmin) {
@@ -125,7 +132,8 @@ export default async function BookingsPage({
   // 'all' applies no status filter.
 
   if (bounds) {
-    query = query.gte("booking_date", bounds.from).lte("booking_date", bounds.to);
+    if (bounds.from) query = query.gte("booking_date", bounds.from);
+    if (bounds.to) query = query.lte("booking_date", bounds.to);
   }
 
   const { data, error } = await query;
@@ -176,18 +184,12 @@ export default async function BookingsPage({
               {rows.map((b) => {
                 const completed = consultedSet.has(b.id);
                 return (
-                  <tr
+                  <AdminBookingRow
                     key={b.id}
-                    className={`row-${b.status} row-link`}
+                    bookingId={b.id}
+                    status={b.status}
                   >
-                    <td data-label="Date">
-                      <Link
-                        href={`/admin/bookings/${b.id}`}
-                        className="row-link-target"
-                      >
-                        {formatDate(b.booking_date)}
-                      </Link>
-                    </td>
+                    <td data-label="Date">{formatDate(b.booking_date)}</td>
                     <td data-label="Time">{formatTime(b.booking_time)}</td>
                     <td data-label="Customer">
                       {b.customer_first_name} {b.customer_last_name}
@@ -228,7 +230,7 @@ export default async function BookingsPage({
                         Manage →
                       </Link>
                     </td>
-                  </tr>
+                  </AdminBookingRow>
                 );
               })}
             </tbody>

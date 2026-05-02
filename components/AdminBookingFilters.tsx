@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
 type Status = "active" | "pending" | "confirmed" | "cancelled" | "all";
-type Range = "today" | "week" | "month" | "next30";
+type Range = "today" | "week" | "month" | "next30" | "upcoming";
 
 const STATUS_OPTIONS: Array<{ value: Status; label: string }> = [
   { value: "active", label: "All active" },
@@ -19,6 +19,7 @@ const RANGE_OPTIONS: Array<{ value: Range; label: string }> = [
   { value: "week", label: "This week" },
   { value: "month", label: "This month" },
   { value: "next30", label: "Next 30 days" },
+  { value: "upcoming", label: "All upcoming" },
 ];
 
 export default function AdminBookingFilters() {
@@ -27,7 +28,8 @@ export default function AdminBookingFilters() {
   const [pending, startTransition] = useTransition();
 
   const status = (searchParams.get("status") ?? "active") as Status;
-  const range = (searchParams.get("range") ?? "") as Range | "";
+  // Default to "All upcoming" when no range is set in the URL.
+  const range = (searchParams.get("range") ?? "upcoming") as Range;
 
   function update(next: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());

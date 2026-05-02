@@ -76,6 +76,11 @@ ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS cancelled_by text
     CHECK (cancelled_by IN ('customer', 'owner') OR cancelled_by IS NULL);
 
+-- Consultation reminder tracking (Phase 4). Set when the hourly cron sends
+-- a 12-hour-out reminder so we don't double-send.
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS consultation_reminder_sent_at timestamptz;
+
 CREATE INDEX IF NOT EXISTS bookings_date_idx        ON public.bookings (booking_date);
 CREATE INDEX IF NOT EXISTS bookings_status_idx      ON public.bookings (status);
 CREATE INDEX IF NOT EXISTS bookings_customer_id_idx ON public.bookings (customer_id);

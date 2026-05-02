@@ -45,12 +45,20 @@ export default function CancelBookingButton({
         throw new Error(text || "Cancellation failed");
       }
       setOpen(false);
-      const target = redirectTo.includes("?")
-        ? `${redirectTo}&cancelled=1`
-        : `${redirectTo}?cancelled=1`;
-      router.replace(target);
-      router.refresh();
-      onCancelled?.();
+      // If a parent supplied an onCancelled handler we let it own the UI
+      // refresh (and skip navigation altogether). This prevents the page
+      // from jumping to the top, which `router.replace` would otherwise do
+      // even with `scroll: false` because we're often replacing with the
+      // same path. Only the /account flow uses the redirect path.
+      if (onCancelled) {
+        onCancelled();
+      } else {
+        const target = redirectTo.includes("?")
+          ? `${redirectTo}&cancelled=1`
+          : `${redirectTo}?cancelled=1`;
+        router.replace(target, { scroll: false });
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not cancel booking");
     } finally {

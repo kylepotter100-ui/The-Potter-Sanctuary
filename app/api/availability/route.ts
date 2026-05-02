@@ -9,9 +9,11 @@ export const revalidate = 0;
 // because RLS isn't configured for anon reads on these tables — the data is
 // non-sensitive (opening hours / closed days) so this is fine.
 //
-// Also returns a `bookedSlots` map (date → ["HH:MM", ...]) for the next
-// 90 days so the calendar can hide already-taken slots. Cancelled bookings
-// are excluded so a freed slot reappears automatically.
+// Booked slots, slot overrides and blocked dates are returned for a 60-day
+// horizon (was 90). Trimming the window keeps the response small enough to
+// stay well inside Cloudflare's per-request CPU budget.
+const HORIZON_DAYS = 60;
+
 export async function GET() {
   if (!supabaseAdmin) {
     return NextResponse.json(
@@ -23,7 +25,7 @@ export async function GET() {
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
   const horizon = new Date(today);
-  horizon.setDate(horizon.getDate() + 90);
+  horizon.setDate(horizon.getDate() + HORIZON_DAYS);
   const horizonIso = horizon.toISOString().slice(0, 10);
 
   const [
@@ -34,15 +36,16 @@ export async function GET() {
   ] = await Promise.all([
     supabaseAdmin
       .from("availability")
-      .select("day_of_week, slot_time, is_active")
+      .select("day_of_week, slot_time")
       .eq("is_active", true),
     supabaseAdmin
       .from("blocked_dates")
       .select("blocked_date")
-      .gte("blocked_date", todayIso),
+      .gte("blocked_date", todayIso)
+      .lte("blocked_date", horizonIso),
     supabaseAdmin
       .from("bookings")
-      .select("booking_date, booking_time, status")
+      .select("booking_date, booking_time")
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),
@@ -73,10 +76,10 @@ export async function GET() {
   const slotsByDay: Record<number, string[]> = {};
   for (const row of availability ?? []) {
     const t = String(row.slot_time).slice(0, 5);
-    if (!slotsByDay[row.day_of_week]) slotsByDay[row.day_of_week] = [];
-    slotsByDay[row.day_of_week].push(t);
+    const dow = row.day_of_week as number;
+    (slotsByDay[dow] ||= []).push(t);
   }
-  for (const k of Object.keys(slotsByDay)) {
+  for (const k in slotsByDay) {
     slotsByDay[Number(k)].sort();
   }
 
@@ -86,27 +89,20 @@ export async function GET() {
   for (const row of booked ?? []) {
     const date = row.booking_date as string;
     const time = String(row.booking_time).slice(0, 5);
-    if (!bookedSlots[date]) bookedSlots[date] = [];
-    bookedSlots[date].push(time);
+    (bookedSlots[date] ||= []).push(time);
   }
 
-  // Per-date slot overrides on top of the day_of_week template.
-  // { "2026-05-13": { "11:00": false, "12:30": true } }
   const slotOverrides: Record<string, Record<string, boolean>> = {};
   for (const row of overrides ?? []) {
     const date = row.override_date as string;
     const time = String(row.slot_time).slice(0, 5);
-    if (!slotOverrides[date]) slotOverrides[date] = {};
-    slotOverrides[date][time] = row.is_active as boolean;
+    (slotOverrides[date] ||= {})[time] = row.is_active as boolean;
   }
 
   return NextResponse.json(
     { slotsByDay, blockedDates, bookedSlots, slotOverrides },
     {
       headers: {
-        // Belt-and-suspenders no-cache: covers browsers, intermediaries,
-        // and Cloudflare's edge cache so a freshly-booked slot never gets
-        // served from a stale snapshot.
         "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
         "CDN-Cache-Control": "no-store",
         "Cloudflare-CDN-Cache-Control": "no-store",

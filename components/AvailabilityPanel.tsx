@@ -182,26 +182,18 @@ export default function AvailabilityPanel({
     return activeSlotsFor(iso, dow).size > 0;
   }
 
-  // Toggle whole day on/off. We use blocked_dates as the date-specific
-  // off switch — toggling off blocks the date, toggling on unblocks it.
-  // (Slot-level state still lives in slot_overrides + the day_of_week pattern.)
+  // Toggle whole day on/off. The "off" state is stored in blocked_dates;
+  // the "on" state is "not blocked AND there are slots". For Mon/Sun (no
+  // day_of_week template by default) toggling on also seeds the full
+  // 09:30–19:00 slot list as active overrides for that specific date so
+  // the day actually has slots to show.
   async function toggleDay(date: Date) {
     const iso = isoDate(date);
-    const wasBlocked = blockedSet.has(iso);
-    if (wasBlocked) {
-      // Unblock.
-      blockedSet.delete(iso);
-      setRefreshTick((n) => n + 1);
-      const blockedRow = blocked.find((b) => b.blocked_date === iso);
-      if (blockedRow) {
-        await fetch("/api/admin/availability/unblock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: blockedRow.id }),
-        });
-      }
-    } else {
-      // Block the date so it disappears from public availability.
+    const dow = date.getDay();
+    const currentlyOpen = isDayOpen(iso, dow);
+
+    if (currentlyOpen) {
+      // Close the day — block this specific date.
       blockedSet.add(iso);
       setRefreshTick((n) => n + 1);
       await fetch("/api/admin/availability/block", {
@@ -209,6 +201,43 @@ export default function AvailabilityPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: iso }),
       });
+    } else {
+      // Open the day. First unblock if blocked.
+      if (blockedSet.has(iso)) {
+        blockedSet.delete(iso);
+        setRefreshTick((n) => n + 1);
+        const blockedRow = blocked.find((b) => b.blocked_date === iso);
+        if (blockedRow) {
+          await fetch("/api/admin/availability/unblock", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: blockedRow.id }),
+          });
+        }
+      }
+
+      // If the day has no template and no resolved slots, seed all default
+      // slots as active overrides so the day actually shows slots to
+      // customers and to the slot grid below.
+      const baseSlots = dayPattern[dow] ?? new Set<string>();
+      const overrides = overrideMap[iso] ?? {};
+      const resolved = new Set(baseSlots);
+      for (const [time, active] of Object.entries(overrides)) {
+        if (active) resolved.add(time);
+        else resolved.delete(time);
+      }
+      if (resolved.size === 0) {
+        const seedRows = SLOTS.map((s) => ({ slot_time: s, is_active: true }));
+        // Reflect optimistically in the local map.
+        if (!overrideMap[iso]) overrideMap[iso] = {};
+        for (const s of SLOTS) overrideMap[iso][s] = true;
+        setRefreshTick((n) => n + 1);
+        await fetch("/api/admin/availability/slot-override-bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ override_date: iso, slots: seedRows }),
+        });
+      }
     }
     startTransition(() => router.refresh());
   }
