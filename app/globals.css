@@ -2056,6 +2056,146 @@
     .cookie-banner-btn { width: 100%; }
   }
 
+  /* ===== Info pages (Treatments, Visit) ===== */
+  .info-page {
+    background: #F5F0E8;
+    min-height: calc(100vh - 80px);
+    padding-bottom: 80px;
+    color: #1C1C1C;
+  }
+  .info-page-header {
+    background: #8A9E85;
+    padding: 56px 24px 40px;
+    text-align: center;
+    color: #ffffff;
+  }
+  .info-eyebrow {
+    font-family: var(--font-sans), 'Lora', serif;
+    color: #ffffff;
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+    opacity: 0.95;
+  }
+  .info-page-header h1 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 42px;
+    line-height: 1.1;
+    margin: 0 0 8px;
+    color: #ffffff;
+  }
+  .info-lede {
+    font-size: 16px;
+    line-height: 1.55;
+    color: #ffffff;
+    opacity: 0.9;
+    margin: 0;
+  }
+  .info-shell {
+    max-width: 760px;
+    margin: 32px auto 0;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .info-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 28px 32px;
+    box-shadow: 0 6px 28px rgba(28, 28, 28, 0.06);
+    color: #1C1C1C;
+  }
+  .info-card h2 {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 28px;
+    margin: 0 0 14px;
+    color: #1C1C1C;
+    letter-spacing: 0.005em;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(138, 158, 133, 0.45);
+  }
+  .info-card h2 em {
+    font-style: italic;
+    color: #6E8068;
+  }
+  .info-card-head { margin-bottom: 14px; }
+  .info-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    color: #4A4A4A;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+  .info-card p {
+    font-size: 16px;
+    line-height: 1.75;
+    color: #1C1C1C;
+    margin: 0 0 14px;
+  }
+  .info-card ul {
+    margin: 0;
+    padding-left: 22px;
+  }
+  .info-card li {
+    font-size: 16px;
+    line-height: 1.75;
+    color: #1C1C1C;
+    margin-bottom: 6px;
+  }
+  .info-placeholder {
+    font-style: italic;
+    color: #4A4A4A;
+    background: #FBF7EC;
+    padding: 10px 14px;
+    border-radius: 8px;
+  }
+  .info-card a {
+    color: #8A9E85;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .info-card a:hover { color: #6E8068; }
+  .info-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .info-link {
+    color: #8A9E85;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .info-link:hover { color: #6E8068; }
+  .info-cta {
+    background: #8A9E85;
+    color: #ffffff !important;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .info-cta:hover { background: #6E8068; }
+  @media (max-width: 600px) {
+    .info-page-header { padding: 40px 20px 28px; }
+    .info-page-header h1 { font-size: 32px; }
+    .info-shell { padding: 0 12px; }
+    .info-card { padding: 24px 22px; }
+    .info-card h2 { font-size: 24px; }
+  }
+
   /* ===== Sage branded header (questionnaire, etc) ===== */
   .sage-branded-header {
     background: #8A9E85;

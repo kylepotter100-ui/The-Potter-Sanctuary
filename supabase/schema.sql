@@ -81,6 +81,18 @@ ALTER TABLE public.bookings
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS consultation_reminder_sent_at timestamptz;
 
+-- 24-hour appointment reminder tracking (Phase 4 part 2). Same pattern.
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS appointment_reminder_sent_at timestamptz;
+
+-- ===== daily_summaries_sent =====
+-- Dedupe row written once per UK day after the morning-summary email goes
+-- out, so the hourly cron can skip subsequent runs on the same date.
+CREATE TABLE IF NOT EXISTS public.daily_summaries_sent (
+  summary_date date PRIMARY KEY,
+  sent_at      timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS bookings_date_idx        ON public.bookings (booking_date);
 CREATE INDEX IF NOT EXISTS bookings_status_idx      ON public.bookings (status);
 CREATE INDEX IF NOT EXISTS bookings_customer_id_idx ON public.bookings (customer_id);

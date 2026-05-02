@@ -26,6 +26,12 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+// Site-wide brand description used by both the page <meta description>
+// and the social preview. Kept short (<= 200 chars) so platforms don't
+// truncate awkwardly.
+const SOCIAL_DESCRIPTION =
+  "Private wellness studio offering aromatherapy, hot stones and bodywork in Beck Row, Suffolk.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
@@ -41,6 +47,41 @@ export const metadata: Metadata = {
     email: false,
     telephone: false,
     address: false,
+  },
+  // Favicon set. We currently fall back to the brand PNG for both shapes
+  // — replace `/favicon.ico` and `/apple-touch-icon.png` once you've
+  // generated proper multi-size icons (see /public/README in repo).
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/sanctuary-logo.png", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
+  },
+  // Social preview. Cards use the OG image at /og-image.png (PNG preferred
+  // over SVG for cross-platform support — Twitter, iMessage, WhatsApp).
+  openGraph: {
+    title: siteConfig.name,
+    description: SOCIAL_DESCRIPTION,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} — Beck Row, Suffolk`,
+      },
+    ],
+    locale: "en_GB",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: SOCIAL_DESCRIPTION,
+    images: ["/og-image.png"],
   },
 };
 
