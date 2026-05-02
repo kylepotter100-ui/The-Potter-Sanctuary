@@ -28,9 +28,19 @@ export async function GET() {
       .eq("email", user.email.toLowerCase())
       .maybeSingle();
 
+    let hasConsultation = false;
+    if (customer) {
+      const { count } = await supabaseAdmin
+        .from("consultation_responses")
+        .select("id", { count: "exact", head: true })
+        .eq("customer_id", customer.id);
+      hasConsultation = (count ?? 0) > 0;
+    }
+
     return NextResponse.json({
       user: { id: user.id, email: user.email },
       customer: customer ?? null,
+      hasConsultation,
     });
   } catch {
     return NextResponse.json({ user: null, customer: null });

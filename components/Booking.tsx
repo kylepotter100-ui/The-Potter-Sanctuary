@@ -33,6 +33,7 @@ const DOWS = ["S", "M", "T", "W", "T", "F", "S"];
 type AvailabilityData = {
   slotsByDay: Record<number, string[]>;
   blockedDates: string[];
+  bookedSlots: Record<string, string[]>;
 };
 
 function startOfDay(d: Date) {
@@ -84,6 +85,10 @@ export default function Booking({ preselectId }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [hasPriorConsultation, setHasPriorConsultation] = useState(false);
+  // For returning customers, ask whether their consultation details changed.
+  // null = not yet answered, true = no change, false = needs new questionnaire.
+  const [detailsUnchanged, setDetailsUnchanged] = useState<boolean | null>(null);
 
   // Pull live availability + blocked dates from the admin-controlled tables so
   // the calendar mirrors what the studio has set up.
@@ -153,20 +158,28 @@ export default function Booking({ preselectId }: Props) {
     // Also fetch directly in case the prompt fired before we mounted.
     let cancelled = false;
     fetch("/api/me", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { customer: null }))
-      .then((data: { customer: CustomerDetails | null }) => {
-        if (cancelled || !data.customer) return;
-        const c = data.customer;
-        const fn = c.first_name || (c.full_name ? c.full_name.split(" ")[0] : "");
-        const ln =
-          c.last_name ||
-          (c.full_name ? c.full_name.split(" ").slice(1).join(" ") : "");
-        setFname((prev) => prev || fn);
-        setLname((prev) => prev || ln);
-        setEmail((prev) => prev || c.email || "");
-        setPhone((prev) => prev || c.phone_number || "");
-        setGender((prev) => prev || c.gender || null);
-      })
+      .then((r) => (r.ok ? r.json() : { customer: null, hasConsultation: false }))
+      .then(
+        (data: {
+          customer: CustomerDetails | null;
+          hasConsultation?: boolean;
+        }) => {
+          if (cancelled) return;
+          if (data.hasConsultation) setHasPriorConsultation(true);
+          if (!data.customer) return;
+          const c = data.customer;
+          const fn =
+            c.first_name || (c.full_name ? c.full_name.split(" ")[0] : "");
+          const ln =
+            c.last_name ||
+            (c.full_name ? c.full_name.split(" ").slice(1).join(" ") : "");
+          setFname((prev) => prev || fn);
+          setLname((prev) => prev || ln);
+          setEmail((prev) => prev || c.email || "");
+          setPhone((prev) => prev || c.phone_number || "");
+          setGender((prev) => prev || c.gender || null);
+        }
+      )
       .catch(() => {});
     return () => {
       window.removeEventListener("tps:customer-details", onDetails);
@@ -181,7 +194,9 @@ export default function Booking({ preselectId }: Props) {
     !fname.trim() ||
     !lname.trim() ||
     !phone.trim() ||
-    !/\S+@\S+\.\S+/.test(email);
+    !/\S+@\S+\.\S+/.test(email) ||
+    // Returning customers must answer the consultation-changed question.
+    (hasPriorConsultation && detailsUnchanged === null);
 
   const dateLabel = date ? formatLongDate(date) : "";
 
@@ -189,6 +204,21 @@ export default function Booking({ preselectId }: Props) {
     () => new Set(availability?.blockedDates ?? []),
     [availability]
   );
+
+  const bookedByDate = useMemo(
+    () => availability?.bookedSlots ?? {},
+    [availability]
+  );
+
+  function freeSlotsFor(dt: Date): string[] {
+    if (!availability) return [];
+    const iso = isoDate(dt);
+    if (blockedSet.has(iso)) return [];
+    const dow = dt.getDay();
+    const all = availability.slotsByDay[dow] ?? [];
+    const taken = new Set(bookedByDate[iso] ?? []);
+    return all.filter((t) => !taken.has(t));
+  }
 
   const calCells = useMemo(() => {
     const first = new Date(viewYear, viewMonth, 1);
@@ -223,7 +253,15 @@ export default function Booking({ preselectId }: Props) {
         ? dow === 0 || dow === 1
         : !(availability.slotsByDay[dow]?.length);
       const isBlocked = blockedSet.has(isoDate(dt));
-      const disabled = isPast || closedByDay || isBlocked;
+      // If every published slot for this day has been booked, treat the
+      // day as unavailable so the customer can't pick it.
+      const fullyBooked =
+        !!availability &&
+        !isPast &&
+        !closedByDay &&
+        !isBlocked &&
+        freeSlotsFor(dt).length === 0;
+      const disabled = isPast || closedByDay || isBlocked || fullyBooked;
       const isToday = dt.getTime() === today.getTime();
       const isSelected = !!date && dt.getTime() === date.getTime();
       cells.push({
@@ -251,7 +289,9 @@ export default function Booking({ preselectId }: Props) {
       }
     }
     return cells;
-  }, [viewYear, viewMonth, today, date, availability, blockedSet]);
+    // freeSlotsFor closes over availability/blockedSet/bookedByDate, so
+    // including bookedByDate here keeps the memo in sync when bookings change.
+  }, [viewYear, viewMonth, today, date, availability, blockedSet, bookedByDate]);
 
   const slotState = useMemo(() => {
     if (!date) return [] as Array<{ time: string; disabled: boolean }>;
@@ -259,8 +299,11 @@ export default function Booking({ preselectId }: Props) {
     if (blockedSet.has(isoDate(date))) return [];
     const dow = date.getDay();
     const slots = availability.slotsByDay[dow] ?? [];
-    return slots.map((t) => ({ time: t, disabled: false }));
-  }, [date, availability, blockedSet]);
+    const taken = new Set(bookedByDate[isoDate(date)] ?? []);
+    return slots
+      .filter((t) => !taken.has(t))
+      .map((t) => ({ time: t, disabled: false }));
+  }, [date, availability, blockedSet, bookedByDate]);
 
   function shiftMonth(delta: number) {
     let m = viewMonth + delta;
@@ -295,6 +338,9 @@ export default function Booking({ preselectId }: Props) {
           phone,
           email,
           message,
+          // Returning customers tell us whether their consultation details
+          // are still current. Omitted for first-time bookings.
+          detailsUnchanged: hasPriorConsultation ? detailsUnchanged : null,
         }),
       });
       if (!res.ok) {
@@ -597,6 +643,35 @@ export default function Booking({ preselectId }: Props) {
             onChange={(e) => setMessage(e.target.value)}
           />
         </div>
+
+        {hasPriorConsultation && (
+          <div className="field">
+            <label>
+              Have any of your consultation details changed since your last
+              visit? (e.g. medical conditions, allergies, medications)
+            </label>
+            <div className="gender-row">
+              <button
+                type="button"
+                className={`gender-pill${
+                  detailsUnchanged === true ? " active" : ""
+                }`}
+                onClick={() => setDetailsUnchanged(true)}
+              >
+                No, nothing has changed
+              </button>
+              <button
+                type="button"
+                className={`gender-pill${
+                  detailsUnchanged === false ? " active" : ""
+                }`}
+                onClick={() => setDetailsUnchanged(false)}
+              >
+                Yes, I need to update
+              </button>
+            </div>
+          </div>
+        )}
 
         {submitError && (
           <div

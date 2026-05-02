@@ -415,3 +415,170 @@
     color: var(--admin-ink-soft);
   }
 }
+
+/* ===== Admin booking filters ===== */
+.admin-filters {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.admin-filters.is-pending { opacity: 0.75; }
+.admin-filters-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(220px, 2fr);
+  gap: 12px;
+  align-items: end;
+}
+.admin-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-filter > span {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+.admin-filter select,
+.admin-filter input {
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--admin-ink);
+}
+.admin-filter select:focus,
+.admin-filter input:focus {
+  outline: 2px solid var(--admin-sage);
+  outline-offset: 0;
+}
+.admin-filters-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.admin-filters-presets button {
+  background: transparent;
+  border: 1px solid var(--admin-line);
+  color: var(--admin-ink-soft);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+}
+.admin-filters-presets button:hover {
+  background: var(--admin-sage);
+  color: #ffffff;
+  border-color: var(--admin-sage);
+}
+.admin-filter-clear {
+  margin-left: auto;
+  border-color: rgba(176, 74, 63, 0.4) !important;
+  color: #b04a3f !important;
+}
+.admin-filter-clear:hover {
+  background: #b04a3f !important;
+  color: #ffffff !important;
+  border-color: #b04a3f !important;
+}
+
+/* ===== Clickable rows ===== */
+.admin-table-clickable tbody tr.row-link { cursor: pointer; }
+.admin-table-clickable tbody tr.row-link:hover td {
+  background: rgba(138, 158, 133, 0.08);
+}
+.admin-table-clickable td.row-link-arrow {
+  text-align: right;
+}
+.admin-table-clickable td.row-link-arrow a {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-sage-deep);
+  text-decoration: none;
+}
+.admin-table-clickable td.row-link-arrow a:hover { text-decoration: underline; }
+.admin-table-clickable td .row-link-target {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ===== Admin sub-headings (used inside admin-card) ===== */
+.admin-subheading {
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+  margin: 22px 0 8px;
+}
+.admin-subheading:first-child { margin-top: 0; }
+
+/* ===== Admin-side modal mirrors customer modal but uses admin tokens ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 28, 0.55);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(28, 28, 28, 0.28);
+}
+.modal-title {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 26px;
+  margin: 0 0 14px;
+  color: var(--admin-ink);
+}
+.modal-card textarea {
+  width: 100%;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.modal-error {
+  background: #f7e3e2;
+  border: 1px solid #c98a86;
+  color: #5b201d;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .admin-filters-row { grid-template-columns: 1fr 1fr; }
+  .admin-filter-search { grid-column: 1 / -1; }
+}
