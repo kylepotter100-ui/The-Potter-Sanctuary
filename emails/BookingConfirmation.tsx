@@ -303,12 +303,35 @@ export default function BookingConfirmation({
               style={{
                 fontSize: 12,
                 color: "#ffffff",
-                margin: 0,
+                margin: "0 0 8px",
                 opacity: 0.85,
                 letterSpacing: "0.02em",
               }}
             >
               The Potter Sanctuary, Beck Row, Suffolk
+            </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                color: "#ffffff",
+                margin: 0,
+                opacity: 0.85,
+                lineHeight: 1.6,
+              }}
+            >
+              <a
+                href={`${siteUrl}/legal/privacy`}
+                style={{ color: "#ffffff", textDecoration: "underline" }}
+              >
+                Privacy Policy
+              </a>
+              {" · "}
+              <a
+                href={`${siteUrl}/legal/terms`}
+                style={{ color: "#ffffff", textDecoration: "underline" }}
+              >
+                Cancellation Policy
+              </a>
             </Text>
           </Section>
         </Container>
