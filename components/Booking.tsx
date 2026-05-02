@@ -264,19 +264,18 @@ export default function Booking({ preselectId }: Props) {
       const dt = new Date(viewYear, viewMonth, d);
       const dow = dt.getDay();
       const isPast = dt < today;
-      const closedByDay = !availability
-        ? dow === 0 || dow === 1
-        : !(availability.slotsByDay[dow]?.length);
       const isBlocked = blockedSet.has(isoDate(dt));
-      // If every published slot for this day has been booked, treat the
-      // day as unavailable so the customer can't pick it.
-      const fullyBooked =
-        !!availability &&
-        !isPast &&
-        !closedByDay &&
-        !isBlocked &&
-        freeSlotsFor(dt).length === 0;
-      const disabled = isPast || closedByDay || isBlocked || fullyBooked;
+      // Once availability data is loaded, the day is open if `freeSlotsFor`
+      // resolves to at least one slot — that function merges the
+      // day_of_week template, per-date slot_overrides, and booked slots,
+      // so it naturally handles Mon/Sun (no template, but admin can open
+      // them via overrides) and partially-booked days.
+      // Before availability loads we fall back to a Tue-Sat skeleton so
+      // the calendar isn't blank during the initial paint.
+      const noSlots = availability
+        ? freeSlotsFor(dt).length === 0
+        : dow === 0 || dow === 1;
+      const disabled = isPast || isBlocked || noSlots;
       const isToday = dt.getTime() === today.getTime();
       const isSelected = !!date && dt.getTime() === date.getTime();
       cells.push({
