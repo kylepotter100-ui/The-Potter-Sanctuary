@@ -24,26 +24,23 @@ type BookingRow = {
   status: "pending" | "confirmed" | "cancelled";
 };
 
+type SlotOverrideRow = {
+  override_date: string;
+  slot_time: string;
+  is_active: boolean;
+};
+
 type Props = {
   availability: AvailabilityRow[];
   blocked: BlockedRow[];
   bookings: BookingRow[];
+  overrides: SlotOverrideRow[];
 };
 
 const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 function generateSlots(): string[] {
@@ -71,11 +68,11 @@ function isoDate(d: Date): string {
   return `${y}-${m}-${dd}`;
 }
 
-// Monday as first day of week (en-GB convention).
+// Monday as first day of week.
 function startOfWeek(d: Date): Date {
   const out = new Date(d);
   out.setHours(0, 0, 0, 0);
-  const dow = out.getDay(); // 0=Sun .. 6=Sat
+  const dow = out.getDay();
   const diff = dow === 0 ? -6 : 1 - dow;
   out.setDate(out.getDate() + diff);
   return out;
@@ -108,35 +105,44 @@ export default function AvailabilityPanel({
   availability,
   blocked,
   bookings,
+  overrides,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [, setRefreshTick] = useState(0);
 
-  const todayStart = useMemo(() => {
-    const t = new Date();
-    t.setHours(0, 0, 0, 0);
-    return t;
-  }, []);
-
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  });
 
-  // Build a quick-lookup map for the weekly availability template.
-  // Mutated optimistically when toggling — that's why we trigger refreshTick.
-  const map = useMemo(() => {
-    const m = new Map<string, boolean>();
+  // Recurring weekly template — used as the default for any date that
+  // doesn't have explicit slot overrides.
+  const dayPattern = useMemo(() => {
+    const m: Record<number, Set<string>> = {};
     for (const a of availability) {
-      m.set(`${a.day_of_week}:${normalize(a.slot_time)}`, a.is_active);
+      if (!a.is_active) continue;
+      const dow = a.day_of_week;
+      if (!m[dow]) m[dow] = new Set();
+      m[dow].add(String(a.slot_time).slice(0, 5));
     }
     return m;
   }, [availability]);
 
-  // Map booking_date → { "HH:MM" → "first_name" }
+  // Mutable optimistic stores keyed by ISO date.
+  const blockedSet = useMemo(
+    () => new Set(blocked.map((b) => b.blocked_date)),
+    [blocked]
+  );
+  // Map: date → { time → is_active }
+  const overrideMap = useMemo(() => {
+    const m: Record<string, Record<string, boolean>> = {};
+    for (const o of overrides) {
+      const d = o.override_date;
+      const t = String(o.slot_time).slice(0, 5);
+      if (!m[d]) m[d] = {};
+      m[d][t] = o.is_active;
+    }
+    return m;
+  }, [overrides]);
+
   const bookingsByDate = useMemo(() => {
     const out: Record<string, Record<string, string>> = {};
     for (const b of bookings) {
@@ -148,11 +154,6 @@ export default function AvailabilityPanel({
     return out;
   }, [bookings]);
 
-  const blockedSet = useMemo(
-    () => new Set(blocked.map((b) => b.blocked_date)),
-    [blocked]
-  );
-
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart]
@@ -161,40 +162,83 @@ export default function AvailabilityPanel({
   function shiftWeek(delta: number) {
     setWeekStart((prev) => addDays(prev, delta * 7));
   }
-
   function thisWeek() {
     setWeekStart(startOfWeek(new Date()));
-    const t = new Date();
-    t.setHours(0, 0, 0, 0);
-    setSelectedDate(t);
   }
 
-  async function toggleSlot(
-    day: number,
-    slot: string,
-    currentlyActive: boolean
-  ) {
+  // Resolve a date's active slots: pattern ∪ overrides(true), minus overrides(false).
+  function activeSlotsFor(iso: string, dow: number): Set<string> {
+    const base = new Set(dayPattern[dow] ?? []);
+    const ov = overrideMap[iso] ?? {};
+    for (const [time, active] of Object.entries(ov)) {
+      if (active) base.add(time);
+      else base.delete(time);
+    }
+    return base;
+  }
+
+  function isDayOpen(iso: string, dow: number): boolean {
+    if (blockedSet.has(iso)) return false;
+    return activeSlotsFor(iso, dow).size > 0;
+  }
+
+  // Toggle whole day on/off. We use blocked_dates as the date-specific
+  // off switch — toggling off blocks the date, toggling on unblocks it.
+  // (Slot-level state still lives in slot_overrides + the day_of_week pattern.)
+  async function toggleDay(date: Date) {
+    const iso = isoDate(date);
+    const wasBlocked = blockedSet.has(iso);
+    if (wasBlocked) {
+      // Unblock.
+      blockedSet.delete(iso);
+      setRefreshTick((n) => n + 1);
+      const blockedRow = blocked.find((b) => b.blocked_date === iso);
+      if (blockedRow) {
+        await fetch("/api/admin/availability/unblock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: blockedRow.id }),
+        });
+      }
+    } else {
+      // Block the date so it disappears from public availability.
+      blockedSet.add(iso);
+      setRefreshTick((n) => n + 1);
+      await fetch("/api/admin/availability/block", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: iso }),
+      });
+    }
+    startTransition(() => router.refresh());
+  }
+
+  // Toggle a specific slot on a specific date via slot_overrides.
+  async function toggleSlot(date: Date, slot: string, currentlyActive: boolean) {
+    const iso = isoDate(date);
     const next = !currentlyActive;
-    map.set(`${day}:${normalize(slot)}`, next);
+    if (!overrideMap[iso]) overrideMap[iso] = {};
+    overrideMap[iso][slot] = next;
     setRefreshTick((n) => n + 1);
     try {
-      await fetch("/api/admin/availability/toggle", {
+      await fetch("/api/admin/availability/slot-override", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          day_of_week: day,
-          slot_time: slot,
+          override_date: iso,
+          slot_time: normalize(slot),
           is_active: next,
         }),
       });
       startTransition(() => router.refresh());
     } catch {
-      map.set(`${day}:${normalize(slot)}`, currentlyActive);
+      overrideMap[iso][slot] = currentlyActive;
       setRefreshTick((n) => n + 1);
     }
   }
 
-  // Block-date form state.
+  // Block-date form state (separate manual blocking, e.g. for far-future
+  // dates not visible in the current week view).
   const [date, setDate] = useState("");
   const [reason, setReason] = useState("");
   const [blockError, setBlockError] = useState<string | null>(null);
@@ -226,17 +270,13 @@ export default function AvailabilityPanel({
     if (res.ok) startTransition(() => router.refresh());
   }
 
-  const selectedDow = selectedDate?.getDay();
-  const selectedIso = selectedDate ? isoDate(selectedDate) : null;
-  const selectedDayBookings =
-    selectedIso && bookingsByDate[selectedIso] ? bookingsByDate[selectedIso] : {};
-  const selectedDayBlocked = selectedIso ? blockedSet.has(selectedIso) : false;
-
   const weekHeader = `Week of ${weekStart.toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "long",
   })}`;
+
+  const openDays = weekDays.filter((d) => isDayOpen(isoDate(d), d.getDay()));
 
   return (
     <>
@@ -268,22 +308,26 @@ export default function AvailabilityPanel({
         </div>
       </div>
 
-      {/* Day-of-week buttons */}
+      {/* Day toggles */}
+      <p className="lede" style={{ marginBottom: 10 }}>
+        Tick the days the studio is open this week. Each open day reveals its
+        slots below for fine-tuning.
+      </p>
       <div className="avail-day-row">
         {weekDays.map((d) => {
           const iso = isoDate(d);
-          const isPast = d < todayStart;
-          const isSelected = selectedIso === iso;
+          const dow = d.getDay();
+          const open = isDayOpen(iso, dow);
           return (
             <button
               key={iso}
               type="button"
-              className={`avail-day-btn${isSelected ? " is-selected" : ""}${
-                isPast ? " is-past" : ""
-              }`}
-              onClick={() => setSelectedDate(d)}
+              className={`avail-day-btn${open ? " is-selected" : ""}`}
+              onClick={() => toggleDay(d)}
+              aria-pressed={open}
+              disabled={pending}
             >
-              <span className="avail-day-name">{DAYS_SHORT[d.getDay()]}</span>
+              <span className="avail-day-name">{DAYS_SHORT[dow]}</span>
               <span className="avail-day-date">
                 {d.getDate()} {MONTHS_SHORT[d.getMonth()]}
               </span>
@@ -292,59 +336,66 @@ export default function AvailabilityPanel({
         })}
       </div>
 
-      {/* Time slots for the selected day */}
-      {selectedDate && selectedDow !== undefined && (
-        <section className="avail-day-detail">
-          <h2 style={{ marginBottom: 6 }}>
-            Available slots for {formatLong(selectedDate)}
-          </h2>
-          {selectedDayBlocked && (
-            <p className="error-text">
-              This date is in your blocked dates list — slots will not appear
-              to customers regardless of the toggles below.
-            </p>
-          )}
-          <p className="lede" style={{ marginBottom: 14 }}>
-            Sage = visible to public. Grey outline = hidden. Booked slots can&apos;t
-            be toggled.
-          </p>
-          <div className="avail-slot-grid">
-            {SLOTS.map((slot) => {
-              const active = map.get(`${selectedDow}:${normalize(slot)}`) ?? false;
-              const bookedBy = selectedDayBookings[slot];
-              if (bookedBy) {
-                return (
-                  <div
-                    key={slot}
-                    className="avail-slot is-booked"
-                    title={`Booked by ${bookedBy}`}
-                  >
-                    <span className="avail-slot-time">{slot}</span>
-                    <span className="avail-slot-tag">Booked · {bookedBy}</span>
-                  </div>
-                );
-              }
-              return (
-                <button
-                  key={slot}
-                  type="button"
-                  className={`avail-slot${active ? " is-active" : ""}`}
-                  onClick={() => toggleSlot(selectedDow, slot, active)}
-                  disabled={pending}
-                >
-                  <span className="avail-slot-time">{slot}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+      {/* One slot grid per active day */}
+      {openDays.length === 0 ? (
+        <div className="admin-card" style={{ marginBottom: 18 }}>
+          No open days this week. Tap a day above to mark the studio open.
+        </div>
+      ) : (
+        openDays.map((d) => {
+          const iso = isoDate(d);
+          const dow = d.getDay();
+          const activeSet = activeSlotsFor(iso, dow);
+          const dayBookings = bookingsByDate[iso] ?? {};
+          return (
+            <section key={iso} className="avail-day-detail">
+              <h2 style={{ marginBottom: 6 }}>{formatLong(d)}</h2>
+              <p className="lede" style={{ marginBottom: 14 }}>
+                Sage = visible to public. Grey outline = hidden. Booked slots
+                can&apos;t be toggled.
+              </p>
+              <div className="avail-slot-grid">
+                {SLOTS.map((slot) => {
+                  const bookedBy = dayBookings[slot];
+                  if (bookedBy) {
+                    return (
+                      <div
+                        key={slot}
+                        className="avail-slot is-booked"
+                        title={`Booked by ${bookedBy}`}
+                      >
+                        <span className="avail-slot-time">{slot}</span>
+                        <span className="avail-slot-tag">
+                          Booked · {bookedBy}
+                        </span>
+                      </div>
+                    );
+                  }
+                  const active = activeSet.has(slot);
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      className={`avail-slot${active ? " is-active" : ""}`}
+                      onClick={() => toggleSlot(d, slot, active)}
+                      aria-pressed={active}
+                      disabled={pending}
+                    >
+                      <span className="avail-slot-time">{slot}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })
       )}
 
       {/* Blocked dates */}
       <h2 style={{ marginTop: 36, marginBottom: 14 }}>Block specific dates</h2>
       <p className="lede">
-        Holidays, training days, anything else. Blocked dates take precedence
-        over the weekly grid.
+        Toggling a day off above already adds it here. Use this form for dates
+        outside the visible week (holidays, training days, etc.).
       </p>
 
       <form onSubmit={block} className="admin-card" style={{ marginBottom: 16 }}>

@@ -322,9 +322,9 @@ export default function HomePage() {
                 <div className="row">
                   <div className="lab">Hours</div>
                   <div className="val">
-                    {siteConfig.hours.days}
+                    Tuesday to Saturday — hours vary by day.
                     <br />
-                    {siteConfig.hours.times}
+                    Please check available slots at booking.
                   </div>
                 </div>
                 <div className="row">
@@ -338,7 +338,7 @@ export default function HomePage() {
                 </div>
                 <div className="row">
                   <div className="lab">Cancel</div>
-                  <div className="val">24 hours notice, kindly</div>
+                  <div className="val">12 hours notice, kindly</div>
                 </div>
               </div>
             </div>

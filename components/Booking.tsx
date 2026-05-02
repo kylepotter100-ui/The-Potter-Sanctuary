@@ -34,6 +34,7 @@ type AvailabilityData = {
   slotsByDay: Record<number, string[]>;
   blockedDates: string[];
   bookedSlots: Record<string, string[]>;
+  slotOverrides?: Record<string, Record<string, boolean>>;
 };
 
 function startOfDay(d: Date) {
@@ -210,14 +211,28 @@ export default function Booking({ preselectId }: Props) {
     [availability]
   );
 
+  const overridesByDate = useMemo(
+    () => availability?.slotOverrides ?? {},
+    [availability]
+  );
+
   function freeSlotsFor(dt: Date): string[] {
     if (!availability) return [];
     const iso = isoDate(dt);
     if (blockedSet.has(iso)) return [];
     const dow = dt.getDay();
-    const all = availability.slotsByDay[dow] ?? [];
+    const baseSet = new Set(availability.slotsByDay[dow] ?? []);
+    // Apply per-date overrides — `false` removes a slot, `true` adds one
+    // that the day_of_week template wouldn't normally include.
+    const overrides = overridesByDate[iso] ?? {};
+    for (const [time, active] of Object.entries(overrides)) {
+      if (active) baseSet.add(time);
+      else baseSet.delete(time);
+    }
     const taken = new Set(bookedByDate[iso] ?? []);
-    return all.filter((t) => !taken.has(t));
+    return Array.from(baseSet)
+      .filter((t) => !taken.has(t))
+      .sort();
   }
 
   const calCells = useMemo(() => {
@@ -289,21 +304,18 @@ export default function Booking({ preselectId }: Props) {
       }
     }
     return cells;
-    // freeSlotsFor closes over availability/blockedSet/bookedByDate, so
-    // including bookedByDate here keeps the memo in sync when bookings change.
-  }, [viewYear, viewMonth, today, date, availability, blockedSet, bookedByDate]);
+    // freeSlotsFor closes over availability/blockedSet/bookedByDate/overridesByDate,
+    // so including all of them here keeps the memo in sync when any change.
+  }, [viewYear, viewMonth, today, date, availability, blockedSet, bookedByDate, overridesByDate]);
 
   const slotState = useMemo(() => {
     if (!date) return [] as Array<{ time: string; disabled: boolean }>;
     if (!availability) return [];
-    if (blockedSet.has(isoDate(date))) return [];
-    const dow = date.getDay();
-    const slots = availability.slotsByDay[dow] ?? [];
-    const taken = new Set(bookedByDate[isoDate(date)] ?? []);
-    return slots
-      .filter((t) => !taken.has(t))
-      .map((t) => ({ time: t, disabled: false }));
-  }, [date, availability, blockedSet, bookedByDate]);
+    return freeSlotsFor(date).map((t) => ({ time: t, disabled: false }));
+    // freeSlotsFor depends on availability/blockedSet/bookedByDate/overridesByDate;
+    // deps below cover all of them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, availability, blockedSet, bookedByDate, overridesByDate]);
 
   function shiftMonth(delta: number) {
     let m = viewMonth + delta;

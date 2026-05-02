@@ -30,6 +30,7 @@ export async function GET() {
     { data: availability, error: availErr },
     { data: blocked, error: blockErr },
     { data: booked, error: bookedErr },
+    { data: overrides, error: overridesErr },
   ] = await Promise.all([
     supabaseAdmin
       .from("availability")
@@ -45,6 +46,11 @@ export async function GET() {
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),
+    supabaseAdmin
+      .from("slot_overrides")
+      .select("override_date, slot_time, is_active")
+      .gte("override_date", todayIso)
+      .lte("override_date", horizonIso),
   ]);
 
   if (availErr || blockErr || bookedErr) {
@@ -58,6 +64,10 @@ export async function GET() {
       },
       { status: 500 }
     );
+  }
+  if (overridesErr) {
+    // Phase 4 schema may not be applied yet — log and continue without overrides.
+    console.error("[availability] slot_overrides read failed", overridesErr);
   }
 
   const slotsByDay: Record<number, string[]> = {};
@@ -80,8 +90,18 @@ export async function GET() {
     bookedSlots[date].push(time);
   }
 
+  // Per-date slot overrides on top of the day_of_week template.
+  // { "2026-05-13": { "11:00": false, "12:30": true } }
+  const slotOverrides: Record<string, Record<string, boolean>> = {};
+  for (const row of overrides ?? []) {
+    const date = row.override_date as string;
+    const time = String(row.slot_time).slice(0, 5);
+    if (!slotOverrides[date]) slotOverrides[date] = {};
+    slotOverrides[date][time] = row.is_active as boolean;
+  }
+
   return NextResponse.json(
-    { slotsByDay, blockedDates, bookedSlots },
+    { slotsByDay, blockedDates, bookedSlots, slotOverrides },
     {
       headers: {
         // Belt-and-suspenders no-cache: covers browsers, intermediaries,

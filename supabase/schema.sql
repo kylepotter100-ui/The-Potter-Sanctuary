@@ -112,6 +112,24 @@ CREATE TABLE IF NOT EXISTS public.consultation_responses (
 CREATE INDEX IF NOT EXISTS consultation_customer_id_idx ON public.consultation_responses (customer_id);
 CREATE INDEX IF NOT EXISTS consultation_booking_id_idx  ON public.consultation_responses (booking_id);
 
+-- ===== slot_overrides (Phase 4) =====
+-- Per-date overrides on top of the day_of_week pattern in `availability`.
+-- Used by the new admin availability workflow to fine-tune individual slots
+-- on individual dates without disturbing the recurring weekly template.
+-- A row with is_active=false hides that slot from the public calendar for
+-- that date; is_active=true exposes a slot the day_of_week pattern would
+-- have hidden. Whole-day closures still belong in `blocked_dates`.
+CREATE TABLE IF NOT EXISTS public.slot_overrides (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  override_date date    NOT NULL,
+  slot_time     time    NOT NULL,
+  is_active     boolean NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT slot_overrides_unique UNIQUE (override_date, slot_time)
+);
+CREATE INDEX IF NOT EXISTS slot_overrides_date_idx ON public.slot_overrides (override_date);
+
 -- ===== Seed default availability =====
 -- Tuesday–Saturday (2..6), every 30 minutes from 09:30 to 19:00 inclusive.
 -- Re-running is safe thanks to the unique constraint.

@@ -24,9 +24,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Idempotent — the day-toggle workflow may call this for a date that was
+  // already blocked (e.g. quick double-tap). Upsert avoids the unique
+  // constraint violation on blocked_date.
   const { data, error } = await supabaseAdmin
     .from("blocked_dates")
-    .insert({ blocked_date: date, reason: reason ?? null })
+    .upsert(
+      { blocked_date: date, reason: reason ?? null },
+      { onConflict: "blocked_date" }
+    )
     .select()
     .single();
 
