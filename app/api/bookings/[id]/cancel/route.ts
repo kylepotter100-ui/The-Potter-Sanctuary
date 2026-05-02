@@ -118,6 +118,7 @@ export async function POST(
             customerEmail: booking.customer_email,
             customerPhone: booking.customer_phone,
             reason,
+            siteUrl,
           })
         ),
       ]);

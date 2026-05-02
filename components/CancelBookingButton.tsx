@@ -8,6 +8,13 @@ type Props = {
   treatmentName: string;
   bookingDate: string;
   bookingTime: string;
+  // Where to land after a successful cancellation. Defaults to /account so
+  // existing call sites keep their previous behaviour. Pass "/" to keep the
+  // user on the homepage.
+  redirectTo?: string;
+  // Called after a successful cancel so the parent can refresh its data
+  // (e.g. re-fetch /api/me to drop the cancelled booking from a list).
+  onCancelled?: () => void;
 };
 
 export default function CancelBookingButton({
@@ -15,6 +22,8 @@ export default function CancelBookingButton({
   treatmentName,
   bookingDate,
   bookingTime,
+  redirectTo = "/account",
+  onCancelled,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -36,8 +45,12 @@ export default function CancelBookingButton({
         throw new Error(text || "Cancellation failed");
       }
       setOpen(false);
-      router.replace("/account?cancelled=1");
+      const target = redirectTo.includes("?")
+        ? `${redirectTo}&cancelled=1`
+        : `${redirectTo}?cancelled=1`;
+      router.replace(target);
       router.refresh();
+      onCancelled?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not cancel booking");
     } finally {

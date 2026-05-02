@@ -13,14 +13,26 @@ export default async function AvailabilityPage() {
         <main className="admin-main">
           <h1>Availability</h1>
           <p className="lede">
-            Supabase isn't configured yet — set the env vars and run the schema.
+            Supabase isn&apos;t configured yet — set the env vars and run the
+            schema.
           </p>
         </main>
       </>
     );
   }
 
-  const [{ data: availability }, { data: blocked }] = await Promise.all([
+  // Pull a 60-day window of upcoming bookings so the day view can show
+  // "Booked by [first name]" badges for already-taken slots.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const horizon = new Date();
+  horizon.setDate(horizon.getDate() + 60);
+  const horizonIso = horizon.toISOString().slice(0, 10);
+
+  const [
+    { data: availability },
+    { data: blocked },
+    { data: bookings },
+  ] = await Promise.all([
     supabaseAdmin
       .from("availability")
       .select("id, day_of_week, slot_time, is_active")
@@ -30,6 +42,12 @@ export default async function AvailabilityPage() {
       .from("blocked_dates")
       .select("id, blocked_date, reason")
       .order("blocked_date", { ascending: true }),
+    supabaseAdmin
+      .from("bookings")
+      .select("id, booking_date, booking_time, customer_first_name, status")
+      .gte("booking_date", todayIso)
+      .lte("booking_date", horizonIso)
+      .in("status", ["pending", "confirmed"]),
   ]);
 
   return (
@@ -41,6 +59,7 @@ export default async function AvailabilityPage() {
         <AvailabilityPanel
           availability={availability ?? []}
           blocked={blocked ?? []}
+          bookings={bookings ?? []}
         />
       </main>
     </>

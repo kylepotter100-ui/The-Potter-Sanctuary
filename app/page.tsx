@@ -8,6 +8,7 @@ import Ribbon from "@/components/Ribbon";
 import Booking from "@/components/Booking";
 import SignInPrompt from "@/components/SignInPrompt";
 import HomeUpcomingBookings from "@/components/HomeUpcomingBookings";
+import HashScroll from "@/components/HashScroll";
 import HeroCta from "@/components/HeroCta";
 import ServiceCardLink from "@/components/ServiceCardLink";
 import JsonLd from "@/components/JsonLd";
@@ -27,6 +28,7 @@ export default function HomePage() {
     <>
       <Intro />
       <Nav homeAnchors />
+      <HashScroll />
       <div className="page" id="page">
         {/* HERO */}
         <section className="hero" id="top">

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import SageBrandedHeader from "@/components/SageBrandedHeader";
 import QuestionnaireForm, {
   type CustomerSeed,
   type ConsultationSeed,
@@ -38,12 +39,15 @@ export default async function QuestionnairePage({
 
   if (!supabaseAdmin) {
     return (
-      <main className="questionnaire-page">
-        <div className="questionnaire-shell">
-          <h1>Consultation</h1>
-          <p className="lede">Supabase isn't configured yet.</p>
-        </div>
-      </main>
+      <>
+        <SageBrandedHeader />
+        <main className="questionnaire-page">
+          <div className="questionnaire-shell">
+            <h1>Consultation</h1>
+            <p className="lede">Supabase isn&apos;t configured yet.</p>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -61,24 +65,27 @@ export default async function QuestionnairePage({
 
     if (booking && booking.customer_email?.toLowerCase() !== emailLower) {
       return (
-        <main className="questionnaire-page">
-          <div className="questionnaire-shell">
-            <h1>Wrong account</h1>
-            <p className="lede">
-              This booking is registered to a different email address. Please
-              sign in with the email address used for the booking.
-            </p>
-            <form
-              method="post"
-              action="/api/auth/signout"
-              style={{ marginTop: 24 }}
-            >
-              <button type="submit" className="login-btn">
-                Sign out and try again
-              </button>
-            </form>
-          </div>
-        </main>
+        <>
+          <SageBrandedHeader />
+          <main className="questionnaire-page">
+            <div className="questionnaire-shell">
+              <h1>Wrong account</h1>
+              <p className="lede">
+                This booking is registered to a different email address. Please
+                sign in with the email address used for the booking.
+              </p>
+              <form
+                method="post"
+                action="/api/auth/signout"
+                style={{ marginTop: 24 }}
+              >
+                <button type="submit" className="login-btn">
+                  Sign out and try again
+                </button>
+              </form>
+            </div>
+          </main>
+        </>
       );
     }
   }
@@ -94,15 +101,18 @@ export default async function QuestionnairePage({
   if (!customer) {
     // Should not normally happen — the auth callback creates one. Bail safely.
     return (
-      <main className="questionnaire-page">
-        <div className="questionnaire-shell">
-          <h1>Consultation</h1>
-          <p className="lede">
-            We couldn't find your client record. Please make a booking first or
-            contact hello@thepottersanctuary.co.uk.
-          </p>
-        </div>
-      </main>
+      <>
+        <SageBrandedHeader />
+        <main className="questionnaire-page">
+          <div className="questionnaire-shell">
+            <h1>Consultation</h1>
+            <p className="lede">
+              We couldn&apos;t find your client record. Please make a booking
+              first or contact hello@thepottersanctuary.co.uk.
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -144,19 +154,22 @@ export default async function QuestionnairePage({
     : null;
 
   return (
-    <main className="questionnaire-page">
-      <div className="questionnaire-shell">
-        <h1>Your consultation</h1>
-        <p className="lede">
-          A few questions to help us tailor your treatment. Your answers are
-          private and will only be seen by your therapist.
-        </p>
-        <QuestionnaireForm
-          bookingId={bookingId}
-          customer={customerSeed}
-          previous={previousSeed}
-        />
-      </div>
-    </main>
+    <>
+      <SageBrandedHeader />
+      <main className="questionnaire-page">
+        <div className="questionnaire-shell">
+          <h1>Your consultation</h1>
+          <p className="lede">
+            A few questions to help us tailor your treatment. Your answers are
+            private and will only be seen by your therapist.
+          </p>
+          <QuestionnaireForm
+            bookingId={bookingId}
+            customer={customerSeed}
+            previous={previousSeed}
+          />
+        </div>
+      </main>
+    </>
   );
 }
