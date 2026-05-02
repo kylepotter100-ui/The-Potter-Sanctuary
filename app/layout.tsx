@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Lora } from "next/font/google";
 import { siteConfig } from "@/lib/site";
+import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
 
 const serif = Cormorant_Garamond({
@@ -50,7 +51,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }
