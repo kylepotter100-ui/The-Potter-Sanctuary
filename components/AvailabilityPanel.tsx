@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 type AvailabilityRow = {
@@ -16,23 +16,40 @@ type BlockedRow = {
   reason: string | null;
 };
 
+type BookingRow = {
+  id: string;
+  booking_date: string;
+  booking_time: string;
+  customer_first_name: string;
+  status: "pending" | "confirmed" | "cancelled";
+};
+
 type Props = {
   availability: AvailabilityRow[];
   blocked: BlockedRow[];
+  bookings: BookingRow[];
 };
 
-const DAYS: Array<{ idx: number; name: string }> = [
-  { idx: 2, name: "Tuesday" },
-  { idx: 3, name: "Wednesday" },
-  { idx: 4, name: "Thursday" },
-  { idx: 5, name: "Friday" },
-  { idx: 6, name: "Saturday" },
+const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 function generateSlots(): string[] {
   const out: string[] = [];
-  let m = 9 * 60 + 30; // 09:30
-  const end = 19 * 60; // 19:00 inclusive
+  let m = 9 * 60 + 30;
+  const end = 19 * 60;
   while (m <= end) {
     const h = Math.floor(m / 60);
     const mm = m % 60;
@@ -41,11 +58,41 @@ function generateSlots(): string[] {
   }
   return out;
 }
-
 const SLOTS = generateSlots();
 
 function normalize(t: string): string {
   return t.length === 5 ? `${t}:00` : t;
+}
+
+function isoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+// Monday as first day of week (en-GB convention).
+function startOfWeek(d: Date): Date {
+  const out = new Date(d);
+  out.setHours(0, 0, 0, 0);
+  const dow = out.getDay(); // 0=Sun .. 6=Sat
+  const diff = dow === 0 ? -6 : 1 - dow;
+  out.setDate(out.getDate() + diff);
+  return out;
+}
+
+function addDays(d: Date, n: number): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + n);
+  return out;
+}
+
+function formatLong(d: Date): string {
+  return d.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 }
 
 function formatBlockedDate(iso: string): string {
@@ -57,22 +104,76 @@ function formatBlockedDate(iso: string): string {
   });
 }
 
-export default function AvailabilityPanel({ availability, blocked }: Props) {
+export default function AvailabilityPanel({
+  availability,
+  blocked,
+  bookings,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [, setRefreshTick] = useState(0);
 
-  // Build a quick-lookup map: "day:HH:MM:SS" → is_active
-  const map = new Map<string, boolean>();
-  for (const a of availability) {
-    map.set(`${a.day_of_week}:${normalize(a.slot_time)}`, a.is_active);
+  const todayStart = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t;
+  }, []);
+
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
+
+  // Build a quick-lookup map for the weekly availability template.
+  // Mutated optimistically when toggling — that's why we trigger refreshTick.
+  const map = useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const a of availability) {
+      m.set(`${a.day_of_week}:${normalize(a.slot_time)}`, a.is_active);
+    }
+    return m;
+  }, [availability]);
+
+  // Map booking_date → { "HH:MM" → "first_name" }
+  const bookingsByDate = useMemo(() => {
+    const out: Record<string, Record<string, string>> = {};
+    for (const b of bookings) {
+      const date = b.booking_date;
+      const time = String(b.booking_time).slice(0, 5);
+      if (!out[date]) out[date] = {};
+      out[date][time] = b.customer_first_name;
+    }
+    return out;
+  }, [bookings]);
+
+  const blockedSet = useMemo(
+    () => new Set(blocked.map((b) => b.blocked_date)),
+    [blocked]
+  );
+
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  );
+
+  function shiftWeek(delta: number) {
+    setWeekStart((prev) => addDays(prev, delta * 7));
   }
 
-  const [date, setDate] = useState("");
-  const [reason, setReason] = useState("");
-  const [blockError, setBlockError] = useState<string | null>(null);
+  function thisWeek() {
+    setWeekStart(startOfWeek(new Date()));
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    setSelectedDate(t);
+  }
 
-  async function toggleSlot(day: number, slot: string, currentlyActive: boolean) {
+  async function toggleSlot(
+    day: number,
+    slot: string,
+    currentlyActive: boolean
+  ) {
     const next = !currentlyActive;
     map.set(`${day}:${normalize(slot)}`, next);
     setRefreshTick((n) => n + 1);
@@ -88,11 +189,15 @@ export default function AvailabilityPanel({ availability, blocked }: Props) {
       });
       startTransition(() => router.refresh());
     } catch {
-      // Roll back optimistic update on failure
       map.set(`${day}:${normalize(slot)}`, currentlyActive);
       setRefreshTick((n) => n + 1);
     }
   }
+
+  // Block-date form state.
+  const [date, setDate] = useState("");
+  const [reason, setReason] = useState("");
+  const [blockError, setBlockError] = useState<string | null>(null);
 
   async function block(e: React.FormEvent) {
     e.preventDefault();
@@ -121,36 +226,122 @@ export default function AvailabilityPanel({ availability, blocked }: Props) {
     if (res.ok) startTransition(() => router.refresh());
   }
 
+  const selectedDow = selectedDate?.getDay();
+  const selectedIso = selectedDate ? isoDate(selectedDate) : null;
+  const selectedDayBookings =
+    selectedIso && bookingsByDate[selectedIso] ? bookingsByDate[selectedIso] : {};
+  const selectedDayBlocked = selectedIso ? blockedSet.has(selectedIso) : false;
+
+  const weekHeader = `Week of ${weekStart.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  })}`;
+
   return (
     <>
-      <h2 style={{ marginBottom: 14 }}>Weekly availability</h2>
-      <p className="lede">
-        Toggle slots on or off for each day. Tuesdays through Saturdays, every
-        30 minutes from 09:30 to 19:00. Changes save automatically.
-      </p>
-      {DAYS.map((d) => (
-        <div key={d.idx} className="day-block">
-          <h3>{d.name}</h3>
-          <div className="slot-grid">
+      {/* Week selector */}
+      <div className="avail-week-bar">
+        <div className="avail-week-label">{weekHeader}</div>
+        <div className="avail-week-nav">
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => shiftWeek(-1)}
+          >
+            ← Previous
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={thisWeek}
+          >
+            This week
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => shiftWeek(1)}
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+
+      {/* Day-of-week buttons */}
+      <div className="avail-day-row">
+        {weekDays.map((d) => {
+          const iso = isoDate(d);
+          const isPast = d < todayStart;
+          const isSelected = selectedIso === iso;
+          return (
+            <button
+              key={iso}
+              type="button"
+              className={`avail-day-btn${isSelected ? " is-selected" : ""}${
+                isPast ? " is-past" : ""
+              }`}
+              onClick={() => setSelectedDate(d)}
+            >
+              <span className="avail-day-name">{DAYS_SHORT[d.getDay()]}</span>
+              <span className="avail-day-date">
+                {d.getDate()} {MONTHS_SHORT[d.getMonth()]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Time slots for the selected day */}
+      {selectedDate && selectedDow !== undefined && (
+        <section className="avail-day-detail">
+          <h2 style={{ marginBottom: 6 }}>
+            Available slots for {formatLong(selectedDate)}
+          </h2>
+          {selectedDayBlocked && (
+            <p className="error-text">
+              This date is in your blocked dates list — slots will not appear
+              to customers regardless of the toggles below.
+            </p>
+          )}
+          <p className="lede" style={{ marginBottom: 14 }}>
+            Sage = visible to public. Grey outline = hidden. Booked slots can&apos;t
+            be toggled.
+          </p>
+          <div className="avail-slot-grid">
             {SLOTS.map((slot) => {
-              const active = map.get(`${d.idx}:${normalize(slot)}`) ?? false;
+              const active = map.get(`${selectedDow}:${normalize(slot)}`) ?? false;
+              const bookedBy = selectedDayBookings[slot];
+              if (bookedBy) {
+                return (
+                  <div
+                    key={slot}
+                    className="avail-slot is-booked"
+                    title={`Booked by ${bookedBy}`}
+                  >
+                    <span className="avail-slot-time">{slot}</span>
+                    <span className="avail-slot-tag">Booked · {bookedBy}</span>
+                  </div>
+                );
+              }
               return (
                 <button
                   key={slot}
                   type="button"
-                  className={`slot-toggle${active ? " is-active" : ""}`}
-                  onClick={() => toggleSlot(d.idx, slot, active)}
+                  className={`avail-slot${active ? " is-active" : ""}`}
+                  onClick={() => toggleSlot(selectedDow, slot, active)}
                   disabled={pending}
                 >
-                  {slot}
+                  <span className="avail-slot-time">{slot}</span>
                 </button>
               );
             })}
           </div>
-        </div>
-      ))}
+        </section>
+      )}
 
-      <h2 style={{ marginTop: 36, marginBottom: 14 }}>Blocked dates</h2>
+      {/* Blocked dates */}
+      <h2 style={{ marginTop: 36, marginBottom: 14 }}>Block specific dates</h2>
       <p className="lede">
         Holidays, training days, anything else. Blocked dates take precedence
         over the weekly grid.
@@ -158,7 +349,7 @@ export default function AvailabilityPanel({ availability, blocked }: Props) {
 
       <form onSubmit={block} className="admin-card" style={{ marginBottom: 16 }}>
         {blockError && <div className="error-text">{blockError}</div>}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(160px, 200px) 1fr auto", gap: 12, alignItems: "end" }}>
+        <div className="avail-block-grid">
           <div className="field" style={{ marginBottom: 0 }}>
             <label htmlFor="block-date">Date</label>
             <input
@@ -194,7 +385,9 @@ export default function AvailabilityPanel({ availability, blocked }: Props) {
               <span>
                 <strong>{formatBlockedDate(b.blocked_date)}</strong>
                 {b.reason ? (
-                  <span style={{ opacity: 0.65, marginLeft: 10 }}>· {b.reason}</span>
+                  <span style={{ opacity: 0.65, marginLeft: 10 }}>
+                    · {b.reason}
+                  </span>
                 ) : null}
               </span>
               <button

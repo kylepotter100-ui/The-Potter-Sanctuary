@@ -213,6 +213,7 @@ export async function POST(req: Request) {
           gender: payload.gender ?? "—",
           message: payload.message ?? "",
           timestamp: formatTimestamp(),
+          siteUrl,
         })
       ),
     ]);

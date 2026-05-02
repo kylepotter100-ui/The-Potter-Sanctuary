@@ -1,13 +1,14 @@
+import { Section } from "@react-email/components";
 import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Section,
-  Text,
-} from "@react-email/components";
+  ContentSection,
+  Divider,
+  EmailLayout,
+  INK,
+  INK_SOFT,
+  Paragraph,
+  SectionHeading,
+  LINE,
+} from "./_shared";
 
 type Props = {
   firstName: string;
@@ -18,14 +19,8 @@ type Props = {
   customerEmail: string;
   customerPhone: string;
   reason?: string | null;
+  siteUrl: string;
 };
-
-const INK = "#1C1C1C";
-const INK_SOFT = "#4A4A4A";
-const LINE = "rgba(28,28,28,0.12)";
-
-const SERIF = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
-const SANS = "'Lora', Georgia, serif";
 
 export default function OwnerCancellationByCustomer({
   firstName,
@@ -36,97 +31,55 @@ export default function OwnerCancellationByCustomer({
   customerEmail,
   customerPhone,
   reason,
+  siteUrl,
 }: Props) {
   return (
-    <Html lang="en">
-      <Head />
-      <Preview>
-        Booking cancelled by customer — {firstName} {lastName}, {bookingDate}
-      </Preview>
-      <Body
-        style={{
-          margin: 0,
-          padding: 0,
-          background: "#ffffff",
-          fontFamily: SANS,
-          color: INK,
-        }}
-      >
-        <Container style={{ maxWidth: 600, margin: "0 auto", padding: 32 }}>
-          <Heading
-            as="h1"
-            style={{
-              fontFamily: SERIF,
-              fontWeight: 400,
-              fontSize: 24,
-              margin: "0 0 16px",
-            }}
-          >
-            Booking cancelled by customer
-          </Heading>
-          <Text
-            style={{
-              fontSize: 15,
-              lineHeight: 1.7,
-              color: INK_SOFT,
-              margin: "0 0 18px",
-            }}
-          >
-            {firstName} {lastName} has cancelled their{" "}
-            <strong>{treatmentName}</strong> booking on{" "}
-            <strong>{bookingDate}</strong> at <strong>{bookingTime}</strong>.
-          </Text>
+    <EmailLayout
+      siteUrl={siteUrl}
+      preview={`Booking cancelled by customer — ${firstName} ${lastName}, ${bookingDate}`}
+    >
+      <ContentSection>
+        <SectionHeading>Booking cancelled by customer</SectionHeading>
+        <Paragraph>
+          {firstName} {lastName} has cancelled their{" "}
+          <strong>{treatmentName}</strong> booking on{" "}
+          <strong>{bookingDate}</strong> at <strong>{bookingTime}</strong>.
+        </Paragraph>
 
-          {reason && reason.trim().length > 0 ? (
-            <Section
+        {reason && reason.trim().length > 0 ? (
+          <>
+            <Divider />
+            <SectionHeading>Reason</SectionHeading>
+            <p
               style={{
-                border: `1px solid ${LINE}`,
-                borderRadius: 8,
-                padding: "14px 16px",
-                margin: "0 0 18px",
+                fontSize: 15,
+                lineHeight: 1.6,
+                color: INK,
+                margin: 0,
+                whiteSpace: "pre-wrap",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: INK_SOFT,
-                  margin: "0 0 6px",
-                }}
-              >
-                Reason
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  color: INK,
-                  margin: 0,
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {reason}
-              </Text>
-            </Section>
-          ) : null}
+              {reason}
+            </p>
+          </>
+        ) : null}
 
-          <Section
-            style={{
-              border: `1px solid ${LINE}`,
-              borderRadius: 8,
-              padding: "14px 16px",
-            }}
-          >
-            <Text style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 4px" }}>
-              <strong>Email:</strong> {customerEmail}
-            </Text>
-            <Text style={{ fontSize: 13, color: INK_SOFT, margin: 0 }}>
-              <strong>Phone:</strong> {customerPhone}
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+        <Divider />
+        <Section
+          style={{
+            border: `1px solid ${LINE}`,
+            borderRadius: 8,
+            padding: "14px 16px",
+          }}
+        >
+          <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 4px" }}>
+            <strong style={{ color: INK }}>Email:</strong> {customerEmail}
+          </p>
+          <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>
+            <strong style={{ color: INK }}>Phone:</strong> {customerPhone}
+          </p>
+        </Section>
+      </ContentSection>
+    </EmailLayout>
   );
 }

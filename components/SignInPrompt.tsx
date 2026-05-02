@@ -88,7 +88,7 @@ export default function SignInPrompt() {
         remembered.
       </div>
       <div className="actions">
-        <a href="/login?next=/" className="signin-link">
+        <a href="/login?next=%2F%23booking" className="signin-link">
           Sign in
         </a>
       </div>

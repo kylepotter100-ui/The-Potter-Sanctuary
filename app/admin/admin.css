@@ -375,6 +375,140 @@
   font-size: 14px;
 }
 
+/* ----- Availability redesign (week selector + day buttons) ----- */
+.avail-week-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.avail-week-label {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 22px;
+  color: var(--admin-ink);
+}
+.avail-week-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.avail-day-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.avail-day-btn {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 12px 8px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--admin-ink);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  min-height: 64px;
+}
+.avail-day-btn:hover { border-color: var(--admin-sage); }
+.avail-day-btn.is-selected {
+  background: var(--admin-sage);
+  color: #ffffff;
+  border-color: var(--admin-sage);
+}
+.avail-day-btn.is-past { opacity: 0.55; }
+.avail-day-name {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.avail-day-date {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 16px;
+}
+.avail-day-detail {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.avail-day-detail h2 {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0;
+}
+.avail-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.avail-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  padding: 12px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-line);
+  background: transparent;
+  color: var(--admin-ink-soft);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 52px;
+}
+.avail-slot:hover { border-color: var(--admin-sage); }
+.avail-slot.is-active {
+  background: var(--admin-sage);
+  color: #ffffff;
+  border-color: var(--admin-sage);
+}
+.avail-slot.is-booked {
+  background: var(--admin-cream-soft);
+  border-color: var(--admin-amber-soft);
+  color: var(--admin-ink);
+  cursor: not-allowed;
+}
+.avail-slot-time { font-weight: 500; }
+.avail-slot-tag {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b3d0e;
+}
+.avail-block-grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+@media (max-width: 720px) {
+  .avail-day-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .avail-day-name { font-size: 10px; }
+  .avail-day-date { font-size: 14px; }
+  .avail-slot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .avail-block-grid { grid-template-columns: 1fr; }
+  .avail-block-grid .btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 420px) {
+  .avail-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* ----- Mobile ----- */
 @media (max-width: 720px) {
   .admin-header { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }

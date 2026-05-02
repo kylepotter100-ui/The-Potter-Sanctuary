@@ -54,6 +54,7 @@ export async function POST(
       console.error("[admin status] RESEND_API_KEY missing — confirmation email skipped");
     } else {
       const resend = new Resend(apiKey);
+      const siteUrl = new URL(req.url).origin;
       try {
         const html = await render(
           BookingConfirmed({
@@ -62,6 +63,7 @@ export async function POST(
             bookingDate: formatLongDate(data.booking_date),
             bookingTime: formatTime12h(data.booking_time),
             treatmentPrice: data.treatment_price,
+            siteUrl,
           })
         );
         const result = await resend.emails.send({
