@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import {
+  SUPABASE_COOKIE_ENCODING,
+  SUPABASE_COOKIE_OPTIONS,
+} from "@/lib/supabase-cookie-config";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -12,6 +16,8 @@ export async function createSupabaseServerClient() {
   }
 
   return createServerClient(url, anon, {
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
+    cookieEncoding: SUPABASE_COOKIE_ENCODING,
     cookies: {
       getAll() {
         return cookieStore.getAll();
