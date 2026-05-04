@@ -78,7 +78,10 @@ export function localBusinessJsonLd() {
       latitude: siteConfig.geo.latitude,
       longitude: siteConfig.geo.longitude,
     },
-    openingHoursSpecification: siteConfig.hours.openingHoursSpec,
+    // Hours are set per-date in the booking calendar (by appointment,
+    // varies by day) so we deliberately don't emit fixed opening hours
+    // in JSON-LD — quoting hours we may not actually be open is worse
+    // than omitting the field.
     areaServed: [
       { "@type": "Place", name: "Beck Row" },
       { "@type": "Place", name: "Mildenhall" },
