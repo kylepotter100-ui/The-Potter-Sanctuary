@@ -42,7 +42,7 @@ export default async function LoginPage({
         </p>
         {expired && (
           <div role="alert" className="login-error login-error-banner">
-            Your sign-in link has expired or already been used. Please request
+            Your sign-in code has expired or already been used. Please request
             a new code below.
           </div>
         )}

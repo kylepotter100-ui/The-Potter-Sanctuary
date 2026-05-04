@@ -5,10 +5,9 @@ import { useEffect } from "react";
 // Smooth-scrolls to a target element if the URL specifies one. Supports
 // two sources, in priority order:
 //
-//   1. ?scrollTo=<id>  — used by the magic-link / login flow. Lives in the
-//      query string so the value survives Supabase's redirect chain (a
-//      hash fragment doesn't, because Supabase decodes URL-encoded `#`
-//      and the appended `&code=` ends up as part of the fragment).
+//   1. ?scrollTo=<id>  — used by post-login redirects and CTA links from
+//      other pages. Kept in the query string so the value survives any
+//      redirect chain a hash fragment wouldn't.
 //   2. #<id> — plain anchor links (e.g. /#booking).
 //
 // After acting on `?scrollTo=`, we strip it from the URL with
