@@ -77,6 +77,10 @@ export default function Footer() {
                 {siteConfig.contact.instagram}
               </a>
             </li>
+            <li className="footer-signin">
+              Already a client?{" "}
+              <Link href="/login">Sign in</Link>
+            </li>
           </ul>
         </div>
         <div className="col">

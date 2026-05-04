@@ -5,17 +5,24 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Props = {
+  // True on the homepage — we can use plain hash anchors because the
+  // sections live on the same page. On any other page we route through
+  // /?scrollTo=<id> so HashScroll smooth-scrolls after navigation.
   homeAnchors?: boolean;
   // Force the sage-backed look from initial paint. Use on any page whose
   // body sits behind the (fixed) nav with a non-sage background — e.g.
-  // legal pages, treatments, visit. Without this the nav's cream-coloured
-  // text is invisible against a cream page background.
+  // legal pages. Without this the nav's cream text is invisible.
   solid?: boolean;
 };
 
+const NAV_ITEMS: Array<{ label: string; anchor: string }> = [
+  { label: "Treatments", anchor: "services" },
+  { label: "Products", anchor: "products" },
+  { label: "Booking", anchor: "booking" },
+];
+
 export default function Nav({ homeAnchors = false, solid = false }: Props) {
   const [scrolled, setScrolled] = useState(false);
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -24,25 +31,12 @@ export default function Nav({ homeAnchors = false, solid = false }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/me", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { user: null }))
-      .then((data: { user?: { id: string } | null }) => {
-        if (!cancelled) setSignedIn(!!data.user);
-      })
-      .catch(() => {
-        if (!cancelled) setSignedIn(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Booking CTA still anchors to the homepage booking section. From any
-  // page other than `/`, send through ?scrollTo=booking so HashScroll
-  // smooths into the booking calendar after the nav lands.
-  const bookingHref = homeAnchors ? "#booking" : "/?scrollTo=booking";
+  // From the homepage we can link straight to `#anchor`. From any other
+  // page we send through /?scrollTo=anchor — HashScroll then smooth-
+  // scrolls to the matching id after navigation lands.
+  function hrefFor(anchor: string): string {
+    return homeAnchors ? `#${anchor}` : `/?scrollTo=${anchor}`;
+  }
 
   return (
     <nav
@@ -61,16 +55,13 @@ export default function Nav({ homeAnchors = false, solid = false }: Props) {
         <span className="name">The Potter Sanctuary</span>
       </Link>
       <div className="links">
-        <Link href="/">Home</Link>
-        <Link href="/treatments">Treatments</Link>
-        <Link href="/visit">Visit</Link>
-        {signedIn === true ? (
-          <Link href="/account">Account</Link>
-        ) : signedIn === false ? (
-          <Link href="/login">Sign in</Link>
-        ) : null}
+        {NAV_ITEMS.map((item) => (
+          <Link key={item.anchor} href={hrefFor(item.anchor)}>
+            {item.label}
+          </Link>
+        ))}
       </div>
-      <Link href={bookingHref} className="cta">
+      <Link href={hrefFor("booking")} className="cta">
         Book a Treatment
       </Link>
     </nav>
