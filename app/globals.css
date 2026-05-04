@@ -2047,6 +2047,15 @@
   }
   footer.site-footer .footer-legal a:hover { opacity: 1; }
   footer.site-footer .footer-legal span[aria-hidden="true"] { opacity: 0.5; }
+  footer.site-footer .footer-signin {
+    margin-top: 6px;
+    opacity: 0.7;
+    font-size: 13px;
+  }
+  footer.site-footer .footer-signin a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 
   /* ===== Cookie banner ===== */
   .cookie-banner {
