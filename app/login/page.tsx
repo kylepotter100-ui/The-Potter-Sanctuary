@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LoginForm from "@/components/LoginForm";
+import SageBrandedHeader from "@/components/SageBrandedHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -30,32 +31,32 @@ export default async function LoginPage({
   const expired = params.expired === "1";
 
   return (
-    <main className="login-page">
-      <div className="login-card">
-        <Link href="/" className="login-brand">
-          The Potter Sanctuary
-        </Link>
-        <h1>Welcome to your sanctuary</h1>
-        <p className="login-lede">
-          Enter your email address and we&apos;ll send you a 6-digit sign-in
-          code.
-        </p>
-        {expired && (
-          <div role="alert" className="login-error login-error-banner">
-            Your sign-in code has expired or already been used. Please request
-            a new code below.
-          </div>
-        )}
-        {errorMessage && !expired && (
-          <div role="alert" className="login-error login-error-banner">
-            {decodeURIComponent(errorMessage)}
-          </div>
-        )}
-        <LoginForm next={next} />
-        <p className="login-foot">
-          <Link href="/">← Back to the studio</Link>
-        </p>
-      </div>
-    </main>
+    <>
+      <SageBrandedHeader />
+      <main className="login-page">
+        <div className="login-card">
+          <h1>Welcome to your sanctuary</h1>
+          <p className="login-lede">
+            Enter your email address and we&apos;ll send you a 6-digit sign-in
+            code.
+          </p>
+          {expired && (
+            <div role="alert" className="login-error login-error-banner">
+              Your sign-in code has expired or already been used. Please
+              request a new code below.
+            </div>
+          )}
+          {errorMessage && !expired && (
+            <div role="alert" className="login-error login-error-banner">
+              {decodeURIComponent(errorMessage)}
+            </div>
+          )}
+          <LoginForm next={next} />
+          <p className="login-foot">
+            <Link href="/">← Back to the studio</Link>
+          </p>
+        </div>
+      </main>
+    </>
   );
 }
