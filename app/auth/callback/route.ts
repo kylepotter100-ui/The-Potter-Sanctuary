@@ -4,18 +4,25 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+// Legacy/safety-net route for old magic-link emails still sitting in
+// inboxes. The primary auth path is now OTP-code via verifyOtp() from
+// LoginForm, which doesn't pass through this route at all. If anything
+// fails here we just send the user back to /login?expired=1 with a
+// friendly message inviting them to request a fresh code.
+
 function safeNext(raw: string | null): string {
   if (!raw) return "/account";
   // Only allow same-origin relative paths. Reject protocol-relative ("//foo")
   // and absolute URLs to avoid open-redirect.
   if (!raw.startsWith("/") || raw.startsWith("//")) return "/account";
-  // Strip URL fragments. They survive in our own redirect chain just fine,
-  // but Supabase's verifier sometimes decodes `%23` to a literal `#`,
-  // which then chews up the appended `&code=…` and breaks PKCE. Use the
-  // `?scrollTo=` query convention (handled client-side by HashScroll)
-  // for any post-auth scroll targeting instead.
+  // Strip URL fragments — Supabase's verifier sometimes decodes `%23` to
+  // a literal `#`, which then chews up the appended `&code=…`.
   const hashIdx = raw.indexOf("#");
   return hashIdx >= 0 ? raw.slice(0, hashIdx) : raw;
+}
+
+function expiredRedirect(origin: string) {
+  return NextResponse.redirect(new URL("/login?expired=1", origin));
 }
 
 export async function GET(request: Request) {
@@ -24,9 +31,7 @@ export async function GET(request: Request) {
   const next = safeNext(url.searchParams.get("next"));
 
   if (!code) {
-    return NextResponse.redirect(
-      new URL("/login?error=could_not_authenticate", url.origin)
-    );
+    return expiredRedirect(url.origin);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -38,9 +43,7 @@ export async function GET(request: Request) {
       "[auth-callback]",
       JSON.stringify(exchangeError, Object.getOwnPropertyNames(exchangeError))
     );
-    return NextResponse.redirect(
-      new URL("/login?error=could_not_authenticate", url.origin)
-    );
+    return expiredRedirect(url.origin);
   }
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -53,9 +56,7 @@ export async function GET(request: Request) {
         userError ? Object.getOwnPropertyNames(userError) : undefined
       )
     );
-    return NextResponse.redirect(
-      new URL("/login?error=could_not_authenticate", url.origin)
-    );
+    return expiredRedirect(url.origin);
   }
 
   // Best-effort: ensure a customer row exists for the authenticated user so
