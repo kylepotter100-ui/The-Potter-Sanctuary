@@ -147,6 +147,23 @@ CREATE TABLE IF NOT EXISTS public.slot_overrides (
 );
 CREATE INDEX IF NOT EXISTS slot_overrides_date_idx ON public.slot_overrides (override_date);
 
+-- ===== Row Level Security defaults =====
+-- Enable RLS on every table that holds personal or health data so
+-- fresh deployments are closed by default. Per-role policies live in
+-- supabase/rls-policies.sql — that file must be run after this one.
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.consultation_responses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_summaries_sent ENABLE ROW LEVEL SECURITY;
+
+-- ===== Active-slot uniqueness =====
+-- DB-level guard against double-booking. Two simultaneous inserts for the
+-- same (date, time) where status is pending or confirmed will fail with
+-- a 23505 unique_violation; the booking API surfaces that as a friendly
+-- 409 to the customer.
+CREATE UNIQUE INDEX IF NOT EXISTS bookings_active_slot_unique
+ON public.bookings (booking_date, booking_time)
+WHERE status IN ('pending', 'confirmed');
+
 -- ===== Seed default availability =====
 -- Tuesday–Saturday (2..6), every 30 minutes from 09:30 to 19:00 inclusive.
 -- Re-running is safe thanks to the unique constraint.

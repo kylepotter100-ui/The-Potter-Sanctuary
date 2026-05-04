@@ -134,6 +134,24 @@ export async function POST(req: Request) {
       "[booking] supabase insert failed",
       JSON.stringify(insertError)
     );
+    // Postgres 23505 = unique_violation. With the partial unique index on
+    // (booking_date, booking_time) WHERE status IN ('pending','confirmed'),
+    // this fires when two customers race to book the same slot.
+    if (
+      (insertError as { code?: string }).code === "23505" ||
+      /duplicate key|unique constraint|bookings_active_slot_unique/i.test(
+        insertError.message ?? ""
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error: "slot_taken",
+          message:
+            "Sorry, that time slot was just taken — please pick another time.",
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: "Could not save your booking. Please try again." },
       { status: 500 }

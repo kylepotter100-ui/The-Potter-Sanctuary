@@ -1,4 +1,18 @@
 -- Run this in Supabase dashboard → SQL Editor after the main schema. Idempotent — safe to re-run.
+--
+-- IMPORTANT: re-run this file after pulling the Phase 4.5 changes. The
+-- ENABLE ROW LEVEL SECURITY statements below were missing from earlier
+-- versions, which meant the customer / consultation policies were inert
+-- on tables created via raw SQL. Re-running this in the Supabase SQL
+-- Editor activates them on the live database.
+
+-- Enable RLS on every table that holds personal or health data so the
+-- CREATE POLICY statements below are actually enforced.
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.consultation_responses ENABLE ROW LEVEL SECURITY;
+-- daily_summaries_sent is admin/server-only — no policies, but RLS on by
+-- default closes the table to anon reads.
+ALTER TABLE public.daily_summaries_sent ENABLE ROW LEVEL SECURITY;
 
 -- Customers table policies
 DROP POLICY IF EXISTS "Customers can view own profile" ON public.customers;

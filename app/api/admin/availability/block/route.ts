@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase";
 
+async function isAdmin(): Promise<boolean> {
+  const store = await cookies();
+  return store.get("admin_session")?.value === "authenticated";
+}
+
 export async function POST(req: Request) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 403 });
+  }
   if (!supabaseAdmin) {
     return NextResponse.json(
       { error: "Supabase is not configured on the server" },
