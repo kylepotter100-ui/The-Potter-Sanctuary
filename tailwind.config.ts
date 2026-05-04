@@ -10,8 +10,8 @@ const config: Config = {
     extend: {
       colors: {
         sage: {
-          DEFAULT: "#9CA98A",
-          deep: "#3A4F33",
+          DEFAULT: "#8A9E85",
+          deep: "#6E8068",
           soft: "#B8C4A6",
         },
         cream: {

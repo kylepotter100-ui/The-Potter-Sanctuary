@@ -6,9 +6,14 @@ import { useEffect, useState } from "react";
 
 type Props = {
   homeAnchors?: boolean;
+  // Force the sage-backed look from initial paint. Use on any page whose
+  // body sits behind the (fixed) nav with a non-sage background — e.g.
+  // legal pages, treatments, visit. Without this the nav's cream-coloured
+  // text is invisible against a cream page background.
+  solid?: boolean;
 };
 
-export default function Nav({ homeAnchors = false }: Props) {
+export default function Nav({ homeAnchors = false, solid = false }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
@@ -40,7 +45,10 @@ export default function Nav({ homeAnchors = false }: Props) {
   const bookingHref = homeAnchors ? "#booking" : "/?scrollTo=booking";
 
   return (
-    <nav className={`top${scrolled ? " scrolled" : ""}`} id="nav">
+    <nav
+      className={`top${scrolled || solid ? " scrolled" : ""}`}
+      id="nav"
+    >
       <Link href="/" className="brand" aria-label="The Potter Sanctuary, home">
         <Image
           src="/sanctuary-logo.png"

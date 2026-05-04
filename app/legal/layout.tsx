@@ -8,7 +8,7 @@ export default function LegalLayout({
 }) {
   return (
     <>
-      <Nav />
+      <Nav solid />
       <main className="legal-page">
         <article className="legal-shell">{children}</article>
       </main>

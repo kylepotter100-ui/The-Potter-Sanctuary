@@ -4,8 +4,11 @@
 
 @layer base {
   :root {
-    --sage-deep: #7A8A6B;
-    --sage: #9CA98A;
+    /* Canonical brand sage — match emails, admin, legal pages, branded
+       headers. Both shades are the single source of truth across the
+       entire customer site. */
+    --sage-deep: #6E8068;
+    --sage: #8A9E85;
     --sage-mid: #A8B498;
     --sage-soft: #B8C2A8;
     --sage-pale: #D6DCC9;
@@ -164,7 +167,7 @@
     border-bottom: 1px solid transparent;
   }
   nav.top.scrolled {
-    background: rgba(156, 169, 138, 0.92);
+    background: rgba(138, 158, 133, 0.92);
     backdrop-filter: blur(10px);
     padding: 14px 44px;
     border-bottom: 1px solid rgba(239, 232, 214, 0.18);
@@ -983,7 +986,7 @@
     font-family: inherit;
   }
   .svc-option:hover { border-color: var(--sage-deep); }
-  .svc-option.active { border-color: var(--sage-deep); background: rgba(122, 138, 107, 0.06); }
+  .svc-option.active { border-color: var(--sage-deep); background: rgba(110, 128, 104, 0.06); }
   .svc-option .num {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;
     font-size: 13px;
@@ -1921,7 +1924,9 @@
   /* ===== Legal pages ===== */
   .legal-page {
     background: #F5F0E8;
-    min-height: calc(100vh - 80px);
+    min-height: 100vh;
+    /* Account for the fixed top nav (~80px desktop, ~64px mobile). */
+    padding-top: 90px;
     padding-bottom: 80px;
     color: #1C1C1C;
   }
@@ -1941,7 +1946,7 @@
   }
   .legal-shell {
     max-width: 720px;
-    margin: 64px auto 0;
+    margin: 24px auto 0;
     padding: 48px 40px;
     background: #ffffff;
     border-radius: 14px;
