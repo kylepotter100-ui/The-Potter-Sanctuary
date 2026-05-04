@@ -21,7 +21,7 @@ const sans = Lora({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#9CA98A",
+  themeColor: "#8A9E85",
   width: "device-width",
   initialScale: 1,
 };
