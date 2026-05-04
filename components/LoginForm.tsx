@@ -12,19 +12,13 @@ type Step = "email" | "code";
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
-// OTP-only sign-in flow.
-//
-// Why no magic link: cross-browser cookie issues on mobile (the user
-// requests in Safari, taps the link in the Mail app's in-app webview,
-// the PKCE verifier cookie is lost, exchange fails). Apps like Notion,
-// Linear, and Vercel have all converged on OTP-only for this reason.
+// OTP-only sign-in flow. Email + 6-digit code. No URL-based redirect
+// path; cookie state from the requesting browser is irrelevant, which
+// is what makes this reliable on mobile.
 //
 // Supabase email-template requirement: the template that fires for
 // `signInWithOtp` MUST include `{{ .Token }}` so the customer sees a
-// 6-digit code. The link `{{ .ConfirmationURL }}` is no longer relied
-// on by the UI (the auth/callback route still tolerates a stale link
-// landing there from old emails — it redirects to /login?expired=1 if
-// it can't exchange).
+// 6-digit code.
 export default function LoginForm({ next }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
