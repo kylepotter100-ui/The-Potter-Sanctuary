@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Props = {
@@ -10,16 +10,21 @@ type Props = {
 
 type Step = "email" | "code";
 
-// Two-step sign-in flow:
-//   1. Email — request a one-time code (Supabase sends both a 6-digit
-//      token and a magic link in the same email).
-//   2. Code  — type the 6-digit token to sign in. This avoids the PKCE
-//      cookie-mismatch problem when mobile users open the magic link
-//      in their email client's in-app browser instead of the browser
-//      that requested it.
+const RESEND_COOLDOWN_SECONDS = 30;
+
+// OTP-only sign-in flow.
 //
-// The magic link still works as a backup whenever cookies survive the
-// round-trip (typically desktop). Either path lands the user at `next`.
+// Why no magic link: cross-browser cookie issues on mobile (the user
+// requests in Safari, taps the link in the Mail app's in-app webview,
+// the PKCE verifier cookie is lost, exchange fails). Apps like Notion,
+// Linear, and Vercel have all converged on OTP-only for this reason.
+//
+// Supabase email-template requirement: the template that fires for
+// `signInWithOtp` MUST include `{{ .Token }}` so the customer sees a
+// 6-digit code. The link `{{ .ConfirmationURL }}` is no longer relied
+// on by the UI (the auth/callback route still tolerates a stale link
+// landing there from old emails — it redirects to /login?expired=1 if
+// it can't exchange).
 export default function LoginForm({ next }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
@@ -27,36 +32,79 @@ export default function LoginForm({ next }: Props) {
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resent, setResent] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function requestCode(e?: React.FormEvent) {
-    if (e) e.preventDefault();
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Please enter a valid email address.");
+  // Cooldown countdown for the resend button.
+  useEffect(() => {
+    if (resendIn <= 0) {
+      if (cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
+      }
       return;
     }
-    setSubmitting(true);
+    if (!cooldownTimer.current) {
+      cooldownTimer.current = setInterval(() => {
+        setResendIn((s) => Math.max(0, s - 1));
+      }, 1000);
+    }
+    return () => {
+      if (cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
+      }
+    };
+  }, [resendIn]);
+
+  function startCooldown() {
+    setResendIn(RESEND_COOLDOWN_SECONDS);
+  }
+
+  async function sendCode() {
     setError(null);
-    setResent(false);
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+    setSubmitting(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirectTo },
+        options: {
+          shouldCreateUser: true,
+        },
       });
       if (otpError) throw otpError;
-      setStep("code");
+      return true;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Something went wrong. Try again."
       );
+      return false;
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function verifyCode(e: React.FormEvent) {
+  async function onEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const ok = await sendCode();
+    if (ok) {
+      setStep("code");
+      setCode("");
+      startCooldown();
+    }
+  }
+
+  async function onResend() {
+    if (resendIn > 0) return;
+    const ok = await sendCode();
+    if (ok) startCooldown();
+  }
+
+  async function onCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
     const token = code.trim();
     if (!/^\d{6}$/.test(token)) {
@@ -72,8 +120,17 @@ export default function LoginForm({ next }: Props) {
         token,
         type: "email",
       });
-      if (verifyErr) throw verifyErr;
-      // Sign-in succeeded — land the user where they wanted to go.
+      if (verifyErr) {
+        const msg = verifyErr.message || "";
+        if (/expired/i.test(msg) || /invalid/i.test(msg)) {
+          setError(
+            "That code is invalid or has expired. Please request a new one."
+          );
+        } else {
+          setError(msg || "We couldn't verify that code. Please try again.");
+        }
+        return;
+      }
       const safeNext =
         next.startsWith("/") && !next.startsWith("//") ? next : "/account";
       router.replace(safeNext);
@@ -89,17 +146,13 @@ export default function LoginForm({ next }: Props) {
     }
   }
 
-  async function resend() {
-    await requestCode();
-    if (!error) setResent(true);
-  }
-
   if (step === "code") {
     return (
-      <form className="login-form" onSubmit={verifyCode} noValidate>
+      <form className="login-form" onSubmit={onCodeSubmit} noValidate>
+        <h2 className="login-step-heading">Enter your code</h2>
         <p className="login-hint">
-          We&apos;ve sent a 6-digit code to <strong>{email}</strong>. Enter it
-          below to sign in.
+          We&apos;ve sent a 6-digit code to <strong>{email}</strong>. Check
+          your inbox and enter the code below.
         </p>
         <label htmlFor="login-code">Sign-in code</label>
         <input
@@ -114,11 +167,7 @@ export default function LoginForm({ next }: Props) {
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           required
           autoFocus
-          style={{
-            letterSpacing: "0.4em",
-            fontSize: "20px",
-            textAlign: "center",
-          }}
+          className="login-code-input"
         />
         {error && (
           <div role="alert" className="login-error">
@@ -128,17 +177,7 @@ export default function LoginForm({ next }: Props) {
         <button type="submit" className="login-btn" disabled={submitting}>
           {submitting ? "Signing in…" : "Sign in"}
         </button>
-        <p className="login-hint" style={{ marginTop: 14 }}>
-          Or tap the magic link in the same email — both work.
-        </p>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: 8,
-            fontSize: 13,
-          }}
-        >
+        <div className="login-step-actions">
           <button
             type="button"
             onClick={() => {
@@ -146,31 +185,17 @@ export default function LoginForm({ next }: Props) {
               setCode("");
               setError(null);
             }}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--sage-deep, #6E8068)",
-              cursor: "pointer",
-              padding: 0,
-              fontFamily: "inherit",
-            }}
+            className="login-link-btn"
           >
             ← Use a different email
           </button>
           <button
             type="button"
-            onClick={resend}
-            disabled={submitting}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--sage-deep, #6E8068)",
-              cursor: "pointer",
-              padding: 0,
-              fontFamily: "inherit",
-            }}
+            onClick={onResend}
+            disabled={submitting || resendIn > 0}
+            className="login-link-btn"
           >
-            {resent ? "Sent again ✓" : "Resend code"}
+            {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
           </button>
         </div>
       </form>
@@ -178,7 +203,7 @@ export default function LoginForm({ next }: Props) {
   }
 
   return (
-    <form className="login-form" onSubmit={requestCode} noValidate>
+    <form className="login-form" onSubmit={onEmailSubmit} noValidate>
       <label htmlFor="login-email">Email</label>
       <input
         id="login-email"
@@ -197,9 +222,6 @@ export default function LoginForm({ next }: Props) {
       <button type="submit" className="login-btn" disabled={submitting}>
         {submitting ? "Sending…" : "Send my code"}
       </button>
-      <p className="login-hint" style={{ marginTop: 12 }}>
-        We&apos;ll email you a one-time code and a sign-in link. Either works.
-      </p>
     </form>
   );
 }

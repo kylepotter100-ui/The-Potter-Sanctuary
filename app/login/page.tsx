@@ -10,7 +10,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type SearchParams = Promise<{ next?: string; error?: string }>;
+type SearchParams = Promise<{
+  next?: string;
+  error?: string;
+  expired?: string;
+}>;
 
 export default async function LoginPage({
   searchParams,
@@ -18,10 +22,12 @@ export default async function LoginPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const next = typeof params.next === "string" && params.next.startsWith("/")
-    ? params.next
-    : "/account";
+  const next =
+    typeof params.next === "string" && params.next.startsWith("/")
+      ? params.next
+      : "/account";
   const errorMessage = params.error;
+  const expired = params.expired === "1";
 
   return (
     <main className="login-page">
@@ -31,10 +37,16 @@ export default async function LoginPage({
         </Link>
         <h1>Welcome to your sanctuary</h1>
         <p className="login-lede">
-          Enter your email and we'll send you a secure link to access your
-          account — no password required.
+          Enter your email address and we&apos;ll send you a 6-digit sign-in
+          code.
         </p>
-        {errorMessage && (
+        {expired && (
+          <div role="alert" className="login-error login-error-banner">
+            Your sign-in link has expired or already been used. Please request
+            a new code below.
+          </div>
+        )}
+        {errorMessage && !expired && (
           <div role="alert" className="login-error login-error-banner">
             {decodeURIComponent(errorMessage)}
           </div>

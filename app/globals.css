@@ -1483,6 +1483,44 @@
   .login-error-banner {
     margin-bottom: 16px;
   }
+  .login-step-heading {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 26px;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+  .login-code-input {
+    letter-spacing: 0.4em;
+    font-size: 22px !important;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace !important;
+  }
+  .login-step-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .login-link-btn {
+    background: none;
+    border: none;
+    color: var(--sage-deep);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 6px 0;
+  }
+  .login-link-btn:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+  .login-link-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
   .login-success {
     text-align: center;
     padding: 8px 0;
