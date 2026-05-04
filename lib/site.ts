@@ -31,18 +31,13 @@ export const siteConfig = {
     instagram: "@thepottersanctuary",
   },
   hours: {
-    // Concise, accurate phrasing — exact times vary per day and are
-    // shown in the booking calendar.
-    days: "By appointment, Tue–Sat",
+    // Studio operates by appointment any day of the week — actual
+    // availability is set per-date by the owner via the admin
+    // availability page, and the booking calendar is the source of
+    // truth. We deliberately don't quote fixed opening hours here.
+    days: "By appointment, Monday to Sunday",
+    note: "Availability varies by day",
     times: null,
-    openingHoursSpec: [
-      {
-        "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-        opens: "09:30",
-        closes: "19:00",
-      },
-    ],
   },
   priceRange: "££",
 } as const;

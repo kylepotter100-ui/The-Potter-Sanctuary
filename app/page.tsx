@@ -322,7 +322,7 @@ export default function HomePage() {
                 <div className="row">
                   <div className="lab">Hours</div>
                   <div className="val">
-                    Tuesday to Saturday — hours vary by day.
+                    Monday to Sunday — availability varies by day.
                     <br />
                     Please check available slots at booking.
                   </div>

@@ -47,6 +47,7 @@ export default function Footer() {
           <h5>Visit</h5>
           <ul>
             <li>{siteConfig.hours.days}</li>
+            <li>{siteConfig.hours.note}</li>
             {siteConfig.hours.times && <li>{siteConfig.hours.times}</li>}
           </ul>
         </div>
