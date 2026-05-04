@@ -92,6 +92,62 @@ export default function Booking({ preselectId }: Props) {
   const [detailsUnchanged, setDetailsUnchanged] = useState<boolean | null>(null);
 
   // Pull live availability + blocked dates from the admin-controlled tables so
+  // Scroll the relevant section into view on mobile when the step
+  // changes. Desktop layouts already keep everything visible, so we skip
+  // the smooth-scroll there to avoid feeling jumpy.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(min-width: 769px)").matches) return;
+    const target = document.getElementById(`step-pane-${step}`);
+    if (target) {
+      // Defer one frame so the pane's `.active` class has applied and
+      // its height is correct before we measure scroll offsets.
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [step]);
+
+  // Within step 1, scroll to the time-pane after picking a date so the
+  // available slots are immediately in view on mobile.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(min-width: 769px)").matches) return;
+    if (!date) return;
+    const target = document.getElementById("time-pane");
+    if (target) {
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [date]);
+
+  // After picking a time on step 1, nudge the Continue button into view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(min-width: 769px)").matches) return;
+    if (!time || step !== 1) return;
+    const target = document.getElementById("step-actions-1");
+    if (target) {
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }, [time, step]);
+
+  // After picking a treatment on step 2, nudge the Continue button into view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(min-width: 769px)").matches) return;
+    if (!service || step !== 2) return;
+    const target = document.getElementById("step-actions-2");
+    if (target) {
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }, [service, step]);
+
   // the calendar mirrors what the studio has set up.
   useEffect(() => {
     let cancelled = false;
@@ -417,7 +473,7 @@ export default function Booking({ preselectId }: Props) {
       </div>
 
       {/* Step 1 — Date & Time */}
-      <div className={`step-pane${step === 1 ? " active" : ""}`}>
+      <div className={`step-pane${step === 1 ? " active" : ""}`} id="step-pane-1">
         <div className="calendar">
           <div className="cal-pane">
             <div className="cal-head">
@@ -467,7 +523,7 @@ export default function Booking({ preselectId }: Props) {
               })}
             </div>
           </div>
-          <div className="time-pane">
+          <div className="time-pane" id="time-pane">
             <h4>Available times</h4>
             <div className="hint">
               {date ? dateLabel : "Select a date to see times"}
@@ -507,7 +563,7 @@ export default function Booking({ preselectId }: Props) {
             </span>
           </div>
         )}
-        <div className="step-actions">
+        <div className="step-actions" id="step-actions-1">
           <span />
           <button
             type="button"
@@ -521,7 +577,7 @@ export default function Booking({ preselectId }: Props) {
       </div>
 
       {/* Step 2 — Treatment */}
-      <div className={`step-pane${step === 2 ? " active" : ""}`}>
+      <div className={`step-pane${step === 2 ? " active" : ""}`} id="step-pane-2">
         <h4
           style={{
             fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
@@ -566,7 +622,7 @@ export default function Booking({ preselectId }: Props) {
             );
           })}
         </div>
-        <div className="step-actions">
+        <div className="step-actions" id="step-actions-2">
           <button type="button" className="back" onClick={() => setStep(1)}>
             ← Back
           </button>
@@ -582,7 +638,7 @@ export default function Booking({ preselectId }: Props) {
       </div>
 
       {/* Step 3 — Details */}
-      <div className={`step-pane${step === 3 ? " active" : ""}`}>
+      <div className={`step-pane${step === 3 ? " active" : ""}`} id="step-pane-3">
         <h4
           style={{
             fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
@@ -740,7 +796,7 @@ export default function Booking({ preselectId }: Props) {
       </div>
 
       {/* Step 4 — Confirm */}
-      <div className={`step-pane${step === 4 ? " active" : ""}`}>
+      <div className={`step-pane${step === 4 ? " active" : ""}`} id="step-pane-4">
         <div className="confirm">
           <div className="check">✓</div>
           <h3>Reservation received</h3>
