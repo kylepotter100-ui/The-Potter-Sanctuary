@@ -433,6 +433,25 @@ export default function Booking({ preselectId }: Props) {
           detailsUnchanged: hasPriorConsultation ? detailsUnchanged : null,
         }),
       });
+      if (res.status === 409) {
+        // Race-loss: another customer grabbed the same slot between page
+        // load and submit. Refresh availability, drop the picked time,
+        // and send the customer back to step 1 so they can pick again.
+        setSubmitError(
+          "Sorry, that time slot was just taken. Please pick another time."
+        );
+        setTime(null);
+        setStep(1);
+        try {
+          const fresh = await fetch("/api/availability", { cache: "no-store" });
+          if (fresh.ok) {
+            setAvailability((await fresh.json()) as AvailabilityData);
+          }
+        } catch {
+          // best-effort — the user can also just refresh the page
+        }
+        return;
+      }
       if (!res.ok) {
         const body = await res.text();
         throw new Error(body || "Booking failed");
@@ -449,6 +468,11 @@ export default function Booking({ preselectId }: Props) {
 
   return (
     <div className="booking-card" id="bookingCard">
+      {submitError && step !== 3 && (
+        <div role="alert" className="booking-top-error">
+          {submitError}
+        </div>
+      )}
       <div className="steps">
         {[
           { n: 1, lbl: "Date" },

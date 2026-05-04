@@ -31,10 +31,14 @@ export default function Footer() {
               opacity: 0.78,
             }}
           >
-            {siteConfig.address.streetAddress}
-            <br />
+            {siteConfig.address.streetAddress && (
+              <>
+                {siteConfig.address.streetAddress}
+                <br />
+              </>
+            )}
             {siteConfig.address.addressLocality},{" "}
-            {siteConfig.address.addressRegion} {siteConfig.address.postalCode}
+            {siteConfig.address.addressRegion}
             <br />
             United Kingdom
           </address>
@@ -42,9 +46,8 @@ export default function Footer() {
         <div className="col">
           <h5>Visit</h5>
           <ul>
-            <li>By appointment</li>
             <li>{siteConfig.hours.days}</li>
-            <li>{siteConfig.hours.times}</li>
+            {siteConfig.hours.times && <li>{siteConfig.hours.times}</li>}
           </ul>
         </div>
         <div className="col">
@@ -55,11 +58,13 @@ export default function Footer() {
                 {siteConfig.contact.email}
               </a>
             </li>
-            <li>
-              <a href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}>
-                {siteConfig.contact.phone}
-              </a>
-            </li>
+            {siteConfig.contact.phone && (
+              <li>
+                <a href={`tel:${siteConfig.contact.phone.replace(/\s/g, "")}`}>
+                  {siteConfig.contact.phone}
+                </a>
+              </li>
+            )}
             <li>
               <a
                 href={`https://instagram.com/${siteConfig.contact.instagram.replace(

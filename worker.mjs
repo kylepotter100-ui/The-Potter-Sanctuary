@@ -10,14 +10,22 @@
 
 import openNextHandler from "./.open-next/worker.js";
 
+// Routes that run every hour, regardless of UK time.
 const HOURLY_ROUTES = [
   "/api/cron/reminders",
   "/api/cron/appointment-reminders",
-  // morning-summary is HTTP-callable hourly too — the route checks the UK
-  // hour itself and bails outside the 7am window. Keeping the gate inside
-  // the route avoids double sources of truth on timezone handling.
-  "/api/cron/morning-summary",
 ];
+
+// Returns the current hour in Europe/London (handles BST/GMT correctly).
+function ukHour() {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    hour: "2-digit",
+    hour12: false,
+  });
+  const part = fmt.formatToParts(new Date()).find((p) => p.type === "hour");
+  return parseInt(part?.value ?? "-1", 10);
+}
 
 export default {
   fetch: openNextHandler.fetch,
@@ -41,21 +49,30 @@ export default {
         return;
       }
 
+      // Build the dispatch list. Hourly jobs always run; the morning
+      // summary only runs in the 6/7/8 UK hours so a single hourly cron
+      // can drive it without 21 wasted invocations per day. The window
+      // is wider than the 7am-only check inside the route so we still
+      // hit the 7am bucket even if Cloudflare drifts the trigger.
+      const routes = [...HOURLY_ROUTES];
+      const hour = ukHour();
+      if (hour >= 6 && hour <= 8) {
+        routes.push("/api/cron/morning-summary");
+      }
+
       const results = await Promise.allSettled(
-        HOURLY_ROUTES.map((path) =>
+        routes.map((path) =>
           binding.fetch(`${baseUrl}${path}`, { headers })
         )
       );
       results.forEach((r, i) => {
         if (r.status === "rejected") {
           console.error(
-            `[scheduled] ${HOURLY_ROUTES[i]} failed`,
+            `[scheduled] ${routes[i]} failed`,
             JSON.stringify(r.reason, Object.getOwnPropertyNames(r.reason || {}))
           );
         } else if (!r.value.ok) {
-          console.error(
-            `[scheduled] ${HOURLY_ROUTES[i]} ${r.value.status}`
-          );
+          console.error(`[scheduled] ${routes[i]} ${r.value.status}`);
         }
       });
     })();

@@ -56,12 +56,22 @@ export function localBusinessJsonLd() {
     description: siteConfig.description,
     url: siteConfig.url,
     image: new URL(DEFAULT_OG_IMAGE, siteConfig.url).toString(),
-    telephone: siteConfig.contact.phone,
+    // Only emit telephone / streetAddress when set — schema.org validators
+    // prefer the field omitted to a placeholder value.
+    ...(siteConfig.contact.phone
+      ? { telephone: siteConfig.contact.phone }
+      : {}),
     email: siteConfig.contact.email,
     priceRange: siteConfig.priceRange,
     address: {
       "@type": "PostalAddress",
-      ...siteConfig.address,
+      ...(siteConfig.address.streetAddress
+        ? { streetAddress: siteConfig.address.streetAddress }
+        : {}),
+      addressLocality: siteConfig.address.addressLocality,
+      addressRegion: siteConfig.address.addressRegion,
+      postalCode: siteConfig.address.postalCode,
+      addressCountry: siteConfig.address.addressCountry,
     },
     geo: {
       "@type": "GeoCoordinates",

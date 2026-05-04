@@ -5,9 +5,13 @@ export const siteConfig = {
     "A private body-therapy studio in Beck Row, Suffolk. Every session is led personally by a fully trained Clarins therapist using whipped, plant-based products made in small batches by PrecyseByNature.",
   url:
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thepottersanctuary.co.uk",
-  // TODO: replace with the studio's real address before launch.
+  // BEFORE LAUNCH: add the studio's real street address to `streetAddress`
+  // and the contact phone to `contact.phone`. Both render in the Footer
+  // and JSON-LD only when non-empty.
   address: {
-    streetAddress: "Studio address shared on booking",
+    // Typed as `string` so consumers can render or omit it conditionally
+    // without TS narrowing the literal "" to `never`.
+    streetAddress: "" as string,
     addressLocality: "Beck Row",
     addressRegion: "Suffolk",
     postalCode: "IP28",
@@ -20,12 +24,17 @@ export const siteConfig = {
   },
   contact: {
     email: "hello@thepottersanctuary.co.uk",
-    phone: "+44 7000 000 000",
+    // Empty until the owner provides a number — Footer skips the row
+    // when this is blank. Typed as `string` (not the literal "") so
+    // consumers can safely call .replace() inside truthy branches.
+    phone: "" as string,
     instagram: "@thepottersanctuary",
   },
   hours: {
-    days: "Tue – Sat",
-    times: "9:30 am – 7:00 pm",
+    // Concise, accurate phrasing — exact times vary per day and are
+    // shown in the booking calendar.
+    days: "By appointment, Tue–Sat",
+    times: null,
     openingHoursSpec: [
       {
         "@type": "OpeningHoursSpecification",
