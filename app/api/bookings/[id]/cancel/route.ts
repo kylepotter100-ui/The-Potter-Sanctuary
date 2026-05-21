@@ -71,6 +71,21 @@ export async function POST(
     return NextResponse.json({ ok: true, alreadyCancelled: true });
   }
 
+  // Cancellation cut-off: no online cancellations within 15 minutes of the
+  // appointment start. Enforced server-side regardless of what the UI shows.
+  const startsAt = new Date(`${booking.booking_date}T${booking.booking_time}`);
+  const minutesUntil = (startsAt.getTime() - Date.now()) / (60 * 1000);
+  if (minutesUntil < 15) {
+    return NextResponse.json(
+      {
+        error: "too_late",
+        message:
+          "This booking is too close to the appointment time to cancel online. Please contact us at hello@thepottersanctuary.co.uk if you need to cancel.",
+      },
+      { status: 400 }
+    );
+  }
+
   const { error: updateError } = await supabaseAdmin
     .from("bookings")
     .update({

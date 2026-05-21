@@ -196,3 +196,13 @@ export function getService(slug: string): Service | undefined {
 export function serviceSlugs(): string[] {
   return services.map((s) => s.slug);
 }
+
+// Bookings store `treatment_id` = the service `bookingId`. Look up the
+// treatment's duration in minutes so background jobs (e.g. review
+// requests) can compute when an appointment is expected to have ended.
+export function durationMinutesForTreatmentId(
+  treatmentId: string
+): number | null {
+  const match = services.find((s) => s.bookingId === treatmentId);
+  return match ? match.durationMinutes : null;
+}

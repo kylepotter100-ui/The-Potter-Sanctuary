@@ -29,6 +29,7 @@ export const siteConfig = {
     // consumers can safely call .replace() inside truthy branches.
     phone: "" as string,
     instagram: "@thepottersanctuary",
+    instagramUrl: "https://www.instagram.com/thepottersanctuary/",
   },
   hours: {
     // Studio operates by appointment any day of the week — actual

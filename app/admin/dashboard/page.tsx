@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import DashboardMonthNav from "@/components/DashboardMonthNav";
+import ExportBookingsButton from "@/components/ExportBookingsButton";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -144,6 +145,10 @@ export default async function DashboardPage({
         <p className="lede">An at-a-glance view of the studio.</p>
 
         <DashboardMonthNav year={year} month={month} />
+
+        <div className="dashboard-tools">
+          <ExportBookingsButton />
+        </div>
 
         <div className="stat-row">
           <div className="stat-card">

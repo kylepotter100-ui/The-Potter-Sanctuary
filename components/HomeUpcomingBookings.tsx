@@ -115,6 +115,7 @@ export default function HomeUpcomingBookings() {
                     treatmentName={b.treatment_name}
                     bookingDate={dateLong}
                     bookingTime={timeNice}
+                    startsAt={`${b.booking_date}T${b.booking_time}`}
                     redirectTo="/"
                     onCancelled={onCancelled}
                   />
