@@ -54,7 +54,12 @@ export default function BookingConfirmed({
           <DetailRow label="Treatment" value={treatmentName} />
           <DetailRow label="Date" value={bookingDate} />
           <DetailRow label="Time" value={bookingTime} />
-          <DetailRow label="Cost" value={`£${treatmentPrice}`} last />
+          <DetailRow label="Cost" value={`£${treatmentPrice}`} />
+          <DetailRow
+            label="Location"
+            value="22 Lockheed Close, Beck Row, IP28 3AB"
+            last
+          />
         </Section>
 
         <Divider />

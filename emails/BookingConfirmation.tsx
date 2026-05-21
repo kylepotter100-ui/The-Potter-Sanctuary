@@ -68,7 +68,7 @@ export default function BookingConfirmation({
           <DetailRow label="Cost" value={`£${treatmentPrice}`} />
           <DetailRow
             label="Location"
-            value="The Potter Sanctuary, Beck Row, Suffolk"
+            value="22 Lockheed Close, Beck Row, IP28 3AB"
             last
           />
         </Section>
