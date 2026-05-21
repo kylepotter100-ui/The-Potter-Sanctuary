@@ -4,7 +4,7 @@ const items = [
   "Essential Oils",
   "Plant-Based",
   "Slow Beauty",
-  "PrecyseByNature",
+  "Precyse By Nature",
 ];
 
 export default function Ribbon() {

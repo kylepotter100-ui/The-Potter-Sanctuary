@@ -52,7 +52,7 @@ export default function AppointmentReminder({
           <DetailRow label="Time" value={bookingTime} />
           <DetailRow
             label="Location"
-            value="The Potter Sanctuary, Beck Row, Suffolk"
+            value="22 Lockheed Close, Beck Row, IP28 3AB"
             last
           />
         </Section>

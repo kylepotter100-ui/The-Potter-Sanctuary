@@ -48,13 +48,14 @@ export const metadata: Metadata = {
     telephone: false,
     address: false,
   },
-  // Favicon set. We currently fall back to the brand PNG for both shapes
-  // — replace `/favicon.ico` and `/apple-touch-icon.png` once you've
-  // generated proper multi-size icons (see /public/README in repo).
+  // Favicon set — all generated with a solid sage (#8A9E85) background
+  // from the brand logo so browser tabs / home-screen icons aren't
+  // transparent.
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/sanctuary-logo.png", type: "image/png" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     shortcut: ["/favicon.ico"],

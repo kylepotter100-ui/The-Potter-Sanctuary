@@ -19,7 +19,7 @@ import { siteConfig } from "@/lib/site";
 export const metadata: Metadata = pageMetadata({
   title: `${siteConfig.name} — Body Therapy Studio in Beck Row, Suffolk`,
   description:
-    "Private body therapy studio in Beck Row, Suffolk. Aromatherapy, hot stones, back-neck-and-scalp massage delivered personally by a fully trained Clarins therapist using plant-based PrecyseByNature products.",
+    "Private body therapy studio in Beck Row, Suffolk. Aromatherapy, hot stones, back-neck-and-scalp massage delivered personally by a fully trained Clarins therapist using plant-based Precyse By Nature products.",
   path: "/",
 });
 
@@ -105,7 +105,7 @@ export default function HomePage() {
               <p>
                 What you bring home is the calm of nothing rushed. What goes
                 onto your skin is whipped, plant-based and made in small batches
-                by <em>PrecyseByNature</em> — pure essential oils, no synthetic
+                by <em>Precyse By Nature</em> — pure essential oils, no synthetic
                 perfume, no fillers.
               </p>
               <div className="credentials">
@@ -209,7 +209,7 @@ export default function HomePage() {
           <div className="container">
             <div className="products-intro">
               <div>
-                <div className="eyebrow">Made by PrecyseByNature</div>
+                <div className="eyebrow">Made by Precyse By Nature</div>
                 <h2 className="section-title">
                   The products <em>used &amp; loved.</em>
                 </h2>
@@ -234,7 +234,7 @@ export default function HomePage() {
                 <div className="img">
                   <Image
                     src="/products/whipped-body-butter.webp"
-                    alt="PrecyseByNature plant-whipped body butter jars on linen"
+                    alt="Precyse By Nature plant-whipped body butter jars on linen"
                     width={800}
                     height={600}
                     sizes="(max-width: 960px) 100vw, 50vw"
@@ -254,7 +254,7 @@ export default function HomePage() {
                 <div className="img">
                   <Image
                     src="/products/sugar-scrub.webp"
-                    alt="PrecyseByNature sugar scrub jars with embossed lids"
+                    alt="Precyse By Nature sugar scrub jars with embossed lids"
                     width={800}
                     height={600}
                     sizes="(max-width: 960px) 100vw, 50vw"
@@ -270,24 +270,6 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="shop-cta">
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>
-                  Shop the range
-                </div>
-                <div className="shop-cta-headline">
-                  The full PrecyseByNature collection
-                </div>
-                <div className="shop-cta-note">
-                  Direct link coming soon — bookmark for launch.
-                </div>
-              </div>
-              {/* TODO: replace href with the live PrecyseByNature shop URL once available. */}
-              <a href="#" className="shop-cta-link">
-                Visit the shop <span aria-hidden="true">→</span>
-              </a>
             </div>
           </div>
         </section>

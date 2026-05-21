@@ -45,7 +45,7 @@ export const services: Service[] = [
     shortDesc:
       "A full-body session blending bespoke essential-oil blends — selected on the day for your nervous system. Long, flowing strokes warm the muscles while the oils settle into the skin, leaving you softened and quietly elsewhere.",
     longDesc: [
-      "A full-body aromatherapy massage in Suffolk delivered the way it's meant to be — slow, hand-led, and tailored to your nervous system on the day. Each session begins with a quiet consultation and a bespoke blend of essential oils chosen from PrecyseByNature's plant-based range.",
+      "A full-body aromatherapy massage in Suffolk delivered the way it's meant to be — slow, hand-led, and tailored to your nervous system on the day. Each session begins with a quiet consultation and a bespoke blend of essential oils chosen from Precyse By Nature's plant-based range.",
       "Long, flowing strokes warm the muscles from the soles of the feet to the crown of the head. The whipped, plant-based oils settle into the skin without leaving a film, so you go home softened, scented gently, and quietly elsewhere.",
       "Best for first-time visitors, anyone who works at a screen, and anyone craving a pure relaxing aromatherapy treatment near Mildenhall delivered by a fully trained Clarins therapist.",
     ],
@@ -144,7 +144,7 @@ export const services: Service[] = [
     longDesc: [
       "A 75-minute hot stone massage in Suffolk that carries heat into places pressure alone can't reach. Smooth basalt stones are warmed and placed along the body's energy lines, then worked through the muscles in long, weighted strokes.",
       "The combination of heat and weight gives a depth of release unlike a standard massage — particularly recommended for stubborn lower back tension, tired legs, and anyone in need of deep relaxation hot stone therapy in Suffolk after a stretched week.",
-      "All oils used are plant-based and made in small batches by PrecyseByNature. The studio takes one guest at a time, so the pace is genuinely unhurried from arrival to herbal tea.",
+      "All oils used are plant-based and made in small batches by Precyse By Nature. The studio takes one guest at a time, so the pace is genuinely unhurried from arrival to herbal tea.",
     ],
     image: {
       src: "/hot-stone-full-body.webp",
