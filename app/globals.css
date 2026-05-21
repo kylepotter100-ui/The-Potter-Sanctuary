@@ -594,53 +594,86 @@
     filter: brightness(1.04);
   }
   /* ===== Treatment detail page — editorial layout ===== */
-  /* Single centred column: contained hero image, then readable copy. */
-  .treatment-detail {
-    max-width: 760px;
-    margin: 0 auto;
-  }
-  .treatment-hero-img {
-    margin: 0 0 36px;
+  /* Cinematic feature image: contained, centred, rounded, 16:9. */
+  .treatment-feature {
+    max-width: 880px;
+    margin: 0 auto 72px;
     aspect-ratio: 16 / 9;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid rgba(58, 63, 49, 0.1);
     background: linear-gradient(160deg, var(--sage-soft), var(--sage));
   }
-  .treatment-hero-img img {
+  .treatment-feature img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  .treatment-copy h2 { margin-bottom: 8px; }
-
-  /* Detail-page gallery: two contained images side by side, stacked on
-     mobile. Each image sits inside its own grid cell — never full-bleed. */
-  .treatment-gallery {
-    max-width: 760px;
+  /* Alternating image/text blocks — mirrors the homepage .service pattern
+     but with explicit-dimension, contained images (no fill / absolute). */
+  .treatment-block {
+    max-width: 1080px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    grid-template-columns: 1fr 1.05fr;
+    gap: 64px;
+    align-items: center;
+    padding: 56px 0;
   }
-  .treatment-gallery-img {
+  .treatment-block.reverse {
+    grid-template-columns: 1.05fr 1fr;
+  }
+  .treatment-block.reverse .treatment-block-img {
+    order: 2;
+  }
+  .treatment-block-img {
     margin: 0;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 5 / 4;
     border-radius: 8px;
     overflow: hidden;
+    border: 1px solid rgba(58, 63, 49, 0.1);
     background: linear-gradient(160deg, var(--sage-soft), var(--sage));
-    border: 1px solid rgba(58, 63, 49, 0.08);
   }
-  .treatment-gallery-img img {
+  .treatment-block-img img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+  .treatment-block-copy h2 { margin-bottom: 8px; }
+  .treatment-cta {
+    max-width: 1080px;
+    margin: 16px auto 0;
+    display: flex;
+    justify-content: center;
+  }
+  .treatment-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sage-deep);
+    color: var(--cream);
+    text-decoration: none;
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 12px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    padding: 18px 44px;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+  }
+  .treatment-cta-btn:hover { background: var(--ink); }
   @media (max-width: 860px) {
-    .treatment-gallery { grid-template-columns: 1fr; gap: 18px; }
-    .treatment-hero-img { margin-bottom: 28px; }
+    .treatment-feature { margin-bottom: 48px; }
+    .treatment-block,
+    .treatment-block.reverse {
+      grid-template-columns: 1fr;
+      gap: 28px;
+      padding: 32px 0;
+    }
+    .treatment-block.reverse .treatment-block-img { order: 0; }
+    .treatment-cta-btn { width: 100%; }
   }
   .svc-num {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;
