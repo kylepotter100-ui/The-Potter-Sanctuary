@@ -482,6 +482,17 @@
     margin: 0 auto;
     text-align: center;
   }
+  /* Balance the eyebrow when centred: the global .eyebrow has a left-only
+     decorative line, which makes a centred block read as left-shifted.
+     Centre the flex and mirror the line on both sides. */
+  .philo .eyebrow { justify-content: center; }
+  .philo .eyebrow::after {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.6;
+  }
   .philo h2 { margin-bottom: 24px; }
   .philo p {
     font-size: 17px;
@@ -594,22 +605,6 @@
     filter: brightness(1.04);
   }
   /* ===== Treatment detail page — editorial layout ===== */
-  /* Cinematic feature image: contained, centred, rounded, 16:9. */
-  .treatment-feature {
-    max-width: 880px;
-    margin: 0 auto 72px;
-    aspect-ratio: 16 / 9;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid rgba(58, 63, 49, 0.1);
-    background: linear-gradient(160deg, var(--sage-soft), var(--sage));
-  }
-  .treatment-feature img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
   /* Alternating image/text blocks — mirrors the homepage .service pattern
      but with explicit-dimension, contained images (no fill / absolute). */
   .treatment-block {
@@ -665,7 +660,6 @@
   }
   .treatment-cta-btn:hover { background: var(--ink); }
   @media (max-width: 860px) {
-    .treatment-feature { margin-bottom: 48px; }
     .treatment-block,
     .treatment-block.reverse {
       grid-template-columns: 1fr;

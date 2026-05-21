@@ -102,20 +102,9 @@ export default async function ServicePage({
 
         <Ribbon />
 
-        {/* FEATURE IMAGE */}
+        {/* DETAIL — editorial alternating blocks */}
         <section className="section cream" id="detail">
           <div className="container">
-            <figure className="treatment-feature">
-              <Image
-                src={service.images.primary}
-                alt={`${service.name} ${service.nameEm} treatment at The Potter Sanctuary`}
-                width={1600}
-                height={900}
-                sizes="(max-width: 940px) 92vw, 880px"
-                priority
-              />
-            </figure>
-
             {/* CONTENT 1 — image left, "What to expect" */}
             <article className="treatment-block">
               <figure className="treatment-block-img">
