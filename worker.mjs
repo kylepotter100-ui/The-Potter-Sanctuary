@@ -10,10 +10,13 @@
 
 import openNextHandler from "./.open-next/worker.js";
 
-// Routes that run every hour, regardless of UK time.
+// Routes that run every hour, regardless of UK time. The review-requests
+// route is feature-flagged off internally (REVIEWS_ENABLED) until launch,
+// so it's safe to dispatch hourly now.
 const HOURLY_ROUTES = [
   "/api/cron/reminders",
   "/api/cron/appointment-reminders",
+  "/api/cron/review-requests",
 ];
 
 // Returns the current hour in Europe/London (handles BST/GMT correctly).

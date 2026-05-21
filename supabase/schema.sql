@@ -85,6 +85,25 @@ ALTER TABLE public.bookings
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS appointment_reminder_sent_at timestamptz;
 
+-- Post-appointment review request tracking. Set when the review-request
+-- cron emails the customer (feature-flagged off until post-launch).
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS review_email_sent_at timestamptz;
+
+-- ===== reviews =====
+-- Customer feedback submitted after a treatment. Built now, surfaced
+-- post-launch via the REVIEWS_ENABLED flag.
+CREATE TABLE IF NOT EXISTS public.reviews (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id  uuid REFERENCES public.bookings(id) ON DELETE SET NULL,
+  customer_id uuid REFERENCES public.customers(id) ON DELETE SET NULL,
+  rating      int  NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment     text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS reviews_booking_id_idx ON public.reviews (booking_id);
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+
 -- ===== daily_summaries_sent =====
 -- Dedupe row written once per UK day after the morning-summary email goes
 -- out, so the hourly cron can skip subsequent runs on the same date.

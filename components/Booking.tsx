@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { services } from "@/lib/services";
+import InlineSignInModal from "@/components/InlineSignInModal";
 
 type ServiceSelection = {
   svc: string;
@@ -58,6 +59,33 @@ function isoDate(d: Date) {
   return `${y}-${m}-${dd}`;
 }
 
+// Current date (YYYY-MM-DD) and minutes-since-midnight in Europe/London,
+// independent of the visitor's own timezone. Used to hide past time slots
+// on same-day bookings.
+function ukNow(): { dateIso: string; minutes: number } {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  const dateIso = `${get("year")}-${get("month")}-${get("day")}`;
+  // "24" can appear at midnight in some engines — normalise to 0.
+  const hh = parseInt(get("hour"), 10) % 24;
+  const mm = parseInt(get("minute"), 10);
+  return { dateIso, minutes: hh * 60 + mm };
+}
+
+function slotToMinutes(t: string): number {
+  const [hh, mm] = t.slice(0, 5).split(":");
+  return parseInt(hh, 10) * 60 + parseInt(mm, 10);
+}
+
 export default function Booking({ preselectId }: Props) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [step, setStep] = useState(1);
@@ -90,6 +118,13 @@ export default function Booking({ preselectId }: Props) {
   // For returning customers, ask whether their consultation details changed.
   // null = not yet answered, true = no change, false = needs new questionnaire.
   const [detailsUnchanged, setDetailsUnchanged] = useState<boolean | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  // Returning-customer banner: shown once per session when an entered email
+  // matches an existing customer and the visitor isn't already signed in.
+  const [returningBanner, setReturningBanner] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [signInModalOpen, setSignInModalOpen] = useState(false);
+  const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pull live availability + blocked dates from the admin-controlled tables so
   // Scroll the relevant section into view on mobile when the step
@@ -218,10 +253,12 @@ export default function Booking({ preselectId }: Props) {
       .then((r) => (r.ok ? r.json() : { customer: null, hasConsultation: false }))
       .then(
         (data: {
+          user?: { id: string } | null;
           customer: CustomerDetails | null;
           hasConsultation?: boolean;
         }) => {
           if (cancelled) return;
+          if (data.user) setSignedIn(true);
           if (data.hasConsultation) setHasPriorConsultation(true);
           if (!data.customer) return;
           const c = data.customer;
@@ -243,6 +280,75 @@ export default function Booking({ preselectId }: Props) {
       cancelled = true;
     };
   }, []);
+
+  // Debounced returning-customer detection. When the visitor (who isn't
+  // signed in) types a known email, surface a banner inviting them to
+  // sign in for faster booking. Only shows once per session.
+  useEffect(() => {
+    if (signedIn || bannerDismissed) return;
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setReturningBanner(false);
+      return;
+    }
+    if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current);
+    const value = email.trim().toLowerCase();
+    emailCheckTimer.current = setTimeout(() => {
+      fetch("/api/customer/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
+      })
+        .then((r) => (r.ok ? r.json() : { exists: false }))
+        .then((data: { exists?: boolean }) => {
+          if (!signedIn && !bannerDismissed && data.exists) {
+            setReturningBanner(true);
+          }
+        })
+        .catch(() => {});
+    }, 500);
+    return () => {
+      if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current);
+    };
+  }, [email, signedIn, bannerDismissed]);
+
+  // After an inline sign-in, pull the customer's profile to pre-fill the
+  // form and surface the "details changed?" question.
+  async function onInlineSignedIn() {
+    setSignInModalOpen(false);
+    setReturningBanner(false);
+    setSignedIn(true);
+    try {
+      const res = await fetch("/api/me", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        customer: {
+          email: string;
+          full_name: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          phone_number: string | null;
+          gender: string | null;
+        } | null;
+        hasConsultation?: boolean;
+      };
+      if (data.hasConsultation) setHasPriorConsultation(true);
+      const c = data.customer;
+      if (c) {
+        const fn =
+          c.first_name || (c.full_name ? c.full_name.split(" ")[0] : "");
+        const ln =
+          c.last_name ||
+          (c.full_name ? c.full_name.split(" ").slice(1).join(" ") : "");
+        if (fn) setFname(fn);
+        if (ln) setLname(ln);
+        if (c.email) setEmail(c.email);
+        if (c.phone_number) setPhone(c.phone_number);
+        if (c.gender) setGender(c.gender);
+      }
+    } catch {
+      // best-effort pre-fill
+    }
+  }
 
   const next1Disabled = !date || !time;
   const next2Disabled = !service;
@@ -286,9 +392,18 @@ export default function Booking({ preselectId }: Props) {
       else baseSet.delete(time);
     }
     const taken = new Set(bookedByDate[iso] ?? []);
-    return Array.from(baseSet)
-      .filter((t) => !taken.has(t))
-      .sort();
+    let slots = Array.from(baseSet).filter((t) => !taken.has(t));
+
+    // For today (UK time), hide any slot that's already started or is
+    // within the next 15 minutes — no point offering a slot that can't
+    // realistically be honoured.
+    const { dateIso: ukToday, minutes: ukMinutes } = ukNow();
+    if (iso === ukToday) {
+      const cutoff = ukMinutes + 15;
+      slots = slots.filter((t) => slotToMinutes(t) >= cutoff);
+    }
+
+    return slots.sort();
   }
 
   const calCells = useMemo(() => {
@@ -675,6 +790,33 @@ export default function Booking({ preselectId }: Props) {
         </h4>
         <div className="hint">We'll only use these to confirm your visit</div>
 
+        {returningBanner && !signedIn && (
+          <div className="returning-banner" role="region" aria-label="Returning customer">
+            <button
+              type="button"
+              className="returning-banner-close"
+              aria-label="Dismiss"
+              onClick={() => {
+                setReturningBanner(false);
+                setBannerDismissed(true);
+              }}
+            >
+              ×
+            </button>
+            <p>
+              Welcome back to The Potter Sanctuary — sign in for faster
+              booking. Your details and consultation will be remembered.
+            </p>
+            <button
+              type="button"
+              className="returning-banner-btn"
+              onClick={() => setSignInModalOpen(true)}
+            >
+              Sign in
+            </button>
+          </div>
+        )}
+
         <div className="field">
           <label>Gender</label>
           <div className="gender-row">
@@ -873,6 +1015,14 @@ export default function Booking({ preselectId }: Props) {
           </div>
         </div>
       </div>
+
+      {signInModalOpen && (
+        <InlineSignInModal
+          initialEmail={email}
+          onClose={() => setSignInModalOpen(false)}
+          onSignedIn={onInlineSignedIn}
+        />
+      )}
     </div>
   );
 }

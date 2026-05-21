@@ -135,6 +135,25 @@ export default async function ServicePage({
           </div>
         </section>
 
+        {/* GALLERY */}
+        <section className="section bone" id="gallery">
+          <div className="container">
+            <div className="treatment-gallery">
+              {service.images.gallery.map((src, i) => (
+                <div className="treatment-gallery-img" key={src}>
+                  <Image
+                    src={src}
+                    alt={`${service.name} ${service.nameEm} at The Potter Sanctuary — image ${i + 2}`}
+                    fill
+                    sizes="(max-width: 860px) 100vw, 50vw"
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* BOOKING */}
         <section className="section sage-deep" id="booking">
           <div className="container booking-wrap">

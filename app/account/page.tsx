@@ -162,6 +162,7 @@ export default async function AccountPage({
                         treatmentName={b.treatment_name}
                         bookingDate={formatDate(b.booking_date)}
                         bookingTime={formatTime(b.booking_time)}
+                        startsAt={`${b.booking_date}T${b.booking_time}`}
                       />
                     </div>
                   </li>

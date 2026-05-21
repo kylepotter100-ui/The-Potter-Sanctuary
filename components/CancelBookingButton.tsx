@@ -8,6 +8,11 @@ type Props = {
   treatmentName: string;
   bookingDate: string;
   bookingTime: string;
+  // Full appointment start as an ISO-ish "YYYY-MM-DDTHH:MM" string. When
+  // provided and the appointment is < 15 min away, the cancel button is
+  // replaced with a subtle "within cancellation window" note. The cut-off
+  // is also enforced server-side.
+  startsAt?: string;
   // Where to land after a successful cancellation. Defaults to /account so
   // existing call sites keep their previous behaviour. Pass "/" to keep the
   // user on the homepage.
@@ -22,6 +27,7 @@ export default function CancelBookingButton({
   treatmentName,
   bookingDate,
   bookingTime,
+  startsAt,
   redirectTo = "/account",
   onCancelled,
 }: Props) {
@@ -30,6 +36,16 @@ export default function CancelBookingButton({
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const withinCutoff =
+    !!startsAt &&
+    (new Date(startsAt).getTime() - Date.now()) / (60 * 1000) < 15;
+
+  if (withinCutoff) {
+    return (
+      <span className="cancel-window-note">Within cancellation window</span>
+    );
+  }
 
   async function confirmCancel() {
     setSubmitting(true);
@@ -41,8 +57,12 @@ export default function CancelBookingButton({
         body: JSON.stringify({ reason }),
       });
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Cancellation failed");
+        // Prefer the structured { message } from the API (e.g. the 15-min
+        // cut-off) over the raw body.
+        const data = await res.json().catch(() => null);
+        throw new Error(
+          (data && (data.message || data.error)) || "Cancellation failed"
+        );
       }
       setOpen(false);
       // If a parent supplied an onCancelled handler we let it own the UI
