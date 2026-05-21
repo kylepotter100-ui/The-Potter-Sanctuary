@@ -90,12 +90,6 @@ export default function HomePage() {
         {/* PHILOSOPHY */}
         <section className="section cream" id="philosophy">
           <div className="container philo">
-            <div className="img">
-              <div className="ph-label">
-                <div className="l1">image — therapist portrait</div>
-                <div className="l2">soft, candid, in-room</div>
-              </div>
-            </div>
             <div>
               <div className="eyebrow">A quiet practice</div>
               <h2 className="section-title">
@@ -163,11 +157,12 @@ export default function HomePage() {
               >
                 <div className="svc-img">
                   <Image
-                    src={s.image.src}
-                    alt={s.image.alt}
+                    src={s.images.primary}
+                    alt={`${s.name} ${s.nameEm} at The Potter Sanctuary`}
                     fill
                     sizes="(max-width: 960px) 100vw, 50vw"
                     style={{ objectFit: "cover" }}
+                    className="svc-img-photo"
                   />
                 </div>
                 <div>

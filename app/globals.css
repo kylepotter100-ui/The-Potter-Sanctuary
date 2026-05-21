@@ -473,19 +473,14 @@
   }
 
   /* ===== Philosophy ===== */
+  /* Portrait photo removed — the philosophy copy now reads as a single
+     centred column. (Former two-column grid + .philo .img image styles
+     intentionally dropped; restore the grid and an <Image> if a portrait
+     is reinstated later.) */
   .philo {
-    display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
-    gap: 80px;
-    align-items: center;
-  }
-  .philo .img {
-    aspect-ratio: 4 / 5;
-    border-radius: 8px;
-    overflow: hidden;
-    background: linear-gradient(160deg, var(--sage-soft), var(--sage));
-    border: 1px solid rgba(58, 63, 49, 0.08);
-    position: relative;
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
   }
   .philo h2 { margin-bottom: 24px; }
   .philo p {
@@ -497,6 +492,7 @@
   .credentials {
     display: flex;
     gap: 48px;
+    justify-content: center;
     margin-top: 38px;
     padding-top: 32px;
     border-top: 1px solid rgba(58, 63, 49, 0.15);
@@ -589,6 +585,31 @@
     position: relative;
     background: linear-gradient(160deg, #a8b498, #7a8a6b);
     border: 1px solid rgba(239, 232, 214, 0.2);
+  }
+  .service .svc-img .svc-img-photo {
+    transition: transform 0.5s ease, filter 0.5s ease;
+  }
+  .service .svc-img:hover .svc-img-photo {
+    transform: scale(1.04);
+    filter: brightness(1.04);
+  }
+  /* Treatment detail-page gallery: two images side by side, stacked on
+     mobile. */
+  .treatment-gallery {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .treatment-gallery-img {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--sage-soft), var(--sage));
+    border: 1px solid rgba(58, 63, 49, 0.08);
+  }
+  @media (max-width: 860px) {
+    .treatment-gallery { grid-template-columns: 1fr; gap: 18px; }
   }
   .svc-num {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;

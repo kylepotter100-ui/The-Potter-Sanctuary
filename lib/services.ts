@@ -13,6 +13,12 @@ export type Service = {
   shortDesc: string;
   longDesc: string[];
   image: { src: string; width: number; height: number; alt: string };
+  // Treatment photography: `primary` shows on the homepage card; `gallery`
+  // (two images) shows on the /services/[slug] detail page.
+  images: {
+    primary: string;
+    gallery: [string, string];
+  };
   reverse: boolean;
   bookingId: string;
   seo: {
@@ -48,6 +54,13 @@ export const services: Service[] = [
       width: 1024,
       height: 1024,
       alt: "Full body aromatherapy massage in progress at The Potter Sanctuary, with plant-based essential oils on linen drapes.",
+    },
+    images: {
+      primary: "/treatments/aromatherapy/1.jpg",
+      gallery: [
+        "/treatments/aromatherapy/2.jpg",
+        "/treatments/aromatherapy/3.jpg",
+      ],
     },
     reverse: false,
     bookingId: "full-body-aromatherapy",
@@ -91,6 +104,13 @@ export const services: Service[] = [
       height: 1533,
       alt: "Back, neck and scalp massage being delivered at The Potter Sanctuary in Beck Row, Suffolk.",
     },
+    images: {
+      primary: "/treatments/back-neck-scalp/1.jpg",
+      gallery: [
+        "/treatments/back-neck-scalp/2.jpg",
+        "/treatments/back-neck-scalp/3.jpg",
+      ],
+    },
     reverse: true,
     bookingId: "back-neck-scalp",
     seo: {
@@ -132,6 +152,13 @@ export const services: Service[] = [
       height: 585,
       alt: "Heated basalt stones laid along the body for the hot stones full body treatment in Suffolk.",
     },
+    images: {
+      primary: "/treatments/hot-stones-full-body/1.jpg",
+      gallery: [
+        "/treatments/hot-stones-full-body/2.jpg",
+        "/treatments/hot-stones-full-body/3.jpg",
+      ],
+    },
     reverse: false,
     bookingId: "hot-stones-full",
     seo: {
@@ -171,6 +198,13 @@ export const services: Service[] = [
       width: 1280,
       height: 853,
       alt: "Hot stones layered along the back during a targeted hot stone back massage in Beck Row, Suffolk.",
+    },
+    images: {
+      primary: "/treatments/hot-stones-back/1.jpg",
+      gallery: [
+        "/treatments/hot-stones-back/2.jpg",
+        "/treatments/hot-stones-back/3.jpg",
+      ],
     },
     reverse: true,
     bookingId: "hot-stones-back",
