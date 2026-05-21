@@ -43,6 +43,13 @@ export default async function ServicePage({
 
   const others = services.filter((s) => s.slug !== service.slug);
 
+  // Split the existing longDesc paragraphs into two roughly-equal halves
+  // for the two alternating editorial blocks (verbatim copy, no rewrite).
+  // 3 paragraphs → [0,1] in the first block, [2] in the second.
+  const splitAt = Math.ceil(service.longDesc.length / 2);
+  const detailFirst = service.longDesc.slice(0, splitAt);
+  const detailSecond = service.longDesc.slice(splitAt);
+
   return (
     <>
       <Nav />
@@ -95,62 +102,87 @@ export default async function ServicePage({
 
         <Ribbon />
 
-        {/* DETAIL */}
+        {/* FEATURE IMAGE */}
         <section className="section cream" id="detail">
-          <div className="container treatment-detail">
-            <figure className="treatment-hero-img">
+          <div className="container">
+            <figure className="treatment-feature">
               <Image
                 src={service.images.primary}
                 alt={`${service.name} ${service.nameEm} treatment at The Potter Sanctuary`}
-                width={1200}
-                height={675}
-                sizes="(max-width: 820px) 92vw, 760px"
+                width={1600}
+                height={900}
+                sizes="(max-width: 940px) 92vw, 880px"
                 priority
               />
             </figure>
-            <div className="treatment-copy">
-              <div className="eyebrow">What to expect</div>
-              <h2 className="section-title">
-                {service.name} <em>{service.nameEm}</em>
-              </h2>
-              {service.longDesc.map((p, i) => (
-                <p key={i} style={i === 0 ? { marginTop: 28 } : undefined}>
-                  {p}
-                </p>
-              ))}
-              <div className="credentials">
-                <div className="c">
-                  <span className="k">{service.duration}</span>
-                  <span className="v">Duration</span>
-                </div>
-                <div className="c">
-                  <span className="k">{service.pressure}</span>
-                  <span className="v">Pressure</span>
-                </div>
-                <div className="c">
-                  <span className="k">{service.priceLabel}</span>
-                  <span className="v">Per Session</span>
+
+            {/* CONTENT 1 — image left, "What to expect" */}
+            <article className="treatment-block">
+              <figure className="treatment-block-img">
+                <Image
+                  src={service.images.gallery[0]}
+                  alt={`The ${service.name} ${service.nameEm} treatment room at The Potter Sanctuary`}
+                  width={1000}
+                  height={800}
+                  sizes="(max-width: 860px) 92vw, 440px"
+                />
+              </figure>
+              <div className="treatment-block-copy">
+                <div className="eyebrow">What to expect</div>
+                <h2 className="section-title">
+                  {service.name} <em>{service.nameEm}</em>
+                </h2>
+                {detailFirst.map((p, i) => (
+                  <p key={i} style={i === 0 ? { marginTop: 24 } : undefined}>
+                    {p}
+                  </p>
+                ))}
+              </div>
+            </article>
+
+            {/* CONTENT 2 — text left, image right, "The experience" */}
+            <article className="treatment-block reverse">
+              <figure className="treatment-block-img">
+                <Image
+                  src={service.images.gallery[1]}
+                  alt={`Plant-based oils and warm towels for the ${service.name} ${service.nameEm} treatment`}
+                  width={1000}
+                  height={800}
+                  sizes="(max-width: 860px) 92vw, 440px"
+                />
+              </figure>
+              <div className="treatment-block-copy">
+                <div className="eyebrow">The experience</div>
+                <h2 className="section-title">
+                  Tailored <em>to you.</em>
+                </h2>
+                {detailSecond.map((p, i) => (
+                  <p key={i} style={i === 0 ? { marginTop: 24 } : undefined}>
+                    {p}
+                  </p>
+                ))}
+                <div className="credentials">
+                  <div className="c">
+                    <span className="k">{service.duration}</span>
+                    <span className="v">Duration</span>
+                  </div>
+                  <div className="c">
+                    <span className="k">{service.pressure}</span>
+                    <span className="v">Pressure</span>
+                  </div>
+                  <div className="c">
+                    <span className="k">{service.priceLabel}</span>
+                    <span className="v">Per Session</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
+            </article>
 
-        {/* GALLERY */}
-        <section className="section bone" id="gallery">
-          <div className="container">
-            <div className="treatment-gallery">
-              {service.images.gallery.map((src, i) => (
-                <figure className="treatment-gallery-img" key={src}>
-                  <Image
-                    src={src}
-                    alt={`${service.name} ${service.nameEm} treatment at The Potter Sanctuary — detail ${i + 1}`}
-                    width={800}
-                    height={600}
-                    sizes="(max-width: 860px) 92vw, 380px"
-                  />
-                </figure>
-              ))}
+            {/* BOOK CTA */}
+            <div className="treatment-cta">
+              <a href="#booking" className="treatment-cta-btn">
+                Book this treatment
+              </a>
             </div>
           </div>
         </section>
