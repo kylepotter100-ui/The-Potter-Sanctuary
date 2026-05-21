@@ -95,7 +95,7 @@ export default function HomePage() {
               <h2 className="section-title">
                 A trained hand, <em>a natural touch.</em>
               </h2>
-              <p style={{ marginTop: 28 }}>
+              <p>
                 The Potter Sanctuary is a private studio devoted to body
                 therapies that are at once skilled and unhurried. Every session
                 is led personally by a fully trained Clarins therapist — a

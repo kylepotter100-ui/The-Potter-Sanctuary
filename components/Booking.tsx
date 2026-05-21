@@ -125,12 +125,21 @@ export default function Booking({ preselectId }: Props) {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
   const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Skip the step-change scroll on the very first render — otherwise the
+  // homepage would auto-scroll down to the booking card (step 1) on mobile
+  // load, which reads as "jumps to the bottom of the page".
+  const stepScrollReady = useRef(false);
 
   // Pull live availability + blocked dates from the admin-controlled tables so
   // Scroll the relevant section into view on mobile when the step
   // changes. Desktop layouts already keep everything visible, so we skip
   // the smooth-scroll there to avoid feeling jumpy.
   useEffect(() => {
+    // Don't scroll on the initial mount — only when the user advances.
+    if (!stepScrollReady.current) {
+      stepScrollReady.current = true;
+      return;
+    }
     if (typeof window === "undefined") return;
     if (window.matchMedia("(min-width: 769px)").matches) return;
     const target = document.getElementById(`step-pane-${step}`);
