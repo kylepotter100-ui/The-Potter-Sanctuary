@@ -97,17 +97,18 @@ export default async function ServicePage({
 
         {/* DETAIL */}
         <section className="section cream" id="detail">
-          <div className="container philo">
-            <div className="img">
+          <div className="container treatment-detail">
+            <figure className="treatment-hero-img">
               <Image
-                src={service.image.src}
-                alt={service.image.alt}
-                fill
-                sizes="(max-width: 960px) 100vw, 45vw"
-                style={{ objectFit: "cover" }}
+                src={service.images.primary}
+                alt={`${service.name} ${service.nameEm} treatment at The Potter Sanctuary`}
+                width={1200}
+                height={675}
+                sizes="(max-width: 820px) 92vw, 760px"
+                priority
               />
-            </div>
-            <div>
+            </figure>
+            <div className="treatment-copy">
               <div className="eyebrow">What to expect</div>
               <h2 className="section-title">
                 {service.name} <em>{service.nameEm}</em>
@@ -140,15 +141,15 @@ export default async function ServicePage({
           <div className="container">
             <div className="treatment-gallery">
               {service.images.gallery.map((src, i) => (
-                <div className="treatment-gallery-img" key={src}>
+                <figure className="treatment-gallery-img" key={src}>
                   <Image
                     src={src}
-                    alt={`${service.name} ${service.nameEm} at The Potter Sanctuary — image ${i + 2}`}
-                    fill
-                    sizes="(max-width: 860px) 100vw, 50vw"
-                    style={{ objectFit: "cover" }}
+                    alt={`${service.name} ${service.nameEm} treatment at The Potter Sanctuary — detail ${i + 1}`}
+                    width={800}
+                    height={600}
+                    sizes="(max-width: 860px) 92vw, 380px"
                   />
-                </div>
+                </figure>
               ))}
             </div>
           </div>
