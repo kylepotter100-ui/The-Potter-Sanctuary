@@ -27,8 +27,17 @@ export default async function LoginPage({
     typeof params.next === "string" && params.next.startsWith("/")
       ? params.next
       : "/account";
-  const errorMessage = params.error;
   const expired = params.expired === "1";
+  // Map known error codes to friendly copy; fall back to the raw value.
+  const ERROR_MESSAGES: Record<string, string> = {
+    no_customer_record:
+      "Something went wrong. Please make a booking first to create your account.",
+    could_not_authenticate:
+      "We couldn't sign you in. Please request a new code below.",
+  };
+  const errorMessage = params.error
+    ? ERROR_MESSAGES[params.error] ?? decodeURIComponent(params.error)
+    : null;
 
   return (
     <>
@@ -48,7 +57,7 @@ export default async function LoginPage({
           )}
           {errorMessage && !expired && (
             <div role="alert" className="login-error login-error-banner">
-              {decodeURIComponent(errorMessage)}
+              {errorMessage}
             </div>
           )}
           <LoginForm next={next} />

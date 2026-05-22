@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
@@ -16,6 +17,10 @@ const RESEND_COOLDOWN_SECONDS = 30;
 // path; cookie state from the requesting browser is irrelevant, which
 // is what makes this reliable on mobile.
 //
+// Sign-in is gated to EXISTING customers: we check /api/customer/check
+// before sending a code, and pass shouldCreateUser:false so Supabase
+// never auto-creates an auth user for a stranger.
+//
 // Supabase email-template requirement: the template that fires for
 // `signInWithOtp` MUST include `{{ .Token }}` so the customer sees a
 // 6-digit code.
@@ -26,6 +31,7 @@ export default function LoginForm({ next }: Props) {
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noAccount, setNoAccount] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -57,17 +63,33 @@ export default function LoginForm({ next }: Props) {
 
   async function sendCode() {
     setError(null);
+    setNoAccount(false);
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError("Please enter a valid email address.");
       return false;
     }
     setSubmitting(true);
     try {
+      // Gate: only existing customers (who have booked before) can sign in.
+      const checkRes = await fetch("/api/customer/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const checkData = (await checkRes
+        .json()
+        .catch(() => ({ exists: false }))) as { exists?: boolean };
+      if (!checkData.exists) {
+        setNoAccount(true);
+        return false;
+      }
+
       const supabase = getSupabaseBrowserClient();
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true,
+          // Never auto-create an auth user for a non-customer.
+          shouldCreateUser: false,
         },
       });
       if (otpError) throw otpError;
@@ -192,6 +214,9 @@ export default function LoginForm({ next }: Props) {
             {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
           </button>
         </div>
+        <p className="login-spam-note">
+          Don&apos;t see the code? Check your spam or junk folder.
+        </p>
       </form>
     );
   }
@@ -205,16 +230,31 @@ export default function LoginForm({ next }: Props) {
         autoComplete="email"
         placeholder="you@example.com"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (noAccount) setNoAccount(false);
+        }}
         required
       />
+      {noAccount && (
+        <div role="alert" className="login-no-account">
+          <p>
+            We don&apos;t have an account associated with this email yet.
+            Please make your first booking to create your account, then sign
+            in afterwards to manage your bookings.
+          </p>
+          <Link href="/?scrollTo=booking" className="login-no-account-btn">
+            Book your first session
+          </Link>
+        </div>
+      )}
       {error && (
         <div role="alert" className="login-error">
           {error}
         </div>
       )}
       <button type="submit" className="login-btn" disabled={submitting}>
-        {submitting ? "Sending…" : "Send my code"}
+        {submitting ? "Checking…" : "Send my code"}
       </button>
     </form>
   );

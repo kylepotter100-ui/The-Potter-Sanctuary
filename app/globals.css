@@ -1371,6 +1371,12 @@
     max-width: 400px;
     margin: 0 auto 20px;
   }
+  .confirm-spam-note {
+    font-size: 13px;
+    font-style: italic;
+    opacity: 0.65 !important;
+    max-width: 420px;
+  }
   .confirm-summary {
     background: var(--bone);
     border-radius: 6px;
@@ -1768,6 +1774,42 @@
     opacity: 0.55;
     cursor: not-allowed;
   }
+  /* Subtle "check your spam" reminder under the code entry. */
+  .login-spam-note {
+    margin-top: 14px;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--ink-soft);
+    opacity: 0.7;
+    text-align: center;
+  }
+  /* Friendly banner shown when the email has no customer account yet. */
+  .login-no-account {
+    background: var(--bone);
+    border: 1px solid rgba(58, 63, 49, 0.15);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 4px;
+  }
+  .login-no-account p {
+    margin: 0 0 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .login-no-account-btn {
+    display: inline-block;
+    background: var(--sage-deep);
+    color: var(--cream);
+    text-decoration: none;
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 11px 22px;
+    border-radius: 999px;
+  }
+  .login-no-account-btn:hover { background: var(--ink); }
   .login-success {
     text-align: center;
     padding: 8px 0;

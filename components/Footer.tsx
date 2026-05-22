@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
 import { services } from "@/lib/services";
+import FooterAccountLink from "@/components/FooterAccountLink";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -91,10 +92,7 @@ export default function Footer() {
                 </svg>
               </a>
             </li>
-            <li className="footer-signin">
-              Already a client?{" "}
-              <Link href="/login">Sign in</Link>
-            </li>
+            <FooterAccountLink />
           </ul>
         </div>
         <div className="col">

@@ -59,8 +59,10 @@ export async function GET(request: Request) {
     return expiredRedirect(url.origin);
   }
 
-  // Best-effort: ensure a customer row exists for the authenticated user so
-  // the rest of the app can rely on it. Failure here doesn't block sign-in.
+  // Sign-in is gated to existing customers (those who have booked before).
+  // Link the auth user to their EXISTING customer record — never create a
+  // new one here. If no matching customer exists, this is a stranger who
+  // shouldn't have a session: sign them out and bounce to /login.
   if (supabaseAdmin) {
     const email = user.email.toLowerCase();
     try {
@@ -70,18 +72,18 @@ export async function GET(request: Request) {
         .eq("email", email)
         .maybeSingle();
 
-      if (existing) {
-        if (!existing.user_id) {
-          await supabaseAdmin
-            .from("customers")
-            .update({ user_id: user.id, updated_at: new Date().toISOString() })
-            .eq("id", existing.id);
-        }
-      } else {
-        await supabaseAdmin.from("customers").insert({
-          user_id: user.id,
-          email,
-        });
+      if (!existing) {
+        await supabase.auth.signOut();
+        return NextResponse.redirect(
+          new URL("/login?error=no_customer_record", url.origin)
+        );
+      }
+
+      if (!existing.user_id) {
+        await supabaseAdmin
+          .from("customers")
+          .update({ user_id: user.id, updated_at: new Date().toISOString() })
+          .eq("id", existing.id);
       }
     } catch (err) {
       console.error(
