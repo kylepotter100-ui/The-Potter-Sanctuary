@@ -254,8 +254,14 @@
   /* Full-screen mobile menu overlay. */
   .nav-overlay {
     position: fixed;
-    inset: 0;
-    z-index: 200;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 9999;
     background: var(--sage);
     display: flex;
     flex-direction: column;
@@ -563,8 +569,13 @@
     background: currentColor;
     opacity: 0.6;
   }
-  /* Comfortable space below the heading, before the body copy. */
-  .philo h2 { margin-bottom: 28px; }
+  /* Comfortable space below the heading, before the body copy. The global
+     h2.section-title caps width at 18ch; auto side-margins centre that box
+     within the section (text-align centres the lines inside it). */
+  .philo h2 {
+    margin: 0 auto 28px;
+    text-align: center;
+  }
   .philo p {
     font-size: 17px;
     line-height: 1.8;
