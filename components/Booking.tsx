@@ -979,6 +979,10 @@ export default function Booking({ preselectId }: Props) {
             Thank you, {fname || "friend"} — we'll be in touch within the day to
             confirm. Studio address and parking notes will follow by email.
           </p>
+          <p className="confirm-spam-note">
+            Don&apos;t see the email? Please check your spam or junk folder —
+            we sometimes land there for first-time customers.
+          </p>
           {date && time && service && (
             <div className="confirm-summary">
               <div className="row">
