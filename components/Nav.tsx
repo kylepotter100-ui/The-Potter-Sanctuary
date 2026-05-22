@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Menu, X } from "lucide-react";
 
 type Props = {
@@ -141,36 +142,44 @@ export default function Nav({ homeAnchors = false, solid = false }: Props) {
         </button>
       </div>
 
-      {menuOpen && (
-        <div
-          className="nav-overlay"
-          id="nav-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-          ref={overlayRef}
-        >
-          <button
-            type="button"
-            className="nav-overlay-close"
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
+      {/* The overlay is portalled to <body> rather than nested inside the
+          nav. When scrolled, nav.top.scrolled applies backdrop-filter,
+          which makes the nav a containing block for fixed descendants —
+          that would anchor the overlay to the ~60px nav instead of the
+          viewport. Portalling to body keeps it truly viewport-fixed. */}
+      {menuOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="nav-overlay"
+            id="nav-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            ref={overlayRef}
           >
-            <X size={28} aria-hidden="true" />
-          </button>
-          <div className="nav-overlay-links">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.anchor}
-                href={hrefFor(item.anchor)}
-                onClick={(e) => onAnchorClick(e, item.anchor)}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+            <button
+              type="button"
+              className="nav-overlay-close"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+            >
+              <X size={28} aria-hidden="true" />
+            </button>
+            <div className="nav-overlay-links">
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.anchor}
+                  href={hrefFor(item.anchor)}
+                  onClick={(e) => onAnchorClick(e, item.anchor)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>,
+          document.body
+        )}
     </nav>
   );
 }
