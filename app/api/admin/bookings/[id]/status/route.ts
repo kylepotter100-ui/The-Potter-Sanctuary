@@ -42,18 +42,43 @@ export async function POST(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin
+  // Conditional state transition to prevent races (e.g. admin confirms a
+  // booking the customer is cancelling at the same moment):
+  //  - confirm:  only from 'pending' (never resurrect a cancelled booking)
+  //  - cancel:   only when not already cancelled
+  //  - pending:  only when not already cancelled
+  let query = supabaseAdmin
     .from("bookings")
     .update({ status })
-    .eq("id", id)
-    .select(
-      "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, status"
-    )
-    .single();
+    .eq("id", id);
+  if (status === "confirmed") {
+    query = query.eq("status", "pending");
+  } else {
+    query = query.neq("status", "cancelled");
+  }
+
+  const { data: rows, error } = await query.select(
+    "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, status"
+  );
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  if (!rows || rows.length === 0) {
+    // The booking wasn't in a state this transition is allowed from.
+    return NextResponse.json(
+      {
+        error: "invalid_transition",
+        message:
+          status === "confirmed"
+            ? "This booking can't be confirmed — it may have been cancelled."
+            : "This booking can no longer be updated.",
+      },
+      { status: 409 }
+    );
+  }
+  const data = rows[0];
 
   // Send the customer a confirmation email when the admin moves a booking to
   // 'confirmed'. Best-effort — failures here don't fail the API call.

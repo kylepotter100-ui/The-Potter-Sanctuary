@@ -64,7 +64,9 @@ export async function POST(
     return NextResponse.json({ ok: true, alreadyCancelled: true });
   }
 
-  const { error: updateError } = await supabaseAdmin
+  // Claim-based conditional update so a simultaneous customer cancellation
+  // can't also "win". Only the request that flips the row sends emails.
+  const { data: updatedRows, error: updateError } = await supabaseAdmin
     .from("bookings")
     .update({
       status: "cancelled",
@@ -72,14 +74,21 @@ export async function POST(
       cancelled_at: new Date().toISOString(),
       cancelled_by: "owner",
     })
-    .eq("id", id);
+    .eq("id", id)
+    .neq("status", "cancelled")
+    .select("id");
 
   if (updateError) {
-    console.error("[admin cancel] update failed", updateError);
+    console.error("[admin cancel] update failed", JSON.stringify(updateError));
     return NextResponse.json(
       { error: "Could not cancel the booking" },
       { status: 500 }
     );
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    // Already cancelled by a concurrent request — don't double-send emails.
+    return NextResponse.json({ ok: true, alreadyCancelled: true });
   }
 
   const apiKey = process.env.RESEND_API_KEY;

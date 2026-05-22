@@ -25,8 +25,13 @@ export default function AdminBookingActions({ bookingId, status }: Props) {
         body: JSON.stringify({ status: "confirmed" }),
       });
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Could not confirm");
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
+        throw new Error(
+          data?.message || data?.error || "Could not confirm"
+        );
       }
       router.refresh();
     } catch (err) {
@@ -50,8 +55,11 @@ export default function AdminBookingActions({ bookingId, status }: Props) {
         body: JSON.stringify({ reason }),
       });
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Could not cancel");
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
+        throw new Error(data?.message || data?.error || "Could not cancel");
       }
       setModalOpen(false);
       router.refresh();

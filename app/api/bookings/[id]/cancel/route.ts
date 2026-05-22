@@ -86,7 +86,10 @@ export async function POST(
     );
   }
 
-  const { error: updateError } = await supabaseAdmin
+  // Claim-based conditional update: only the request that actually flips the
+  // row from non-cancelled → cancelled proceeds to send emails. Guards against
+  // a simultaneous customer + owner cancellation both "winning".
+  const { data: updatedRows, error: updateError } = await supabaseAdmin
     .from("bookings")
     .update({
       status: "cancelled",
@@ -94,18 +97,33 @@ export async function POST(
       cancelled_at: new Date().toISOString(),
       cancelled_by: "customer",
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("customer_id", customer.id)
+    .neq("status", "cancelled")
+    .select("id");
 
   if (updateError) {
-    console.error("[cancel] update failed", updateError);
+    console.error("[cancel] update failed", JSON.stringify(updateError));
     return NextResponse.json(
       { error: "Could not cancel the booking" },
       { status: 500 }
     );
   }
 
+  if (!updatedRows || updatedRows.length === 0) {
+    // Lost the race (already cancelled) or no longer owned by this customer.
+    return NextResponse.json(
+      {
+        error: "already_cancelled",
+        message: "This booking has already been cancelled.",
+      },
+      { status: 409 }
+    );
+  }
+
   // Fire-and-forget emails. Failures are logged but don't fail the request,
-  // since the booking is already cancelled in the database.
+  // since the booking is already cancelled in the database. Only the request
+  // that won the conditional update reaches here, so emails send exactly once.
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     const resend = new Resend(apiKey);

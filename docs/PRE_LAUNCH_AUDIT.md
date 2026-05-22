@@ -85,7 +85,7 @@ Verified: both OTP entry points (`LoginForm`, `InlineSignInModal`) now call
 
 ## CATEGORY B — Booking & cancellation race conditions
 
-### B1 — Cancellation 15-minute buffer 🟡 Medium (double-cancel)
+### B1 — Cancellation 15-minute buffer 🟡 Medium (double-cancel) — ✅ RESOLVED (PR #58)
 - WHERE: `app/api/bookings/[id]/cancel/route.ts:70-95` ·
   `app/api/admin/bookings/[id]/cancel/route.ts:63-75`.
 - WHAT (boundary): `minutesUntil < 15` rejects; at exactly 15.0 min it is
@@ -105,7 +105,7 @@ Verified: both OTP entry points (`LoginForm`, `InlineSignInModal`) now call
   send emails if a row was actually updated; otherwise treat as already
   cancelled and no-op.
 
-### B2 — Slot blocked / unavailable between fetch and submit 🟠 High
+### B2 — Slot blocked / unavailable between fetch and submit 🟠 High — ✅ RESOLVED (PR #58)
 - WHERE: `app/api/booking/route.ts` (insert at ~112-130) — **no server-side
   availability validation**.
 - WHAT: `/api/booking` validates field presence and inserts a `pending`
@@ -126,7 +126,7 @@ Verified: both OTP entry points (`LoginForm`, `InlineSignInModal`) now call
   available" if the requested time isn't free. Mirror the `Booking.tsx`
   `freeSlotsFor` resolution server-side.
 
-### B3 — Confirm vs cancel race 🟡 Medium
+### B3 — Confirm vs cancel race 🟡 Medium — ✅ RESOLVED (PR #58)
 - WHERE: `app/api/admin/bookings/[id]/status/route.ts:45-52` —
   `.update({ status }).eq("id", id)` with **no conditional**.
 - WHAT: admin "confirm" sets `status='confirmed'` unconditionally. If a customer
@@ -145,7 +145,7 @@ Verified: both OTP entry points (`LoginForm`, `InlineSignInModal`) now call
 
 ## CATEGORY C — Cron job edge cases
 
-### C1 — Reminder duplicates under overlapping cron runs 🟢 Low
+### C1 — Reminder duplicates under overlapping cron runs 🟢 Low — Accepted risk (post-launch backlog)
 - WHERE: `app/api/cron/reminders/route.ts:96-139` ·
   `app/api/cron/appointment-reminders/route.ts` ·
   `app/api/cron/review-requests/route.ts`.
@@ -160,7 +160,7 @@ Verified: both OTP entry points (`LoginForm`, `InlineSignInModal`) now call
   IS NULL RETURNING id`; only send if a row was claimed. Idempotent under
   overlap.
 
-### C2 — Morning-summary boundary & dedupe atomicity 🟡 Medium
+### C2 — Morning-summary boundary & dedupe atomicity 🟡 Medium — ✅ RESOLVED (PR #58)
 - WHERE: `app/api/cron/morning-summary/route.ts:78-90,194-197` ·
   `worker.mjs` (dispatches when UK hour ∈ [6,7,8]).
 - WHAT (single-shot window): the route only sends when `ukHour() === 7`. The
@@ -265,25 +265,51 @@ Verified: both OTP entry points (`LoginForm`, `InlineSignInModal`) now call
 
 ## Summary table
 
-| ID | Area | Severity | Needs fix before launch? |
-|----|------|----------|--------------------------|
-| A1 | Auth/customer desync on /account | 🟢 Low | No |
-| A2 | Returning-customer detection | ✅ OK | No |
-| A3 | Email case sensitivity | ✅ OK | No |
-| A4 | Sign-out cookie clear on failure | 🟢 Low | Optional |
-| B1 | Double-cancel race / duplicate emails | 🟡 Medium | Recommended |
-| B2 | No server-side slot validation in /api/booking | 🟠 High | **Recommended** |
-| B3 | Confirm-vs-cancel race resurrects booking | 🟡 Medium | Recommended |
-| C1 | Reminder duplicates on cron overlap | 🟢 Low | Optional |
-| C2 | Morning-summary drift miss + dedupe atomicity | 🟡 Medium | Recommended |
-| C3 | Cron Resend-failure handling | ✅ OK | No |
-| D1 | Cancelled bookings free slot | ✅ OK | No |
-| D2 | Auth/customer deletion desync | 🟢 Low | No |
-| D3 | PII retained on bookings after customer delete | 🟢 Low | When erasure flow built |
-| E1 | Bounce handling | 🟢 Low | Optional (post-launch) |
-| E2 | Review-email unsubscribe | 🟢 Low | Before REVIEWS_ENABLED |
+| ID | Area | Severity | Status |
+|----|------|----------|--------|
+| A1 | Auth/customer desync on /account | 🟢 Low | Open (no fix needed for launch) |
+| A2 | Returning-customer detection | ✅ OK | — |
+| A3 | Email case sensitivity | ✅ OK | — |
+| A4 | Sign-out cookie clear on failure | 🟢 Low | Open (optional) |
+| B1 | Double-cancel race / duplicate emails | 🟡 Medium | ✅ **Resolved** |
+| B2 | No server-side slot validation in /api/booking | 🟠 High | ✅ **Resolved** |
+| B3 | Confirm-vs-cancel race resurrects booking | 🟡 Medium | ✅ **Resolved** |
+| C1 | Reminder duplicates on cron overlap | 🟢 Low | Accepted risk — post-launch backlog |
+| C2 | Morning-summary drift miss + dedupe atomicity | 🟡 Medium | ✅ **Resolved** |
+| C3 | Cron Resend-failure handling | ✅ OK | — |
+| D1 | Cancelled bookings free slot | ✅ OK | — |
+| D2 | Auth/customer deletion desync | 🟢 Low | Open (theoretical) |
+| D3 | PII retained on bookings after customer delete | 🟢 Low | Open (when erasure flow built) |
+| E1 | Bounce handling | 🟢 Low | Open (post-launch) |
+| E2 | Review-email unsubscribe | 🟢 Low | Open (before REVIEWS_ENABLED) |
 
-**Top recommendations for a follow-up remediation PR:** B2 (server-side slot
-validation), then B1/B3 (conditional, claim-based status updates), then C2
-(morning-summary window + atomic dedupe). C1 is a cheap idempotency win on the
-same pattern as B1/B3.
+### Remediation — resolved in this PR (#58)
+
+Commit: `fix: server-side slot validation, conditional state updates, atomic
+morning summary dedupe`.
+
+- **B2 ✅** — `lib/availability.ts` adds `validateSlotAvailable()` (shared
+  source of truth mirroring `freeSlotsFor`); `/app/api/booking/route.ts` calls
+  it before INSERT and returns 409 `slot_unavailable` on past dates, blocked
+  dates, slots not offered, or already-taken slots. `Booking.tsx` surfaces the
+  server's reason and re-fetches availability.
+- **B1 ✅** — `/app/api/bookings/[id]/cancel/route.ts` uses a claim-based
+  conditional UPDATE (`.eq(id).eq(customer_id).neq(status,'cancelled')
+  .select()`); emails send only when a row was actually flipped. 0 rows → 409
+  `already_cancelled`.
+- **B3 ✅** — `/app/api/admin/bookings/[id]/status/route.ts` confirm now requires
+  `status='pending'`; `/app/api/admin/bookings/[id]/cancel/route.ts` cancel
+  requires `status != 'cancelled'`. Both return cleanly (409 / already-cancelled)
+  with no duplicate emails when the transition isn't valid.
+- **C2 ✅** — `/app/api/cron/morning-summary/route.ts` widened to the 7–8am UK
+  window and made the dedupe atomic: claim the `daily_summaries_sent` row up
+  front via `upsert(..., { ignoreDuplicates: true }).select()` and only send if
+  the row was newly inserted; on send failure the claim row is deleted so the
+  next run retries.
+
+### Accepted risk / post-launch backlog
+
+- **C1** — reminder crons aren't claim-based, so a run that overlaps the next
+  could double-send a reminder. Accepted for launch (tiny volume, narrow
+  window). Backlog: apply the same claim-before-send pattern used for B1/B3 to
+  `reminders`, `appointment-reminders`, and `review-requests`.

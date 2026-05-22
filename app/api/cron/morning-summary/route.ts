@@ -74,19 +74,32 @@ export async function GET(req: Request) {
 
   const { dateIso, hour } = ukNow();
 
-  // Only run inside the 7am UK hour.
-  if (hour !== 7) {
+  // Send within the 7–8am UK window. Widened from a strict 7 so a slightly
+  // drifted cron trigger still delivers the day's summary; the atomic claim
+  // below guarantees it only goes out once.
+  if (hour < 7 || hour > 8) {
     return NextResponse.json({ ok: true, skipped: "outside-window", hour });
   }
 
-  // Dedupe — if we've already sent today, bail.
-  const { data: alreadySent } = await supabaseAdmin
+  // Atomic dedupe claim: INSERT ... ON CONFLICT DO NOTHING. Only the request
+  // that actually inserts today's row proceeds to send. Two runs racing in
+  // the 7–8am window can't both win, even before either has sent.
+  const { data: claimed, error: claimError } = await supabaseAdmin
     .from("daily_summaries_sent")
-    .select("summary_date")
-    .eq("summary_date", dateIso)
-    .maybeSingle();
-  if (alreadySent) {
-    return NextResponse.json({ ok: true, skipped: "already-sent" });
+    .upsert({ summary_date: dateIso }, {
+      onConflict: "summary_date",
+      ignoreDuplicates: true,
+    })
+    .select("summary_date");
+  if (claimError) {
+    console.error(
+      "[cron morning-summary] claim failed",
+      JSON.stringify(claimError)
+    );
+    return NextResponse.json({ error: claimError.message }, { status: 500 });
+  }
+  if (!claimed || claimed.length === 0) {
+    return NextResponse.json({ ok: true, skipped: "already_sent_today" });
   }
 
   // Pull today's bookings (UK date) excluding cancelled.
@@ -181,6 +194,11 @@ export async function GET(req: Request) {
         "[cron morning-summary] Resend error:",
         JSON.stringify(result.error)
       );
+      // Release the dedupe claim so the next run retries today's summary.
+      await supabaseAdmin
+        .from("daily_summaries_sent")
+        .delete()
+        .eq("summary_date", dateIso);
       return NextResponse.json({ error: "Resend failed" }, { status: 500 });
     }
   } catch (err) {
@@ -188,14 +206,16 @@ export async function GET(req: Request) {
       "[cron morning-summary] dispatch failed",
       JSON.stringify(err, Object.getOwnPropertyNames(err as object))
     );
+    await supabaseAdmin
+      .from("daily_summaries_sent")
+      .delete()
+      .eq("summary_date", dateIso);
     return NextResponse.json({ error: "Send threw" }, { status: 500 });
   }
 
-  // Record that today's summary went out so subsequent cron runs skip.
-  await supabaseAdmin
-    .from("daily_summaries_sent")
-    .insert({ summary_date: dateIso });
-
+  // The dedupe row was claimed up front (atomic INSERT … ON CONFLICT DO
+  // NOTHING); the successful send above means it stays, so subsequent runs
+  // skip today.
   return NextResponse.json({
     ok: true,
     sent: 1,
