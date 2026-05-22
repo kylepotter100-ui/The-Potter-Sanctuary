@@ -61,18 +61,24 @@ export default function InlineSignInModal({
     }
     setSubmitting(true);
     try {
-      // Gate: only existing customers can sign in. This modal is opened
-      // from the returning-customer banner (so the initial email is known),
-      // but the field is editable — re-check here so a changed email can't
-      // create an auth user for a non-customer.
-      const checkRes = await fetch("/api/customer/check", {
+      // Gate + provisioning: confirm this is an existing customer and
+      // pre-create their auth user if needed. This modal's email field is
+      // editable, so a changed email is re-checked here (the server creates
+      // an auth user ONLY for emails with a customer record). See LoginForm
+      // for the full rationale.
+      const checkRes = await fetch("/api/customer/prepare-signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const checkData = (await checkRes
-        .json()
-        .catch(() => ({ exists: false }))) as { exists?: boolean };
+      const checkData = (await checkRes.json().catch(() => null)) as
+        | { exists?: boolean; error?: string }
+        | null;
+      if (!checkRes.ok || !checkData) {
+        throw new Error(
+          checkData?.error || "Something went wrong. Try again."
+        );
+      }
       if (!checkData.exists) {
         setError(
           "We don't have an account for this email yet. Please complete a booking first, then sign in."
@@ -83,10 +89,9 @@ export default function InlineSignInModal({
       const supabase = getSupabaseBrowserClient();
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
-        // shouldCreateUser:true — the /api/customer/check above is the gate;
-        // a verified customer's first-ever sign-in must be able to create
-        // their auth user (see LoginForm for the full rationale).
-        options: { shouldCreateUser: true },
+        // The auth user exists by now (prepare-signin created it if needed),
+        // so avoid the signup path that the project blocks.
+        options: { shouldCreateUser: false },
       });
       if (otpError) throw otpError;
       return true;

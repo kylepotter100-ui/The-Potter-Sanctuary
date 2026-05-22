@@ -17,13 +17,16 @@ const RESEND_COOLDOWN_SECONDS = 30;
 // path; cookie state from the requesting browser is irrelevant, which
 // is what makes this reliable on mobile.
 //
-// Sign-in is gated to EXISTING customers: we check /api/customer/check
-// before sending a code, and pass shouldCreateUser:false so Supabase
-// never auto-creates an auth user for a stranger.
+// Sign-in is gated to EXISTING customers: /api/customer/prepare-signin
+// confirms the email belongs to a customer AND pre-creates their Supabase
+// auth user (via the service role) if it doesn't exist yet. Because the
+// user always exists by the time we call signInWithOtp, we pass
+// shouldCreateUser:false — no public-signup path, so Supabase can't throw
+// "Signups not allowed for otp".
 //
-// Supabase email-template requirement: the template that fires for
-// `signInWithOtp` MUST include `{{ .Token }}` so the customer sees a
-// 6-digit code.
+// Supabase email-template requirement: since the user always pre-exists,
+// signInWithOtp fires the **Magic Link** template — it MUST include
+// `{{ .Token }}` so the customer sees a 6-digit code.
 export default function LoginForm({ next }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
@@ -70,15 +73,21 @@ export default function LoginForm({ next }: Props) {
     }
     setSubmitting(true);
     try {
-      // Gate: only existing customers (who have booked before) can sign in.
-      const checkRes = await fetch("/api/customer/check", {
+      // Gate + provisioning: confirm this is an existing customer and
+      // pre-create their auth user (server-side, service role) if needed.
+      const checkRes = await fetch("/api/customer/prepare-signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const checkData = (await checkRes
-        .json()
-        .catch(() => ({ exists: false }))) as { exists?: boolean };
+      const checkData = (await checkRes.json().catch(() => null)) as
+        | { exists?: boolean; error?: string }
+        | null;
+      if (!checkRes.ok || !checkData) {
+        throw new Error(
+          checkData?.error || "Something went wrong. Please try again."
+        );
+      }
       if (!checkData.exists) {
         setNoAccount(true);
         return false;
@@ -88,14 +97,10 @@ export default function LoginForm({ next }: Props) {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // shouldCreateUser MUST be true. The security gate is the
-          // /api/customer/check call above — only emails with an existing
-          // customer record (i.e. who have booked) reach this point. A
-          // legitimate customer who booked but has never signed in has NO
-          // auth user yet, so this first OTP must be allowed to create it.
-          // With shouldCreateUser:false Supabase throws "Signups not allowed
-          // for otp" and blocks their very first sign-in.
-          shouldCreateUser: true,
+          // The auth user is guaranteed to exist now (prepare-signin created
+          // it if needed), so we never want Supabase to take the signup path
+          // — which the project blocks with "Signups not allowed for otp".
+          shouldCreateUser: false,
         },
       });
       if (otpError) throw otpError;
