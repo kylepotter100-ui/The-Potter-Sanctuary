@@ -31,7 +31,15 @@ function ukHour() {
 }
 
 export default {
-  fetch: openNextHandler.fetch,
+  // Delegate ALL HTTP requests to OpenNext's handler. Call it as a method
+  // of openNextHandler (not a detached reference) so `this` stays bound —
+  // OpenNext relies on that to route requests, including serving static
+  // assets from /public (e.g. /sanctuary-logo.png, /favicon.ico) via the
+  // ASSETS binding. A bare `fetch: openNextHandler.fetch` loses `this` and
+  // breaks static-asset serving.
+  fetch(request, env, ctx) {
+    return openNextHandler.fetch(request, env, ctx);
+  },
   async scheduled(event, env, ctx) {
     const work = (async () => {
       const secret = env.CRON_SECRET;
