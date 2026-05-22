@@ -61,9 +61,31 @@ export default function InlineSignInModal({
     }
     setSubmitting(true);
     try {
+      // Gate: only existing customers can sign in. This modal is opened
+      // from the returning-customer banner (so the initial email is known),
+      // but the field is editable — re-check here so a changed email can't
+      // create an auth user for a non-customer.
+      const checkRes = await fetch("/api/customer/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const checkData = (await checkRes
+        .json()
+        .catch(() => ({ exists: false }))) as { exists?: boolean };
+      if (!checkData.exists) {
+        setError(
+          "We don't have an account for this email yet. Please complete a booking first, then sign in."
+        );
+        return false;
+      }
+
       const supabase = getSupabaseBrowserClient();
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
+        // shouldCreateUser:true — the /api/customer/check above is the gate;
+        // a verified customer's first-ever sign-in must be able to create
+        // their auth user (see LoginForm for the full rationale).
         options: { shouldCreateUser: true },
       });
       if (otpError) throw otpError;

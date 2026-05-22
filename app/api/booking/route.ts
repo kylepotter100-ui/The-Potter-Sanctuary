@@ -4,6 +4,7 @@ import { render } from "@react-email/render";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
 import { supabaseAdmin } from "@/lib/supabase";
+import { validateSlotAvailable } from "@/lib/availability";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
 
 type Payload = {
@@ -66,6 +67,22 @@ export async function POST(req: Request) {
   const slotTime = payload.time.length === 5 ? `${payload.time}:00` : payload.time;
   const emailLower = payload.email.toLowerCase();
   const fullName = `${payload.fname} ${payload.lname}`.trim();
+
+  // Server-side slot validation — never trust the client's date/time. Mirrors
+  // the calendar's resolution (template ∪ active overrides − inactive overrides
+  // − blocked − already-booked). The 23505 unique-violation handler below
+  // remains as the hard concurrency guard.
+  const slotCheck = await validateSlotAvailable(
+    supabaseAdmin,
+    payload.date,
+    payload.time
+  );
+  if (!slotCheck.ok) {
+    return NextResponse.json(
+      { error: "slot_unavailable", message: slotCheck.reason },
+      { status: 409 }
+    );
+  }
 
   // Look up or create the customer record so every booking is linked to one.
   let customerId: string | null = null;

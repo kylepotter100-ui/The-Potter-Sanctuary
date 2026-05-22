@@ -88,8 +88,14 @@ export default function LoginForm({ next }: Props) {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // Never auto-create an auth user for a non-customer.
-          shouldCreateUser: false,
+          // shouldCreateUser MUST be true. The security gate is the
+          // /api/customer/check call above — only emails with an existing
+          // customer record (i.e. who have booked) reach this point. A
+          // legitimate customer who booked but has never signed in has NO
+          // auth user yet, so this first OTP must be allowed to create it.
+          // With shouldCreateUser:false Supabase throws "Signups not allowed
+          // for otp" and blocks their very first sign-in.
+          shouldCreateUser: true,
         },
       });
       if (otpError) throw otpError;

@@ -558,11 +558,16 @@ export default function Booking({ preselectId }: Props) {
         }),
       });
       if (res.status === 409) {
-        // Race-loss: another customer grabbed the same slot between page
-        // load and submit. Refresh availability, drop the picked time,
-        // and send the customer back to step 1 so they can pick again.
+        // The slot is no longer bookable — either taken in a race, the date
+        // got blocked, or the slot was toggled off after the calendar loaded.
+        // Use the server's friendly reason, refresh availability, drop the
+        // picked time, and send the customer back to step 1 to pick again.
+        const body = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
         setSubmitError(
-          "Sorry, that time slot was just taken. Please pick another time."
+          body?.message ??
+            "Sorry, that time slot is no longer available. Please pick another time."
         );
         setTime(null);
         setStep(1);
