@@ -62,3 +62,12 @@ FROM public.slot_overrides
 WHERE extract(minute FROM slot_time) IN (0, 30)
   AND slot_time < '19:00'::time
 ON CONFLICT (override_date, slot_time) DO NOTHING;
+
+-- Drop any per-date overrides at/after 19:00, mirroring the 19:00 delete on the
+-- availability template above. 19:00 is the closing time and can never be a
+-- valid start (a session beginning then can't finish by close), so these rows
+-- are inert orphaned state under the new 15-min grid (which ends at 18:45).
+-- Removing them keeps slot_overrides consistent with the template. This runs
+-- AFTER the expansion step, which already filtered to slot_time < '19:00', so
+-- the expansion is unaffected.
+DELETE FROM public.slot_overrides WHERE slot_time >= '19:00'::time;
