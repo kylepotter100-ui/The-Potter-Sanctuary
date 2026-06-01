@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { durationMinutesForTreatmentId } from "@/lib/services";
+import { BUFFER_MINUTES } from "@/lib/availability";
 
 type AvailabilityRow = {
   id: string;
@@ -20,6 +22,8 @@ type BookingRow = {
   id: string;
   booking_date: string;
   booking_time: string;
+  duration_minutes: number | null;
+  treatment_id: string;
   customer_first_name: string;
   status: "pending" | "confirmed" | "cancelled";
 };
@@ -43,15 +47,17 @@ const MONTHS_SHORT = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+// 15-minute grid, 09:30 through 18:45 inclusive — 18:45 is the last occupiable
+// segment (19:00 is closing time, never a start). ~38 cells per day.
 function generateSlots(): string[] {
   const out: string[] = [];
   let m = 9 * 60 + 30;
-  const end = 19 * 60;
+  const end = 18 * 60 + 45;
   while (m <= end) {
     const h = Math.floor(m / 60);
     const mm = m % 60;
     out.push(`${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`);
-    m += 30;
+    m += 15;
   }
   return out;
 }
@@ -59,6 +65,30 @@ const SLOTS = generateSlots();
 
 function normalize(t: string): string {
   return t.length === 5 ? `${t}:00` : t;
+}
+
+function timeToMin(t: string): number {
+  const [h, m] = String(t).slice(0, 5).split(":");
+  return parseInt(h, 10) * 60 + parseInt(m, 10);
+}
+
+function minToTime(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+// Today's date (YYYY-MM-DD) in Europe/London, so the blocked-date list can hide
+// past dates regardless of the admin's own timezone.
+function ukTodayIso(): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 function isoDate(d: Date): string {
@@ -143,13 +173,30 @@ export default function AvailabilityPanel({
     return m;
   }, [overrides]);
 
+  // A booking now spans every 15-min segment of its session [start, start+dur),
+  // plus its trailing buffer segments [start+dur, start+dur+15) shown in a
+  // lighter style. Session marking takes priority over buffer.
   const bookingsByDate = useMemo(() => {
-    const out: Record<string, Record<string, string>> = {};
+    type Seg = { name: string; kind: "session" | "buffer" };
+    const out: Record<string, Record<string, Seg>> = {};
     for (const b of bookings) {
       const date = b.booking_date;
-      const time = String(b.booking_time).slice(0, 5);
+      const startMin = timeToMin(b.booking_time);
+      const dur =
+        b.duration_minutes ??
+        durationMinutesForTreatmentId(b.treatment_id) ??
+        60;
       if (!out[date]) out[date] = {};
-      out[date][time] = b.customer_first_name;
+      const day = out[date];
+      // Buffer first (lower priority).
+      for (let m = startMin + dur; m < startMin + dur + BUFFER_MINUTES; m += 15) {
+        const t = minToTime(m);
+        if (!day[t]) day[t] = { name: b.customer_first_name, kind: "buffer" };
+      }
+      // Session segments override any buffer mark.
+      for (let m = startMin; m < startMin + dur; m += 15) {
+        day[minToTime(m)] = { name: b.customer_first_name, kind: "session" };
+      }
     }
     return out;
   }, [bookings]);
@@ -271,6 +318,16 @@ export default function AvailabilityPanel({
   const [date, setDate] = useState("");
   const [reason, setReason] = useState("");
   const [blockError, setBlockError] = useState<string | null>(null);
+  const [blockedExpanded, setBlockedExpanded] = useState(false);
+
+  // Only show today-or-future blocked dates — past closures are noise.
+  const visibleBlocked = useMemo(() => {
+    const todayIso = ukTodayIso();
+    return blocked.filter((b) => b.blocked_date >= todayIso);
+  }, [blocked]);
+  // Collapse a long list by default so the page isn't an endless scroll.
+  const blockedCollapsible = visibleBlocked.length > 5;
+  const showBlockedList = !blockedCollapsible || blockedExpanded;
 
   async function block(e: React.FormEvent) {
     e.preventDefault();
@@ -385,17 +442,24 @@ export default function AvailabilityPanel({
               </p>
               <div className="avail-slot-grid">
                 {SLOTS.map((slot) => {
-                  const bookedBy = dayBookings[slot];
-                  if (bookedBy) {
+                  const seg = dayBookings[slot];
+                  if (seg) {
+                    const isBuffer = seg.kind === "buffer";
                     return (
                       <div
                         key={slot}
-                        className="avail-slot is-booked"
-                        title={`Booked by ${bookedBy}`}
+                        className={`avail-slot is-booked${
+                          isBuffer ? " is-buffer" : ""
+                        }`}
+                        title={
+                          isBuffer
+                            ? `Buffer after ${seg.name}`
+                            : `Booked by ${seg.name}`
+                        }
                       >
                         <span className="avail-slot-time">{slot}</span>
                         <span className="avail-slot-tag">
-                          Booked · {bookedBy}
+                          {isBuffer ? "Buffer" : `Booked · ${seg.name}`}
                         </span>
                       </div>
                     );
@@ -456,31 +520,46 @@ export default function AvailabilityPanel({
         </div>
       </form>
 
-      {blocked.length === 0 ? (
+      {visibleBlocked.length === 0 ? (
         <div className="admin-card">No blocked dates.</div>
       ) : (
-        <ul className="blocked-list">
-          {blocked.map((b) => (
-            <li key={b.id}>
-              <span>
-                <strong>{formatBlockedDate(b.blocked_date)}</strong>
-                {b.reason ? (
-                  <span style={{ opacity: 0.65, marginLeft: 10 }}>
-                    · {b.reason}
+        <>
+          {blockedCollapsible && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setBlockedExpanded((v) => !v)}
+              style={{ marginBottom: 12 }}
+            >
+              {visibleBlocked.length} blocked dates —{" "}
+              {blockedExpanded ? "hide" : "show"}
+            </button>
+          )}
+          {showBlockedList && (
+            <ul className="blocked-list">
+              {visibleBlocked.map((b) => (
+                <li key={b.id}>
+                  <span>
+                    <strong>{formatBlockedDate(b.blocked_date)}</strong>
+                    {b.reason ? (
+                      <span style={{ opacity: 0.65, marginLeft: 10 }}>
+                        · {b.reason}
+                      </span>
+                    ) : null}
                   </span>
-                ) : null}
-              </span>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                onClick={() => unblock(b.id)}
-                disabled={pending}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => unblock(b.id)}
+                    disabled={pending}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </>
   );

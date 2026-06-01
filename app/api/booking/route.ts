@@ -5,6 +5,7 @@ import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateSlotAvailable } from "@/lib/availability";
+import { durationMinutesForTreatmentId } from "@/lib/services";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
 
 type Payload = {
@@ -68,14 +69,21 @@ export async function POST(req: Request) {
   const emailLower = payload.email.toLowerCase();
   const fullName = `${payload.fname} ${payload.lname}`.trim();
 
-  // Server-side slot validation — never trust the client's date/time. Mirrors
-  // the calendar's resolution (template ∪ active overrides − inactive overrides
-  // − blocked − already-booked). The 23505 unique-violation handler below
-  // remains as the hard concurrency guard.
+  // The CORRECTED duration for this treatment (new bookings use the updated
+  // lengths). Falls back to 60 if the treatment_id is somehow unknown.
+  const durationMinutes =
+    durationMinutesForTreatmentId(payload.service.svc) ?? 60;
+
+  // Server-side slot validation — never trust the client's date/time/duration.
+  // Runs the same shared interval check the calendar uses (finishes by close;
+  // session segments open; interval doesn't intersect any existing booking).
+  // The unique-violation / exclusion-constraint handlers below remain as the
+  // hard concurrency guards.
   const slotCheck = await validateSlotAvailable(
     supabaseAdmin,
     payload.date,
-    payload.time
+    payload.time,
+    durationMinutes
   );
   if (!slotCheck.ok) {
     return NextResponse.json(
@@ -140,6 +148,7 @@ export async function POST(req: Request) {
       treatment_price: Math.round(payload.service.price),
       booking_date: payload.date,
       booking_time: slotTime,
+      duration_minutes: durationMinutes,
       message: payload.message?.trim() || null,
       status: "pending",
     })
@@ -151,12 +160,14 @@ export async function POST(req: Request) {
       "[booking] supabase insert failed",
       JSON.stringify(insertError)
     );
-    // Postgres 23505 = unique_violation. With the partial unique index on
-    // (booking_date, booking_time) WHERE status IN ('pending','confirmed'),
-    // this fires when two customers race to book the same slot.
+    // Postgres 23505 = unique_violation (identical-start guard,
+    // bookings_active_slot_unique) and 23P01 = exclusion_violation
+    // (bookings_no_overlap — the real overlap backstop). Either fires when two
+    // customers race for intersecting intervals; surface the same friendly 409.
     if (
       (insertError as { code?: string }).code === "23505" ||
-      /duplicate key|unique constraint|bookings_active_slot_unique/i.test(
+      (insertError as { code?: string }).code === "23P01" ||
+      /duplicate key|unique constraint|bookings_active_slot_unique|exclusion constraint|bookings_no_overlap/i.test(
         insertError.message ?? ""
       )
     ) {

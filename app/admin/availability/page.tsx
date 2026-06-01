@@ -45,7 +45,9 @@ export default async function AvailabilityPage() {
       .order("blocked_date", { ascending: true }),
     supabaseAdmin
       .from("bookings")
-      .select("id, booking_date, booking_time, customer_first_name, status")
+      .select(
+        "id, booking_date, booking_time, duration_minutes, treatment_id, customer_first_name, status"
+      )
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),

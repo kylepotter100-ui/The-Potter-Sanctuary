@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   treatment_price     int  NOT NULL,
   booking_date        date NOT NULL,
   booking_time        time NOT NULL,
+  -- Session length in minutes. The bookable interval is
+  -- [booking_time, booking_time + duration_minutes + 15) — session + a 15-min
+  -- buffer. See lib/availability.ts (BUFFER_MINUTES) for the interval model.
+  duration_minutes    int  NOT NULL,
   message             text,
   status              text NOT NULL DEFAULT 'pending'
                         CHECK (status IN ('pending','confirmed','cancelled')),
@@ -66,6 +70,12 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 -- For pre-existing tables created before this version — add the FK column.
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS customer_id uuid REFERENCES public.customers(id) ON DELETE SET NULL;
+
+-- Duration-aware blocking. On a pre-existing table the column is added nullable
+-- here; the two-phase migration (supabase/migrations/*_phaseA/B_*) backfills it
+-- and then promotes it to NOT NULL once the duration-aware code is live.
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS duration_minutes int;
 
 -- Cancellation metadata (Phase 2). Captures who cancelled, when, and why.
 ALTER TABLE public.bookings
@@ -175,23 +185,51 @@ ALTER TABLE public.consultation_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_summaries_sent ENABLE ROW LEVEL SECURITY;
 
 -- ===== Active-slot uniqueness =====
--- DB-level guard against double-booking. Two simultaneous inserts for the
--- same (date, time) where status is pending or confirmed will fail with
--- a 23505 unique_violation; the booking API surfaces that as a friendly
--- 409 to the customer.
+-- Cheap identical-start guard. Two simultaneous inserts for the same
+-- (date, time) where status is pending or confirmed will fail with a 23505
+-- unique_violation; the booking API surfaces that as a friendly 409. The real
+-- overlap protection is the exclusion constraint below.
 CREATE UNIQUE INDEX IF NOT EXISTS bookings_active_slot_unique
 ON public.bookings (booking_date, booking_time)
 WHERE status IN ('pending', 'confirmed');
 
+-- ===== No-overlap exclusion constraint (the atomic guarantee) =====
+-- Rejects any two pending/confirmed bookings on the same date whose
+-- [start, start + duration_minutes + 15) intervals intersect — session plus a
+-- 15-min buffer, half-open so back-to-back bookings are legal. Requires
+-- duration_minutes to be populated (see the two-phase migration), so this is
+-- applied in Phase B once the duration-aware code is live.
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'bookings_no_overlap'
+  ) THEN
+    ALTER TABLE public.bookings ADD CONSTRAINT bookings_no_overlap
+      EXCLUDE USING gist (
+        booking_date WITH =,
+        tsrange(
+          (booking_date + booking_time),
+          (booking_date + booking_time
+             + make_interval(mins => duration_minutes + 15)),
+          '[)'
+        ) WITH &&
+      ) WHERE (status IN ('pending', 'confirmed'));
+  END IF;
+END$$;
+
 -- ===== Seed default availability =====
--- Tuesday–Saturday (2..6), every 30 minutes from 09:30 to 19:00 inclusive.
+-- Tuesday–Saturday (2..6), every 15 minutes from 09:30 to 18:45 inclusive.
+-- 18:45 is the last OCCUPIABLE segment (a 30-min session starting 18:30 needs
+-- it); 19:00 is the closing time, never an occupiable start. The open-set /
+-- valid-start distinction is enforced in lib/availability.ts, not the seed.
 -- Re-running is safe thanks to the unique constraint.
 INSERT INTO public.availability (day_of_week, slot_time, is_active)
 SELECT
   day,
-  (('09:30'::time) + (slot_number * interval '30 minutes')) AS slot_time,
+  (('09:30'::time) + (slot_number * interval '15 minutes')) AS slot_time,
   true
 FROM
-  generate_series(2, 6) AS day,
-  generate_series(0, 19) AS slot_number
+  generate_series(2, 6)  AS day,
+  generate_series(0, 37) AS slot_number
 ON CONFLICT (day_of_week, slot_time) DO NOTHING;

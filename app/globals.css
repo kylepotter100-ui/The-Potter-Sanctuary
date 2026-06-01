@@ -1261,6 +1261,21 @@
   }
   .svc-option:hover { border-color: var(--sage-deep); }
   .svc-option.active { border-color: var(--sage-deep); background: rgba(110, 128, 104, 0.06); }
+  .svc-option.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background: rgba(58, 63, 49, 0.03);
+    border-style: dashed;
+  }
+  .svc-option.disabled:hover { border-color: rgba(58, 63, 49, 0.15); }
+  .svc-option .svc-unavailable {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    color: #a14b3d;
+    font-family: var(--font-sans), 'Lora', serif;
+  }
   .svc-option .num {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;
     font-size: 13px;

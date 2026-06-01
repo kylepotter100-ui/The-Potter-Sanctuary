@@ -45,7 +45,7 @@ export async function GET() {
       .lte("blocked_date", horizonIso),
     supabaseAdmin
       .from("bookings")
-      .select("booking_date, booking_time")
+      .select("booking_date, booking_time, duration_minutes")
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),
@@ -85,11 +85,16 @@ export async function GET() {
 
   const blockedDates = (blocked ?? []).map((b) => b.blocked_date as string);
 
-  const bookedSlots: Record<string, string[]> = {};
+  // Each booking is returned with its duration so the shared helper can derive
+  // the [start, start+duration+buffer) interval client-side. End times are not
+  // pre-computed here.
+  const bookedSlots: Record<string, { time: string; duration: number }[]> = {};
   for (const row of booked ?? []) {
     const date = row.booking_date as string;
     const time = String(row.booking_time).slice(0, 5);
-    (bookedSlots[date] ||= []).push(time);
+    // Defensive default for any un-backfilled (pre-migration) row.
+    const duration = (row.duration_minutes as number | null) ?? 60;
+    (bookedSlots[date] ||= []).push({ time, duration });
   }
 
   const slotOverrides: Record<string, Record<string, boolean>> = {};

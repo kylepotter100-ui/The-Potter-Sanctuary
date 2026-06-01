@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { services } from "@/lib/services";
+import {
+  candidateRejection,
+  validStartTimes,
+  type ExistingBooking,
+} from "@/lib/availability";
 import InlineSignInModal from "@/components/InlineSignInModal";
+
+// Shortest treatment on offer — a start time is only worth showing if at least
+// this duration fits there.
+const SHORTEST_DURATION = Math.min(...services.map((s) => s.durationMinutes));
 
 type ServiceSelection = {
   svc: string;
@@ -34,7 +43,9 @@ const DOWS = ["S", "M", "T", "W", "T", "F", "S"];
 type AvailabilityData = {
   slotsByDay: Record<number, string[]>;
   blockedDates: string[];
-  bookedSlots: Record<string, string[]>;
+  // Each date maps to its existing bookings as { start time, session length }.
+  // The shared helper derives the [start, start+duration+buffer) intervals.
+  bookedSlots: Record<string, { time: string; duration: number }[]>;
   slotOverrides?: Record<string, Record<string, boolean>>;
 };
 
@@ -387,32 +398,53 @@ export default function Booking({ preselectId }: Props) {
     [availability]
   );
 
+  // The date's open 15-min segment set: day_of_week template ∪ active
+  // overrides − inactive overrides. (Booked intervals are handled separately by
+  // the shared helper, not removed here.)
+  function openSetFor(dt: Date): Set<string> {
+    const iso = isoDate(dt);
+    const dow = dt.getDay();
+    const set = new Set(availability?.slotsByDay[dow] ?? []);
+    const overrides = overridesByDate[iso] ?? {};
+    for (const [time, active] of Object.entries(overrides)) {
+      if (active) set.add(time);
+      else set.delete(time);
+    }
+    return set;
+  }
+
+  // The date's existing pending/confirmed bookings as { time, duration_minutes }.
+  function existingFor(dt: Date): ExistingBooking[] {
+    const iso = isoDate(dt);
+    return (bookedByDate[iso] ?? []).map((b) => ({
+      time: b.time,
+      duration_minutes: b.duration,
+    }));
+  }
+
+  // Valid START times for this date: a start is offered only if at least the
+  // shortest treatment fits there per the interval model (finishes by close,
+  // session segments open, interval clear of existing bookings).
   function freeSlotsFor(dt: Date): string[] {
     if (!availability) return [];
     const iso = isoDate(dt);
     if (blockedSet.has(iso)) return [];
-    const dow = dt.getDay();
-    const baseSet = new Set(availability.slotsByDay[dow] ?? []);
-    // Apply per-date overrides — `false` removes a slot, `true` adds one
-    // that the day_of_week template wouldn't normally include.
-    const overrides = overridesByDate[iso] ?? {};
-    for (const [time, active] of Object.entries(overrides)) {
-      if (active) baseSet.add(time);
-      else baseSet.delete(time);
-    }
-    const taken = new Set(bookedByDate[iso] ?? []);
-    let slots = Array.from(baseSet).filter((t) => !taken.has(t));
 
-    // For today (UK time), hide any slot that's already started or is
-    // within the next 15 minutes — no point offering a slot that can't
-    // realistically be honoured.
+    let slots = validStartTimes(
+      openSetFor(dt),
+      existingFor(dt),
+      SHORTEST_DURATION
+    );
+
+    // For today (UK time), hide any slot that's already started or is within
+    // the next 15 minutes — no point offering one that can't be honoured.
     const { dateIso: ukToday, minutes: ukMinutes } = ukNow();
     if (iso === ukToday) {
       const cutoff = ukMinutes + 15;
       slots = slots.filter((t) => slotToMinutes(t) >= cutoff);
     }
 
-    return slots.sort();
+    return slots;
   }
 
   const calCells = useMemo(() => {
@@ -495,6 +527,42 @@ export default function Booking({ preselectId }: Props) {
     // deps below cover all of them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, availability, blockedSet, bookedByDate, overridesByDate]);
+
+  // For the chosen start time, which treatments FIT and (if not) why. Drives the
+  // Step-2 grey-out: every treatment is shown, non-fitting ones disabled with a
+  // short reason.
+  const treatmentFit = useMemo(() => {
+    const m: Record<string, { fits: boolean; reason: string }> = {};
+    if (!date || !time || !availability) return m;
+    const openSet = openSetFor(date);
+    const existing = existingFor(date);
+    for (const s of services) {
+      const rej = candidateRejection({
+        openSet,
+        existing,
+        start: time,
+        duration: s.durationMinutes,
+      });
+      m[s.bookingId] = {
+        fits: rej === null,
+        reason:
+          rej === "closing"
+            ? "Not enough time before closing"
+            : "Not enough time before the next appointment",
+      };
+    }
+    return m;
+    // openSetFor/existingFor depend on availability/overridesByDate/bookedByDate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, time, availability, overridesByDate, bookedByDate]);
+
+  // If the selected treatment no longer fits the chosen start (e.g. the start
+  // changed), drop the selection so the customer must re-pick a fitting one.
+  useEffect(() => {
+    if (service && treatmentFit[service.svc] && !treatmentFit[service.svc].fits) {
+      setService(null);
+    }
+  }, [treatmentFit, service]);
 
   function shiftMonth(delta: number) {
     let m = viewMonth + delta;
@@ -746,13 +814,21 @@ export default function Booking({ preselectId }: Props) {
           {services.map((s, i) => {
             const id = s.bookingId;
             const active = service?.svc === id;
+            const fit = treatmentFit[id];
+            // Default to fitting until a start time is chosen (fit map empty).
+            const fits = fit ? fit.fits : true;
             const num = String(i + 1).padStart(2, "0");
             return (
               <button
                 key={id}
                 type="button"
-                className={`svc-option${active ? " active" : ""}`}
+                className={`svc-option${active ? " active" : ""}${
+                  fits ? "" : " disabled"
+                }`}
+                disabled={!fits}
+                aria-disabled={!fits}
                 onClick={() =>
+                  fits &&
                   setService({
                     svc: id,
                     name: `${s.name} ${s.nameEm}`.trim(),
@@ -769,6 +845,9 @@ export default function Booking({ preselectId }: Props) {
                   <div className="duration">
                     {s.duration} · {s.pressure}
                   </div>
+                  {!fits && fit && (
+                    <div className="svc-unavailable">{fit.reason}</div>
+                  )}
                 </span>
                 <span className="price">{s.priceLabel}</span>
               </button>

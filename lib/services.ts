@@ -133,8 +133,8 @@ export const services: Service[] = [
     category: "Deep Heat",
     name: "Hot Stones",
     nameEm: "Full Body",
-    duration: "75 min",
-    durationMinutes: 75,
+    duration: "60 min",
+    durationMinutes: 60,
     pressure: "Medium",
     suitedTo: "Deep release",
     price: 60,
@@ -142,7 +142,7 @@ export const services: Service[] = [
     shortDesc:
       "Heated basalt stones placed along the body's energy lines and worked through the muscles in long, weighted strokes. The depth of release is unlike a standard massage — heat travels where pressure alone cannot reach.",
     longDesc: [
-      "A 75-minute hot stone massage in Suffolk that carries heat into places pressure alone can't reach. Smooth basalt stones are warmed and placed along the body's energy lines, then worked through the muscles in long, weighted strokes.",
+      "A 60-minute hot stone massage in Suffolk that carries heat into places pressure alone can't reach. Smooth basalt stones are warmed and placed along the body's energy lines, then worked through the muscles in long, weighted strokes.",
       "The combination of heat and weight gives a depth of release unlike a standard massage — particularly recommended for stubborn lower back tension, tired legs, and anyone in need of deep relaxation hot stone therapy in Suffolk after a stretched week.",
       "All oils used are plant-based and made in small batches by Precyse By Nature. The studio takes one guest at a time, so the pace is genuinely unhurried from arrival to herbal tea.",
     ],
@@ -165,7 +165,7 @@ export const services: Service[] = [
       title:
         "Hot Stone Massage Suffolk | Full Body Hot Stones in Beck Row",
       description:
-        "A 75-minute hot stones full body treatment in Beck Row, Suffolk. Heated basalt stones, plant-based oils, delivered by a fully trained Clarins therapist.",
+        "A 60-minute hot stones full body treatment in Beck Row, Suffolk. Heated basalt stones, plant-based oils, delivered by a fully trained Clarins therapist.",
       h1: "Hot Stones Full Body Massage in Suffolk",
       keywords: [
         "hot stone massage Suffolk",
@@ -180,8 +180,8 @@ export const services: Service[] = [
     category: "Targeted",
     name: "Hot Stones",
     nameEm: "Back",
-    duration: "45 min",
-    durationMinutes: 45,
+    duration: "30 min",
+    durationMinutes: 30,
     pressure: "Medium · Firm",
     suitedTo: "Back tension",
     price: 35,
@@ -189,7 +189,7 @@ export const services: Service[] = [
     shortDesc:
       "A back-only edition of the hot-stone ritual — concentrated heat and pressure through the lower, mid and upper back. Recommended for stubborn knots and chronic stiffness between the shoulder blades.",
     longDesc: [
-      "A targeted hot stone back massage in Suffolk — forty-five minutes of concentrated heat and pressure through the lower, mid and upper back. Ideal for stubborn knots, chronic stiffness between the shoulder blades, and anyone who carries their week in their back.",
+      "A targeted hot stone back massage in Suffolk — thirty minutes of concentrated heat and pressure through the lower, mid and upper back. Ideal for stubborn knots, chronic stiffness between the shoulder blades, and anyone who carries their week in their back.",
       "Stones are layered along the spine and worked outward with medium-to-firm pressure. Heat softens the fascia so deeper strokes land without bracing, and the result is a noticeable release that holds for days.",
       "A focused alternative to the full body session for anyone short on time but still in need of a hot stone back massage in Suffolk delivered with care, by a fully trained Clarins therapist.",
     ],
@@ -212,7 +212,7 @@ export const services: Service[] = [
       title:
         "Hot Stone Back Massage Suffolk | The Potter Sanctuary, Beck Row",
       description:
-        "A 45-minute hot stone back massage in Suffolk. Targeted heat and pressure through the lower, mid and upper back, in a private Beck Row studio.",
+        "A 30-minute hot stone back massage in Suffolk. Targeted heat and pressure through the lower, mid and upper back, in a private Beck Row studio.",
       h1: "Hot Stone Back Massage in Suffolk",
       keywords: [
         "hot stone back massage Suffolk",

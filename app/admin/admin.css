@@ -480,6 +480,13 @@
   color: var(--admin-ink);
   cursor: not-allowed;
 }
+/* The 15-min buffer after a session: same booked footprint, lighter. */
+.avail-slot.is-buffer {
+  background: transparent;
+  border-style: dashed;
+  opacity: 0.6;
+}
+.avail-slot.is-buffer .avail-slot-tag { color: var(--admin-ink-soft); }
 .avail-slot-time { font-weight: 500; }
 .avail-slot-tag {
   font-size: 10px;
