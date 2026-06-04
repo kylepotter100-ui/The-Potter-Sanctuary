@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { services } from "@/lib/services";
+import { services, durationMinutesForTreatmentId } from "@/lib/services";
 import {
-  candidateRejection,
+  isCandidateValid,
   validStartTimes,
   type ExistingBooking,
 } from "@/lib/availability";
@@ -104,6 +104,10 @@ export default function Booking({ preselectId }: Props) {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<string | null>(null);
+  // Set when a treatment change (via Back) invalidated an already-picked
+  // date/time, so we can gently prompt the customer to re-pick on the
+  // date & time step instead of silently carrying an invalid slot forward.
+  const [slotClearedNotice, setSlotClearedNotice] = useState(false);
   const [service, setService] = useState<ServiceSelection | null>(() => {
     if (!preselectId) return null;
     const s = services.find((x) => x.bookingId === preselectId);
@@ -177,12 +181,13 @@ export default function Booking({ preselectId }: Props) {
     }
   }, [date]);
 
-  // After picking a time on step 1, nudge the Continue button into view.
+  // After picking a time on the date & time step (step 2), nudge the Continue
+  // button into view.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia("(min-width: 769px)").matches) return;
-    if (!time || step !== 1) return;
-    const target = document.getElementById("step-actions-1");
+    if (!time || step !== 2) return;
+    const target = document.getElementById("step-actions-2");
     if (target) {
       requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -190,12 +195,13 @@ export default function Booking({ preselectId }: Props) {
     }
   }, [time, step]);
 
-  // After picking a treatment on step 2, nudge the Continue button into view.
+  // After picking a treatment on the treatment step (step 1), nudge the
+  // Continue button into view.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia("(min-width: 769px)").matches) return;
-    if (!service || step !== 2) return;
-    const target = document.getElementById("step-actions-2");
+    if (!service || step !== 1) return;
+    const target = document.getElementById("step-actions-1");
     if (target) {
       requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -370,8 +376,15 @@ export default function Booking({ preselectId }: Props) {
     }
   }
 
-  const next1Disabled = !date || !time;
-  const next2Disabled = !service;
+  // Step 1 is now Treatment, step 2 is Date & time (Option 2 ordering).
+  const step1Disabled = !service;
+  const step2Disabled = !date || !time;
+  // The chosen treatment's session length drives the whole date & time step.
+  // Falls back to the shortest duration only while no treatment is selected
+  // (the date & time pane is hidden until then anyway).
+  const selectedDuration = service
+    ? durationMinutesForTreatmentId(service.svc) ?? SHORTEST_DURATION
+    : SHORTEST_DURATION;
   const next3Disabled =
     !gender ||
     !fname.trim() ||
@@ -422,9 +435,11 @@ export default function Booking({ preselectId }: Props) {
     }));
   }
 
-  // Valid START times for this date: a start is offered only if at least the
-  // shortest treatment fits there per the interval model (finishes by close,
-  // session segments open, interval clear of existing bookings).
+  // Valid START times for this date: a start is offered only if the CHOSEN
+  // treatment fits there per the interval model (finishes by close, session
+  // segments open, interval clear of existing bookings). Before a treatment is
+  // picked this uses the shortest duration, but the date & time step isn't
+  // reachable until one is selected.
   function freeSlotsFor(dt: Date): string[] {
     if (!availability) return [];
     const iso = isoDate(dt);
@@ -433,7 +448,7 @@ export default function Booking({ preselectId }: Props) {
     let slots = validStartTimes(
       openSetFor(dt),
       existingFor(dt),
-      SHORTEST_DURATION
+      selectedDuration
     );
 
     // For today (UK time), hide any slot that's already started or is within
@@ -515,54 +530,43 @@ export default function Booking({ preselectId }: Props) {
       }
     }
     return cells;
-    // freeSlotsFor closes over availability/blockedSet/bookedByDate/overridesByDate,
-    // so including all of them here keeps the memo in sync when any change.
-  }, [viewYear, viewMonth, today, date, availability, blockedSet, bookedByDate, overridesByDate]);
+    // freeSlotsFor closes over availability/blockedSet/bookedByDate/overridesByDate
+    // and now `selectedDuration` (via `service`), so including all of them here
+    // keeps day selectability in sync when the treatment or any data changes.
+  }, [viewYear, viewMonth, today, date, service, availability, blockedSet, bookedByDate, overridesByDate]);
 
   const slotState = useMemo(() => {
     if (!date) return [] as Array<{ time: string; disabled: boolean }>;
     if (!availability) return [];
     return freeSlotsFor(date).map((t) => ({ time: t, disabled: false }));
-    // freeSlotsFor depends on availability/blockedSet/bookedByDate/overridesByDate;
-    // deps below cover all of them.
+    // freeSlotsFor depends on availability/blockedSet/bookedByDate/overridesByDate
+    // and selectedDuration (via service); deps below cover all of them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, availability, blockedSet, bookedByDate, overridesByDate]);
+  }, [date, service, availability, blockedSet, bookedByDate, overridesByDate]);
 
-  // For the chosen start time, which treatments FIT and (if not) why. Drives the
-  // Step-2 grey-out: every treatment is shown, non-fitting ones disabled with a
-  // short reason.
-  const treatmentFit = useMemo(() => {
-    const m: Record<string, { fits: boolean; reason: string }> = {};
-    if (!date || !time || !availability) return m;
-    const openSet = openSetFor(date);
-    const existing = existingFor(date);
-    for (const s of services) {
-      const rej = candidateRejection({
-        openSet,
-        existing,
-        start: time,
-        duration: s.durationMinutes,
-      });
-      m[s.bookingId] = {
-        fits: rej === null,
-        reason:
-          rej === "closing"
-            ? "Not enough time before closing"
-            : "Not enough time before the next appointment",
-      };
-    }
-    return m;
-    // openSetFor/existingFor depend on availability/overridesByDate/bookedByDate.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, time, availability, overridesByDate, bookedByDate]);
-
-  // If the selected treatment no longer fits the chosen start (e.g. the start
-  // changed), drop the selection so the customer must re-pick a fitting one.
+  // Back-navigation guard: if the customer changes the treatment (Step 1) to a
+  // longer one after already picking a date/time, the previous slot may no
+  // longer fit. Re-validate with the chosen duration; if it no longer fits,
+  // clear the time (and the date too, if the whole day now has no valid start)
+  // and surface a gentle prompt rather than carrying an invalid slot forward.
+  // A shorter treatment keeps the slot (still valid) with no interruption.
   useEffect(() => {
-    if (service && treatmentFit[service.svc] && !treatmentFit[service.svc].fits) {
-      setService(null);
+    if (!date || !time || !availability) return;
+    const stillFits = isCandidateValid({
+      openSet: openSetFor(date),
+      existing: existingFor(date),
+      start: time,
+      duration: selectedDuration,
+    });
+    if (!stillFits) {
+      setTime(null);
+      if (freeSlotsFor(date).length === 0) setDate(null);
+      setSlotClearedNotice(true);
     }
-  }, [treatmentFit, service]);
+    // openSetFor/existingFor/freeSlotsFor close over availability/overrides/
+    // booked and selectedDuration; re-run when the treatment changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service]);
 
   function shiftMonth(delta: number) {
     let m = viewMonth + delta;
@@ -588,6 +592,7 @@ export default function Booking({ preselectId }: Props) {
     setMessage("");
     setDetailsUnchanged(null);
     setSubmitError(null);
+    setSlotClearedNotice(false);
     fetch("/api/availability", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: AvailabilityData | null) => {
@@ -629,7 +634,8 @@ export default function Booking({ preselectId }: Props) {
         // The slot is no longer bookable — either taken in a race, the date
         // got blocked, or the slot was toggled off after the calendar loaded.
         // Use the server's friendly reason, refresh availability, drop the
-        // picked time, and send the customer back to step 1 to pick again.
+        // picked time, and send the customer back to the date & time step
+        // (step 2) to pick again — the treatment selection stays intact.
         const body = (await res.json().catch(() => null)) as {
           message?: string;
         } | null;
@@ -638,7 +644,7 @@ export default function Booking({ preselectId }: Props) {
             "Sorry, that time slot is no longer available. Please pick another time."
         );
         setTime(null);
-        setStep(1);
+        setStep(2);
         try {
           const fresh = await fetch("/api/availability", { cache: "no-store" });
           if (fresh.ok) {
@@ -672,8 +678,8 @@ export default function Booking({ preselectId }: Props) {
       )}
       <div className="steps">
         {[
-          { n: 1, lbl: "Date" },
-          { n: 2, lbl: "Treatment" },
+          { n: 1, lbl: "Treatment" },
+          { n: 2, lbl: "Date" },
           { n: 3, lbl: "Details" },
           { n: 4, lbl: "Confirm" },
         ].map((s, i, arr) => (
@@ -693,8 +699,73 @@ export default function Booking({ preselectId }: Props) {
         ))}
       </div>
 
-      {/* Step 1 — Date & Time */}
+      {/* Step 1 — Treatment */}
       <div className={`step-pane${step === 1 ? " active" : ""}`} id="step-pane-1">
+        <h4
+          style={{
+            fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
+            fontWeight: 300,
+            fontSize: 24,
+            marginBottom: 6,
+          }}
+        >
+          Choose a treatment
+        </h4>
+        <div className="hint">Select one to continue</div>
+        <div className="svc-options">
+          {services.map((s, i) => {
+            const id = s.bookingId;
+            const active = service?.svc === id;
+            const num = String(i + 1).padStart(2, "0");
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`svc-option${active ? " active" : ""}`}
+                onClick={() =>
+                  setService({
+                    svc: id,
+                    name: `${s.name} ${s.nameEm}`.trim(),
+                    price: s.price,
+                    duration: s.duration,
+                  })
+                }
+              >
+                <span className="num">{num}</span>
+                <span>
+                  <div className="name">
+                    {s.name} {s.nameEm}
+                  </div>
+                  <div className="duration">
+                    {s.duration} · {s.pressure}
+                  </div>
+                </span>
+                <span className="price">{s.priceLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="step-actions" id="step-actions-1">
+          <span />
+          <button
+            type="button"
+            className="next"
+            disabled={step1Disabled}
+            onClick={() => setStep(2)}
+          >
+            Continue →
+          </button>
+        </div>
+      </div>
+
+      {/* Step 2 — Date & Time */}
+      <div className={`step-pane${step === 2 ? " active" : ""}`} id="step-pane-2">
+        {slotClearedNotice && (
+          <div className="hint" role="status" style={{ marginBottom: 10 }}>
+            Your previous time no longer fits a{" "}
+            {service?.duration ?? "longer"} treatment — please choose another.
+          </div>
+        )}
         <div className="calendar">
           <div className="cal-pane">
             <div className="cal-head">
@@ -736,6 +807,7 @@ export default function Booking({ preselectId }: Props) {
                       if (c.disabled || !c.date) return;
                       setDate(c.date);
                       setTime(null);
+                      setSlotClearedNotice(false);
                     }}
                   >
                     {c.label}
@@ -743,6 +815,14 @@ export default function Booking({ preselectId }: Props) {
                 );
               })}
             </div>
+            {availability &&
+              service &&
+              calCells.every((c) => c.muted || c.disabled) && (
+                <div className="hint" style={{ marginTop: 10 }}>
+                  No available dates this month for this treatment — try
+                  another month.
+                </div>
+              )}
           </div>
           <div className="time-pane" id="time-pane">
             <h4>Available times</h4>
@@ -762,7 +842,11 @@ export default function Booking({ preselectId }: Props) {
                   className={`slot${s.disabled ? " disabled" : ""}${
                     time === s.time ? " active" : ""
                   }`}
-                  onClick={() => !s.disabled && setTime(s.time)}
+                  onClick={() => {
+                    if (s.disabled) return;
+                    setTime(s.time);
+                    setSlotClearedNotice(false);
+                  }}
                 >
                   {s.time}
                 </button>
@@ -784,76 +868,6 @@ export default function Booking({ preselectId }: Props) {
             </span>
           </div>
         )}
-        <div className="step-actions" id="step-actions-1">
-          <span />
-          <button
-            type="button"
-            className="next"
-            disabled={next1Disabled}
-            onClick={() => setStep(2)}
-          >
-            Continue →
-          </button>
-        </div>
-      </div>
-
-      {/* Step 2 — Treatment */}
-      <div className={`step-pane${step === 2 ? " active" : ""}`} id="step-pane-2">
-        <h4
-          style={{
-            fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
-            fontWeight: 300,
-            fontSize: 24,
-            marginBottom: 6,
-          }}
-        >
-          Choose a treatment
-        </h4>
-        <div className="hint">Select one to continue</div>
-        <div className="svc-options">
-          {services.map((s, i) => {
-            const id = s.bookingId;
-            const active = service?.svc === id;
-            const fit = treatmentFit[id];
-            // Default to fitting until a start time is chosen (fit map empty).
-            const fits = fit ? fit.fits : true;
-            const num = String(i + 1).padStart(2, "0");
-            return (
-              <button
-                key={id}
-                type="button"
-                className={`svc-option${active ? " active" : ""}${
-                  fits ? "" : " disabled"
-                }`}
-                disabled={!fits}
-                aria-disabled={!fits}
-                onClick={() =>
-                  fits &&
-                  setService({
-                    svc: id,
-                    name: `${s.name} ${s.nameEm}`.trim(),
-                    price: s.price,
-                    duration: s.duration,
-                  })
-                }
-              >
-                <span className="num">{num}</span>
-                <span>
-                  <div className="name">
-                    {s.name} {s.nameEm}
-                  </div>
-                  <div className="duration">
-                    {s.duration} · {s.pressure}
-                  </div>
-                  {!fits && fit && (
-                    <div className="svc-unavailable">{fit.reason}</div>
-                  )}
-                </span>
-                <span className="price">{s.priceLabel}</span>
-              </button>
-            );
-          })}
-        </div>
         <div className="step-actions" id="step-actions-2">
           <button type="button" className="back" onClick={() => setStep(1)}>
             ← Back
@@ -861,7 +875,7 @@ export default function Booking({ preselectId }: Props) {
           <button
             type="button"
             className="next"
-            disabled={next2Disabled}
+            disabled={step2Disabled}
             onClick={() => setStep(3)}
           >
             Continue →
