@@ -158,6 +158,31 @@ export default async function AdminBookingDetailPage({
 
   const canAct = booking.status === "pending" || booking.status === "confirmed";
 
+  // Questionnaire is outstanding when no consultation response exists yet.
+  const questionnaireOutstanding = !consult;
+
+  // Review state, read from existing tables (no schema change):
+  //   "left"      → a reviews row exists for this booking
+  //   "requested" → review_email_sent_at set but no review submitted yet
+  //   "none"      → neither — the review can still be requested
+  const { data: review, error: reviewError } = await supabaseAdmin
+    .from("reviews")
+    .select("id")
+    .eq("booking_id", id)
+    .limit(1)
+    .maybeSingle();
+  if (reviewError) {
+    console.error(
+      "[admin booking detail] review query failed",
+      JSON.stringify(reviewError)
+    );
+  }
+  const reviewState: "left" | "requested" | "none" = review
+    ? "left"
+    : booking.review_email_sent_at
+      ? "requested"
+      : "none";
+
   return (
     <>
       <AdminHeader active="bookings" />
@@ -365,6 +390,8 @@ export default async function AdminBookingDetailPage({
             <AdminBookingActions
               bookingId={booking.id}
               status={booking.status as "pending" | "confirmed"}
+              questionnaireOutstanding={questionnaireOutstanding}
+              reviewState={reviewState}
             />
           </section>
         )}

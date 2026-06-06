@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_email, treatment_id, booking_date, booking_time, status, cancelled_at, review_email_sent_at"
+      "id, customer_first_name, customer_email, treatment_id, treatment_name, booking_date, booking_time, status, cancelled_at, review_email_sent_at"
     )
     .gte("booking_date", yesterdayIso)
     .lte("booking_date", todayIso)
@@ -88,6 +88,7 @@ export async function GET(req: Request) {
       const html = await render(
         ReviewRequest({
           firstName: b.customer_first_name,
+          treatmentName: b.treatment_name,
           bookingId: b.id,
           siteUrl,
         })
@@ -96,7 +97,7 @@ export async function GET(req: Request) {
         from: FROM,
         to: b.customer_email,
         replyTo: REPLY_TO,
-        subject: "How was your session? — The Potter Sanctuary",
+        subject: `How was your ${b.treatment_name}? — The Potter Sanctuary`,
         html,
       });
       if (result.error) {

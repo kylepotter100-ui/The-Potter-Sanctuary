@@ -9,12 +9,14 @@ import {
 
 type Props = {
   firstName: string;
+  treatmentName: string;
   bookingId: string;
   siteUrl: string;
 };
 
 export default function ReviewRequest({
   firstName,
+  treatmentName,
   bookingId,
   siteUrl,
 }: Props) {
@@ -23,13 +25,14 @@ export default function ReviewRequest({
   )}`;
 
   return (
-    <EmailLayout siteUrl={siteUrl} preview="How was your session?">
+    <EmailLayout siteUrl={siteUrl} preview={`How was your ${treatmentName}?`}>
       <ContentSection>
         <SectionHeading>How was your session?</SectionHeading>
         <Paragraph>
-          Dear {firstName}, we hope you feel restored after your treatment
-          today. Your feedback means a great deal to us — and helps us
-          continue to refine the sanctuary experience.
+          Dear {firstName}, thank you for visiting The Potter Sanctuary for your{" "}
+          {treatmentName}. We hope you feel restored. We&apos;d love to hear how
+          it went — your feedback means a great deal to us, and helps us continue
+          to refine the sanctuary experience.
         </Paragraph>
 
         <CtaButton href={reviewUrl} label="Share your feedback" />
