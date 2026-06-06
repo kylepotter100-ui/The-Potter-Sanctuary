@@ -6,33 +6,14 @@ import { useState } from "react";
 type Props = {
   bookingId: string;
   status: "pending" | "confirmed";
-  // Whether the consultation questionnaire is still outstanding for this
-  // booking. When false, the "Nudge questionnaire" button is hidden.
-  questionnaireOutstanding?: boolean;
-  // Review lifecycle for this booking, derived server-side from existing
-  // tables: "left" (reviews row exists), "requested" (review_email_sent_at
-  // set, no review yet) or "none" (can still be requested).
-  reviewState?: "left" | "requested" | "none";
 };
 
-export default function AdminBookingActions({
-  bookingId,
-  status,
-  questionnaireOutstanding = false,
-  reviewState = "none",
-}: Props) {
+export default function AdminBookingActions({ bookingId, status }: Props) {
   const router = useRouter();
-  const [busy, setBusy] = useState<
-    "confirm" | "cancel" | "nudge" | "review" | null
-  >(null);
+  const [busy, setBusy] = useState<"confirm" | "cancel" | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
-  // Transient, local-only confirmations (no persistence). The nudge one
-  // lingers ~60s so the owner sees it took effect; the server state for the
-  // review button updates on router.refresh().
-  const [nudgeMsg, setNudgeMsg] = useState<string | null>(null);
-  const [reviewMsg, setReviewMsg] = useState<string | null>(null);
 
   async function confirm() {
     setBusy("confirm");
@@ -89,61 +70,6 @@ export default function AdminBookingActions({
     }
   }
 
-  async function nudge() {
-    setBusy("nudge");
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/bookings/${bookingId}/nudge`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        alreadyCompleted?: boolean;
-        error?: string;
-      } | null;
-      if (!res.ok) {
-        throw new Error(data?.error || "Could not send reminder");
-      }
-      setNudgeMsg(data?.alreadyCompleted ? "Already completed" : "Reminder sent");
-      window.setTimeout(() => setNudgeMsg(null), 60000);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send reminder");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function requestReview() {
-    setBusy("review");
-    setError(null);
-    try {
-      const res = await fetch(
-        `/api/admin/bookings/${bookingId}/request-review`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        alreadyReviewed?: boolean;
-        alreadyRequested?: boolean;
-        error?: string;
-      } | null;
-      if (!res.ok) {
-        throw new Error(data?.error || "Could not request review");
-      }
-      setReviewMsg("Review requested");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not request review");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   return (
     <>
       <div className="btn-row">
@@ -168,46 +94,6 @@ export default function AdminBookingActions({
           Cancel Booking
         </button>
       </div>
-
-      <div className="btn-row" style={{ marginTop: 12 }}>
-        {questionnaireOutstanding && (
-          <button
-            type="button"
-            className="btn"
-            onClick={nudge}
-            disabled={busy !== null || nudgeMsg !== null}
-          >
-            {busy === "nudge"
-              ? "Sending…"
-              : nudgeMsg ?? "Nudge questionnaire"}
-          </button>
-        )}
-
-        {reviewState === "left" ? (
-          <button type="button" className="btn" disabled>
-            Review left ✓
-          </button>
-        ) : reviewState === "requested" ? (
-          <button type="button" className="btn" disabled>
-            Review requested
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn"
-            onClick={requestReview}
-            disabled={busy !== null || reviewMsg !== null}
-          >
-            {busy === "review" ? "Sending…" : reviewMsg ?? "Request review"}
-          </button>
-        )}
-      </div>
-      {reviewState === "left" && (
-        <p className="lede" style={{ marginTop: 8, fontSize: 14 }}>
-          This customer has already left a review.
-        </p>
-      )}
-
       {error && !modalOpen && (
         <p role="alert" className="error-text" style={{ marginTop: 12 }}>
           {error}

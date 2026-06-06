@@ -1,6 +1,8 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingActions from "@/components/AdminBookingActions";
+import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
+import RequestReviewButton from "@/components/RequestReviewButton";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -158,9 +160,6 @@ export default async function AdminBookingDetailPage({
 
   const canAct = booking.status === "pending" || booking.status === "confirmed";
 
-  // Questionnaire is outstanding when no consultation response exists yet.
-  const questionnaireOutstanding = !consult;
-
   // Review state, read from existing tables (no schema change):
   //   "left"      → a reviews row exists for this booking
   //   "requested" → review_email_sent_at set but no review submitted yet
@@ -266,12 +265,17 @@ export default async function AdminBookingDetailPage({
         {/* Section 2 — Consultation response */}
         <section className="admin-card" style={{ marginBottom: 16 }}>
           <h2 style={{ fontFamily: "var(--font-serif)", marginTop: 0 }}>
-            Consultation Response
+            Consultation Response{consult ? " ✓" : ""}
           </h2>
           {!consult ? (
-            <p className="lede" style={{ margin: 0 }}>
-              No consultation submitted yet.
-            </p>
+            <>
+              <p className="lede" style={{ margin: 0 }}>
+                No consultation submitted yet.
+              </p>
+              {booking.status !== "cancelled" && (
+                <NudgeQuestionnaireButton bookingId={booking.id} />
+              )}
+            </>
           ) : (
             <div className="q-readonly">
               {/* SECTION 1 — Client Information */}
@@ -381,7 +385,24 @@ export default async function AdminBookingDetailPage({
           )}
         </section>
 
-        {/* Section 3 — Actions */}
+        {/* Section 3 — Customer review */}
+        <section className="admin-card" style={{ marginBottom: 16 }}>
+          <h2 style={{ fontFamily: "var(--font-serif)", marginTop: 0 }}>
+            Customer Review{reviewState === "left" ? " ✓" : ""}
+          </h2>
+          <p className="lede" style={{ margin: 0 }}>
+            {reviewState === "left"
+              ? "This customer has left you a review."
+              : "This customer hasn't left a review yet."}
+          </p>
+          <RequestReviewButton
+            bookingId={booking.id}
+            reviewState={reviewState}
+            canRequest={booking.status !== "cancelled"}
+          />
+        </section>
+
+        {/* Section 4 — Actions */}
         {canAct && (
           <section className="admin-card">
             <h2 style={{ fontFamily: "var(--font-serif)", marginTop: 0 }}>
@@ -390,8 +411,6 @@ export default async function AdminBookingDetailPage({
             <AdminBookingActions
               bookingId={booking.id}
               status={booking.status as "pending" | "confirmed"}
-              questionnaireOutstanding={questionnaireOutstanding}
-              reviewState={reviewState}
             />
           </section>
         )}
