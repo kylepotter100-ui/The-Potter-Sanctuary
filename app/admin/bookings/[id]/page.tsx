@@ -180,7 +180,7 @@ export default async function AdminBookingDetailPage({
       <AdminHeader active="bookings" />
       <main className="admin-main">
         <p style={{ marginBottom: 8 }}>
-          <Link href="/admin/bookings" className="account-link">
+          <Link href="/admin/bookings" className="admin-back-link">
             ← Back to bookings
           </Link>
         </p>

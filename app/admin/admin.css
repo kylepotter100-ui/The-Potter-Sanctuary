@@ -96,6 +96,43 @@
 }
 .admin-header .logout:hover { background: var(--admin-ink); color: var(--admin-cream); border-color: var(--admin-ink); }
 
+/* ----- Bottom tab bar (mobile / installed PWA only) ----- */
+/* Hidden on desktop; the @media (max-width:768px) block below reveals it. */
+.admin-tabbar { display: none; }
+.admin-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px;
+  min-height: 56px;
+  text-decoration: none;
+  color: var(--admin-ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.admin-tab:hover { color: var(--admin-sage-deep); }
+.admin-tab.is-active { color: var(--admin-sage-deep); }
+.admin-tab-icon { display: flex; }
+.admin-tab-icon svg { width: 22px; height: 22px; }
+.admin-tab-label { line-height: 1; }
+
+/* Booking-detail back link (admin-scoped, subtle on desktop, clear on mobile) */
+.admin-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-sage-deep);
+  text-decoration: none;
+}
+.admin-back-link:hover { color: var(--admin-ink); }
+
 /* ----- Main wrapper ----- */
 .admin-main {
   max-width: 1180px;
@@ -519,7 +556,6 @@
 /* ----- Mobile ----- */
 @media (max-width: 720px) {
   .admin-header { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }
-  .admin-header .nav-links { order: 3; width: 100%; gap: 16px; flex-wrap: wrap; }
   .admin-main { padding: 24px 18px 60px; }
   .stat-row { grid-template-columns: 1fr; gap: 12px; }
   .admin-table th, .admin-table td { padding: 10px 10px; font-size: 13px; }
@@ -527,6 +563,31 @@
   .slot-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
   /* Comfortable thumb targets on touch screens. */
   .btn { min-height: 44px; }
+}
+
+/* App-style mobile chrome: bottom tab bar replaces the header nav. Applies in
+   the mobile browser AND the installed PWA. Desktop (>768px) is unaffected. */
+@media (max-width: 768px) {
+  /* Header slims to brand + logout — the bottom tabs handle navigation. */
+  .admin-header .nav-links { display: none; }
+
+  /* Reveal the fixed bottom tab bar and reserve the iOS safe area. */
+  .admin-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--admin-cream-soft);
+    border-top: 1px solid var(--admin-line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Keep page content clear of the fixed bar (bar height + safe area). */
+  .admin-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
 }
 
 /* Responsive table-card fallback for phones / small tablets. Each row becomes

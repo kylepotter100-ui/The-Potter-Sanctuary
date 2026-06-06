@@ -1,5 +1,6 @@
 import "./admin.css";
 import type { Metadata } from "next";
+import AdminTabBar from "@/components/AdminTabBar";
 
 export const metadata: Metadata = {
   title: "Admin · The Potter Sanctuary",
@@ -11,5 +12,10 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="admin-shell">{children}</div>;
+  return (
+    <div className="admin-shell">
+      {children}
+      <AdminTabBar />
+    </div>
+  );
 }
