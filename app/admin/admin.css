@@ -525,10 +525,14 @@
   .admin-table th, .admin-table td { padding: 10px 10px; font-size: 13px; }
   .login-card { padding: 28px 22px; }
   .slot-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+  /* Comfortable thumb targets on touch screens. */
+  .btn { min-height: 44px; }
 }
 
-/* Responsive table-card fallback for very narrow screens */
-@media (max-width: 520px) {
+/* Responsive table-card fallback for phones / small tablets. Each row becomes
+   a card with the column label stacked ABOVE its value, so long labels
+   (e.g. "Consultation") and wide badges never collide or get truncated. */
+@media (max-width: 720px) {
   .admin-table thead { display: none; }
   .admin-table,
   .admin-table tbody,
@@ -543,18 +547,26 @@
   }
   .admin-table td {
     border: none;
-    padding: 4px 0;
+    padding: 6px 0;
     font-size: 14px;
   }
+  .admin-table td:first-child { padding-top: 0; }
+  .admin-table td:last-child { padding-bottom: 0; }
   .admin-table td::before {
     content: attr(data-label);
-    display: inline-block;
-    width: 90px;
+    display: block;
+    width: auto;
+    margin-bottom: 2px;
     font-size: 10px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--admin-ink-soft);
   }
+  /* The trailing arrow cell has an empty label — don't reserve a blank line. */
+  .admin-table td[data-label=""]::before { display: none; }
+  .admin-table-clickable td.row-link-arrow { text-align: left; }
+  /* Badges sit on their own line beneath the label and may wrap if long. */
+  .admin-table .badge { white-space: normal; }
 }
 
 /* ===== Read-only questionnaire view (admin booking detail) ===== */
@@ -637,7 +649,7 @@
   margin: 18px 0 0;
   opacity: 0.7;
 }
-@media (max-width: 600px) {
+@media (max-width: 720px) {
   .q-readonly-list { grid-template-columns: 1fr; gap: 4px 0; }
   .q-readonly-list dd { margin-bottom: 12px; }
   .q-checklist { grid-template-columns: 1fr; }
@@ -795,11 +807,6 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
-}
-
-@media (max-width: 700px) {
-  .admin-filters-row { grid-template-columns: 1fr 1fr; }
-  .admin-filter-search { grid-column: 1 / -1; }
 }
 
 /* ----- Dashboard tools (CSV export, etc) ----- */

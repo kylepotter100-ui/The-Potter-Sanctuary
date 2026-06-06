@@ -143,6 +143,10 @@ export default function AvailabilityPanel({
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
 
+  // Today (Europe/London). Past days are greyed out and inert — the studio
+  // can't open or edit slots for dates that have already gone.
+  const todayIso = ukTodayIso();
+
   // Recurring weekly template — used as the default for any date that
   // doesn't have explicit slot overrides.
   const dayPattern = useMemo(() => {
@@ -207,7 +211,13 @@ export default function AvailabilityPanel({
   );
 
   function shiftWeek(delta: number) {
-    setWeekStart((prev) => addDays(prev, delta * 7));
+    // Don't let the admin navigate to a week that's entirely in the past —
+    // the current week is the earliest reachable.
+    setWeekStart((prev) => {
+      const next = addDays(prev, delta * 7);
+      const currentStart = startOfWeek(new Date());
+      return next < currentStart ? prev : next;
+    });
   }
   function thisWeek() {
     setWeekStart(startOfWeek(new Date()));
@@ -236,6 +246,7 @@ export default function AvailabilityPanel({
   // the day actually has slots to show.
   async function toggleDay(date: Date) {
     const iso = isoDate(date);
+    if (iso < todayIso) return; // past days are inert
     const dow = date.getDay();
     const currentlyOpen = isDayOpen(iso, dow);
 
@@ -292,6 +303,7 @@ export default function AvailabilityPanel({
   // Toggle a specific slot on a specific date via slot_overrides.
   async function toggleSlot(date: Date, slot: string, currentlyActive: boolean) {
     const iso = isoDate(date);
+    if (iso < todayIso) return; // past days are inert
     const next = !currentlyActive;
     if (!overrideMap[iso]) overrideMap[iso] = {};
     overrideMap[iso][slot] = next;
@@ -362,7 +374,10 @@ export default function AvailabilityPanel({
     month: "long",
   })}`;
 
-  const openDays = weekDays.filter((d) => isDayOpen(isoDate(d), d.getDay()));
+  // Open days that are today or later — past days never show an editable grid.
+  const openDays = weekDays.filter(
+    (d) => isoDate(d) >= todayIso && isDayOpen(isoDate(d), d.getDay())
+  );
 
   return (
     <>
@@ -404,14 +419,17 @@ export default function AvailabilityPanel({
           const iso = isoDate(d);
           const dow = d.getDay();
           const open = isDayOpen(iso, dow);
+          const isPast = iso < todayIso;
           return (
             <button
               key={iso}
               type="button"
-              className={`avail-day-btn${open ? " is-selected" : ""}`}
+              className={`avail-day-btn${open ? " is-selected" : ""}${
+                isPast ? " is-past" : ""
+              }`}
               onClick={() => toggleDay(d)}
               aria-pressed={open}
-              disabled={pending}
+              disabled={isPast || pending}
             >
               <span className="avail-day-name">{DAYS_SHORT[dow]}</span>
               <span className="avail-day-date">
