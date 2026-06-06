@@ -49,7 +49,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 28px;
+  /* Top inset clears the iOS status bar/notch in standalone (viewport-fit=cover);
+     0 where there's no top inset (desktop/Android), so nothing else changes. */
+  padding: calc(18px + env(safe-area-inset-top)) 28px 18px;
   background: var(--admin-cream-soft);
   border-bottom: 1px solid var(--admin-line);
 }
@@ -597,9 +599,9 @@
     box-shadow: 0 -1px 8px rgba(28, 28, 28, 0.06);
   }
 
-  /* Keep page content clear of the taller bar: content height + inset + gap. */
+  /* Keep page content clear of the taller bar: 56px content + ~8px gap + inset. */
   .admin-main {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px);
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 }
 
