@@ -103,13 +103,11 @@
 .admin-tabbar { display: none; }
 .admin-tab {
   flex: 1;
+  /* Full-height tap target; centers the inner pill within the bar's content
+     region (above the safe-area inset). */
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  /* No fixed min-height: the tab stretches to fill the bar's content-height
-     region (above the safe-area inset) so the icon row sits centered there. */
   padding: 6px 4px;
   text-decoration: none;
   color: var(--admin-ink-soft);
@@ -118,8 +116,19 @@
   text-transform: uppercase;
   -webkit-tap-highlight-color: transparent;
 }
+/* Icon+label group; gets a soft sage pill behind it when the tab is active. */
+.admin-tab-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 18px;
+  border-radius: 16px;
+  transition: background-color 0.15s ease;
+}
 .admin-tab:hover { color: var(--admin-sage-deep); }
 .admin-tab.is-active { color: var(--admin-sage-deep); }
+.admin-tab.is-active .admin-tab-inner { background: rgba(138, 158, 133, 0.18); }
 .admin-tab-icon { display: flex; }
 .admin-tab-icon svg { width: 24px; height: 24px; }
 .admin-tab-label { line-height: 1; }
@@ -184,6 +193,124 @@
   font-size: 44px;
   line-height: 1;
   color: var(--admin-ink);
+}
+
+/* ----- Dashboard overview stats ----- */
+/* Revenue headline. Sage-tinted hero card so it reads as the primary figure. */
+.stat-hero {
+  background: var(--admin-info-soft);
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 26px 28px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat-hero .label {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--admin-sage-deep);
+}
+.stat-hero .value {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--admin-ink);
+}
+.stat-hero .caption {
+  font-size: 12px;
+  color: var(--admin-ink-soft);
+}
+
+/* Most-booked treatments — ranked list. */
+.rank-list {
+  list-style: none;
+  margin: 0 0 36px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.rank-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--admin-line);
+  font-size: 14px;
+}
+.rank-list li:last-child { border-bottom: none; }
+.rank-list .rank-name { color: var(--admin-ink); }
+.rank-list .rank-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-ink-soft);
+  white-space: nowrap;
+}
+.rank-list .rank-count strong {
+  color: var(--admin-sage-deep);
+  font-weight: 600;
+}
+.dashboard-empty {
+  color: var(--admin-ink-soft);
+  font-size: 14px;
+}
+
+/* Year-mode per-month revenue bars (no charting library). */
+.month-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+.month-bar {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.month-bar .month-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+.month-bar .bar-track {
+  background: var(--admin-cream-soft);
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+.month-bar .bar-fill {
+  height: 100%;
+  background: var(--admin-sage);
+  border-radius: 999px;
+  min-width: 2px;
+}
+.month-bar .month-value {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-ink);
+  white-space: nowrap;
+}
+
+/* Month / Year period toggle (segmented). */
+.dashboard-view-toggle {
+  display: inline-flex;
+  gap: 0;
+}
+.dashboard-view-toggle .btn.is-selected {
+  background: var(--admin-sage-deep);
+  border-color: var(--admin-sage-deep);
+  color: var(--admin-cream);
+}
+.dashboard-view-toggle .btn.is-selected:hover {
+  background: var(--admin-sage-deep);
+  color: var(--admin-cream);
 }
 
 /* ----- Tables ----- */
@@ -614,12 +741,32 @@
   .admin-table tbody,
   .admin-table tr,
   .admin-table td { display: block; width: 100%; }
+  /* Drop the table's own surface so each row is a free-standing card and the
+     page cream shows in the gaps between them (no white seam / outer box). */
+  .admin-table {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
   .admin-table tr {
     background: #ffffff;
     border: 1px solid var(--admin-line);
-    border-radius: 10px;
-    margin-bottom: 12px;
-    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    padding: 14px 16px;
+  }
+  .admin-table tr:last-child { margin-bottom: 0; }
+  /* Uniform card surface: neutralise zebra/status/hover tints carried from the
+     table so backgrounds don't break the rounded silhouette. Status is still
+     shown by the badge; cancelled keeps its grey TEXT (colour only). */
+  .admin-table tr.row-pending td,
+  .admin-table tr.row-pending:hover td,
+  .admin-table tr.row-cancelled td,
+  .admin-table tr.row-cancelled:hover td,
+  .admin-table tr:hover td,
+  .admin-table-clickable tbody tr.row-link:hover td {
+    background: transparent;
   }
   .admin-table td {
     border: none;

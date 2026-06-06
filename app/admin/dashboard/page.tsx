@@ -7,17 +7,15 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Booking = {
-  id: string;
-  customer_first_name: string;
-  customer_last_name: string;
-  treatment_name: string;
-  booking_date: string;
-  booking_time: string;
-  status: "pending" | "confirmed" | "cancelled";
-};
+type SearchParams = Promise<{ year?: string; month?: string; view?: string }>;
 
-type SearchParams = Promise<{ year?: string; month?: string }>;
+type RevenueRow = { treatment_price: number; booking_date: string };
+type PopularityRow = { treatment_name: string };
+
+const MONTHS_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -37,16 +35,20 @@ function endOfMonthIso(y: number, m: number): string {
   return isoDate(y, m, last);
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
+function formatMoney(n: number): string {
+  return `£${Math.round(n).toLocaleString("en-GB")}`;
 }
 
-function formatTime(t: string): string {
-  return t.slice(0, 5);
+// Current year/month in Europe/London, so "this month"/"this year" defaults are
+// correct regardless of server timezone (mirrors ukTodayIso in AvailabilityPanel).
+function ukNowParts(): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return { year: Number(get("year")), month: Number(get("month")) };
 }
 
 export default async function DashboardPage({
@@ -56,14 +58,16 @@ export default async function DashboardPage({
 }) {
   const params = await searchParams;
 
-  const now = new Date();
+  const ukNow = ukNowParts();
   const yearParam = Number(params.year);
   const monthParam = Number(params.month);
-  const year = Number.isFinite(yearParam) && yearParam > 1900 ? yearParam : now.getFullYear();
+  const year =
+    Number.isFinite(yearParam) && yearParam > 1900 ? yearParam : ukNow.year;
   const month =
     Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12
       ? monthParam
-      : now.getMonth() + 1;
+      : ukNow.month;
+  const view = params.view === "year" ? "year" : "month";
 
   if (!supabaseAdmin) {
     return (
@@ -82,60 +86,82 @@ export default async function DashboardPage({
     );
   }
 
-  const monthStart = startOfMonthIso(year, month);
-  const monthEnd = endOfMonthIso(year, month);
+  // Period bounds follow the month/year toggle.
+  const periodStart =
+    view === "year" ? isoDate(year, 1, 1) : startOfMonthIso(year, month);
+  const periodEnd =
+    view === "year" ? isoDate(year, 12, 31) : endOfMonthIso(year, month);
 
-  // If the selected month is the current month or in the future, show
-  // upcoming-from-today bookings within the month. If it's a past month,
-  // show all bookings that occurred that month.
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const isCurrent = year === now.getFullYear() && month === now.getMonth() + 1;
-  const isFuture =
-    year > now.getFullYear() ||
-    (year === now.getFullYear() && month > now.getMonth() + 1);
-  const listFrom = isCurrent ? todayIso : monthStart;
-  const listTitle = isFuture
-    ? "Bookings this month"
-    : isCurrent
-      ? "Upcoming this month"
-      : "Bookings that month";
+  const [pending, confirmed, cancelled, total, revenueRes, popularityRes] =
+    await Promise.all([
+      supabaseAdmin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending")
+        .gte("booking_date", periodStart)
+        .lte("booking_date", periodEnd),
+      supabaseAdmin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "confirmed")
+        .gte("booking_date", periodStart)
+        .lte("booking_date", periodEnd),
+      supabaseAdmin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "cancelled")
+        .gte("booking_date", periodStart)
+        .lte("booking_date", periodEnd),
+      supabaseAdmin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .gte("booking_date", periodStart)
+        .lte("booking_date", periodEnd),
+      // Revenue: confirmed bookings' list prices over the period. Summed in JS
+      // (low volume); booking_date is also used to bucket per-month in year mode.
+      supabaseAdmin
+        .from("bookings")
+        .select("treatment_price, booking_date")
+        .eq("status", "confirmed")
+        .gte("booking_date", periodStart)
+        .lte("booking_date", periodEnd),
+      // Most-booked: all non-cancelled bookings (real demand) grouped in JS.
+      supabaseAdmin
+        .from("bookings")
+        .select("treatment_name")
+        .neq("status", "cancelled")
+        .gte("booking_date", periodStart)
+        .lte("booking_date", periodEnd),
+    ]);
 
-  const [pending, confirmed, cancelled, total, list] = await Promise.all([
-    supabaseAdmin
-      .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending")
-      .gte("booking_date", monthStart)
-      .lte("booking_date", monthEnd),
-    supabaseAdmin
-      .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "confirmed")
-      .gte("booking_date", monthStart)
-      .lte("booking_date", monthEnd),
-    supabaseAdmin
-      .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "cancelled")
-      .gte("booking_date", monthStart)
-      .lte("booking_date", monthEnd),
-    supabaseAdmin
-      .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .gte("booking_date", monthStart)
-      .lte("booking_date", monthEnd),
-    supabaseAdmin
-      .from("bookings")
-      .select(
-        "id, customer_first_name, customer_last_name, treatment_name, booking_date, booking_time, status"
-      )
-      .gte("booking_date", listFrom)
-      .lte("booking_date", monthEnd)
-      .order("booking_date", { ascending: true })
-      .order("booking_time", { ascending: true }),
-  ]);
+  const revenueRows = (revenueRes.data ?? []) as RevenueRow[];
+  const popularityRows = (popularityRes.data ?? []) as PopularityRow[];
 
-  const rows = (list.data ?? []) as Booking[];
+  const revenueTotal = revenueRows.reduce(
+    (sum, r) => sum + (r.treatment_price ?? 0),
+    0
+  );
+
+  // Per-month confirmed revenue (year mode only).
+  const perMonth = Array.from({ length: 12 }, () => 0);
+  if (view === "year") {
+    for (const r of revenueRows) {
+      const m = Number(r.booking_date.slice(5, 7));
+      if (m >= 1 && m <= 12) perMonth[m - 1] += r.treatment_price ?? 0;
+    }
+  }
+  const maxMonth = Math.max(1, ...perMonth);
+
+  // Most-booked ranking, top 5.
+  const tally = new Map<string, number>();
+  for (const r of popularityRows) {
+    tally.set(r.treatment_name, (tally.get(r.treatment_name) ?? 0) + 1);
+  }
+  const ranking = [...tally.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const periodLabel = view === "year" ? "this year" : "this month";
 
   return (
     <>
@@ -144,11 +170,40 @@ export default async function DashboardPage({
         <h1>Dashboard</h1>
         <p className="lede">An at-a-glance view of the studio.</p>
 
-        <DashboardMonthNav year={year} month={month} />
+        <DashboardMonthNav year={year} month={month} view={view} />
 
         <div className="dashboard-tools">
           <ExportBookingsButton />
+          <Link href="/admin/bookings" className="btn btn-ghost btn-sm">
+            All bookings →
+          </Link>
         </div>
+
+        <div className="stat-hero">
+          <span className="label">Revenue — confirmed</span>
+          <span className="value">{formatMoney(revenueTotal)}</span>
+          <span className="caption">List price · excludes any discounts</span>
+        </div>
+
+        {view === "year" && (
+          <section>
+            <h2>Revenue by month</h2>
+            <div className="month-bars">
+              {perMonth.map((amt, i) => (
+                <div className="month-bar" key={MONTHS_SHORT[i]}>
+                  <span className="month-label">{MONTHS_SHORT[i]}</span>
+                  <div className="bar-track">
+                    <div
+                      className="bar-fill"
+                      style={{ width: `${(amt / maxMonth) * 100}%` }}
+                    />
+                  </div>
+                  <span className="month-value">{formatMoney(amt)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="stat-row">
           <div className="stat-card">
@@ -169,73 +224,20 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            marginBottom: 14,
-            marginTop: 24,
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <h2 style={{ margin: 0 }}>{listTitle}</h2>
-          <div className="btn-row">
-            <Link href="/admin/bookings" className="btn btn-ghost btn-sm">
-              All bookings
-            </Link>
-            <Link
-              href="/admin/availability"
-              className="btn btn-ghost btn-sm"
-            >
-              Availability
-            </Link>
-          </div>
-        </div>
-
-        {rows.length === 0 ? (
-          <div className="admin-card">No bookings to show for this month.</div>
+        <h2>Most booked</h2>
+        {ranking.length === 0 ? (
+          <p className="dashboard-empty">No bookings {periodLabel}.</p>
         ) : (
-          <table className="admin-table admin-table-clickable">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Name</th>
-                <th>Treatment</th>
-                <th>Status</th>
-                <th aria-hidden="true"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((b) => (
-                <tr key={b.id} className={`row-${b.status} row-link`}>
-                  <td data-label="Date">
-                    <Link
-                      href={`/admin/bookings/${b.id}`}
-                      className="row-link-target"
-                    >
-                      {formatDate(b.booking_date)}
-                    </Link>
-                  </td>
-                  <td data-label="Time">{formatTime(b.booking_time)}</td>
-                  <td data-label="Name">
-                    {b.customer_first_name} {b.customer_last_name}
-                  </td>
-                  <td data-label="Treatment">{b.treatment_name}</td>
-                  <td data-label="Status">
-                    <span className={`badge badge-${b.status}`}>
-                      {b.status}
-                    </span>
-                  </td>
-                  <td data-label="" className="row-link-arrow">
-                    <Link href={`/admin/bookings/${b.id}`}>Manage →</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ol className="rank-list">
+            {ranking.map(([name, count]) => (
+              <li key={name}>
+                <span className="rank-name">{name}</span>
+                <span className="rank-count">
+                  <strong>{count}</strong> {count === 1 ? "booking" : "bookings"}
+                </span>
+              </li>
+            ))}
+          </ol>
         )}
       </main>
     </>

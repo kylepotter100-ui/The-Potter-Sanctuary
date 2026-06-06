@@ -97,8 +97,10 @@ export default function AdminTabBar() {
             className={`admin-tab${active ? " is-active" : ""}`}
             aria-current={active ? "page" : undefined}
           >
-            <span className="admin-tab-icon">{tab.icon}</span>
-            <span className="admin-tab-label">{tab.label}</span>
+            <span className="admin-tab-inner">
+              <span className="admin-tab-icon">{tab.icon}</span>
+              <span className="admin-tab-label">{tab.label}</span>
+            </span>
           </Link>
         );
       })}
