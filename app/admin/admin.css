@@ -105,19 +105,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 8px 4px;
-  min-height: 56px;
+  gap: 4px;
+  /* No fixed min-height: the tab stretches to fill the bar's content-height
+     region (above the safe-area inset) so the icon row sits centered there. */
+  padding: 6px 4px;
   text-decoration: none;
   color: var(--admin-ink-soft);
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
 }
 .admin-tab:hover { color: var(--admin-sage-deep); }
 .admin-tab.is-active { color: var(--admin-sage-deep); }
 .admin-tab-icon { display: flex; }
-.admin-tab-icon svg { width: 22px; height: 22px; }
+.admin-tab-icon svg { width: 24px; height: 24px; }
 .admin-tab-label { line-height: 1; }
 
 /* Booking-detail back link (admin-scoped, subtle on desktop, clear on mobile) */
@@ -571,22 +573,33 @@
   /* Header slims to brand + logout — the bottom tabs handle navigation. */
   .admin-header .nav-links { display: none; }
 
-  /* Reveal the fixed bottom tab bar and reserve the iOS safe area. */
+  /* Native-style fixed bottom tab bar.
+     Total height = 56px content region + the safe-area inset beneath it.
+     With box-sizing:border-box, min-height includes the padding-bottom, so the
+     56px content region sits ABOVE the inset and the inset stays empty — the
+     icon row never enters the iOS home-indicator zone. On no-inset viewports
+     (Android / older iPhones / desktop emulation) the inset is 0 and the bar
+     is a clean 56px with icons centered. Tabs stretch (align-items:stretch) to
+     fill the content region and center their icon + label within it. */
   .admin-tabbar {
     display: flex;
+    align-items: stretch;
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 100;
+    min-height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     background: var(--admin-cream-soft);
     border-top: 1px solid var(--admin-line);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Soft top shadow so the bar reads as a layer above scrolling content. */
+    box-shadow: 0 -1px 8px rgba(28, 28, 28, 0.06);
   }
 
-  /* Keep page content clear of the fixed bar (bar height + safe area). */
+  /* Keep page content clear of the taller bar: content height + inset + gap. */
   .admin-main {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px);
   }
 }
 
