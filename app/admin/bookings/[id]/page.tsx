@@ -4,6 +4,7 @@ import AdminBookingActions from "@/components/AdminBookingActions";
 import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
 import RequestReviewButton from "@/components/RequestReviewButton";
 import { supabaseAdmin } from "@/lib/supabase";
+import { customerHasReviewed } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -160,23 +161,15 @@ export default async function AdminBookingDetailPage({
 
   const canAct = booking.status === "pending" || booking.status === "confirmed";
 
-  // Review state, read from existing tables (no schema change):
-  //   "left"      → a reviews row exists for this booking
+  // Review state (customer-level), read from existing tables (no schema change):
+  //   "left"      → this customer has reviewed on ANY of their bookings
   //   "requested" → review_email_sent_at set but no review submitted yet
   //   "none"      → neither — the review can still be requested
-  const { data: review, error: reviewError } = await supabaseAdmin
-    .from("reviews")
-    .select("id")
-    .eq("booking_id", id)
-    .limit(1)
-    .maybeSingle();
-  if (reviewError) {
-    console.error(
-      "[admin booking detail] review query failed",
-      JSON.stringify(reviewError)
-    );
-  }
-  const reviewState: "left" | "requested" | "none" = review
+  const reviewLeft = await customerHasReviewed(supabaseAdmin, {
+    customerId: (booking.customer_id as string | null) ?? null,
+    email: booking.customer_email as string,
+  });
+  const reviewState: "left" | "requested" | "none" = reviewLeft
     ? "left"
     : booking.review_email_sent_at
       ? "requested"

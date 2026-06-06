@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
+import { customerHasReviewed } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export async function POST(
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_email, treatment_name, status, review_email_sent_at"
+      "id, customer_id, customer_first_name, customer_email, treatment_name, status, review_email_sent_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -75,6 +76,18 @@ export async function POST(
     );
   }
   if ((reviewCount ?? 0) > 0) {
+    return NextResponse.json({ ok: true, alreadyReviewed: true });
+  }
+
+  // 1b) Customer-level guard: skip if this customer has reviewed on ANY of
+  // their bookings (matched by email, plus customer_id), so a repeat customer
+  // is never asked again. No send, no write.
+  if (
+    await customerHasReviewed(supabaseAdmin, {
+      customerId: booking.customer_id,
+      email: booking.customer_email,
+    })
+  ) {
     return NextResponse.json({ ok: true, alreadyReviewed: true });
   }
 

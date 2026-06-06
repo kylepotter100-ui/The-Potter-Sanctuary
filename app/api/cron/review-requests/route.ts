@@ -4,6 +4,7 @@ import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
 import { durationMinutesForTreatmentId } from "@/lib/services";
+import { customerHasReviewed } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_email, treatment_id, treatment_name, booking_date, booking_time, status, cancelled_at, review_email_sent_at"
+      "id, customer_id, customer_first_name, customer_email, treatment_id, treatment_name, booking_date, booking_time, status, cancelled_at, review_email_sent_at"
     )
     .gte("booking_date", yesterdayIso)
     .lte("booking_date", todayIso)
@@ -80,6 +81,20 @@ export async function GET(req: Request) {
     const endedAt = new Date(startedAt.getTime() + durationMin * 60 * 1000);
     const minsSinceEnd = (now.getTime() - endedAt.getTime()) / (60 * 1000);
     if (minsSinceEnd < 15 || minsSinceEnd > 75) {
+      skipped++;
+      continue;
+    }
+
+    // Customer-level guard: never ask someone who has already left a review on
+    // any of their bookings. We intentionally do NOT set review_email_sent_at
+    // here — that column means "a request was actually sent"; the 15–75 min
+    // window naturally bounds re-evaluation to a few cheap reads.
+    if (
+      await customerHasReviewed(supabaseAdmin, {
+        customerId: b.customer_id,
+        email: b.customer_email,
+      })
+    ) {
       skipped++;
       continue;
     }
