@@ -1,10 +1,24 @@
 import "./admin.css";
 import type { Metadata, Viewport } from "next";
 import AdminTabBar from "@/components/AdminTabBar";
+import AdminServiceWorker from "@/components/AdminServiceWorker";
 
 export const metadata: Metadata = {
   title: "Admin · The Potter Sanctuary",
   robots: { index: false, follow: false },
+  // Admin-only PWA. Next merges metadata down the segment tree, so the manifest
+  // link + apple meta render on /admin/* only — the public site is untouched.
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Sanctuary Admin",
+    statusBarStyle: "default",
+  },
+  // Next 15 emits the modern `mobile-web-app-capable`; also emit the legacy
+  // `apple-mobile-web-app-capable` for maximum iOS standalone compatibility.
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 // Admin-scoped viewport. Next.js merges viewport down the segment tree, so this
@@ -25,6 +39,7 @@ export default function AdminLayout({
     <div className="admin-shell">
       {children}
       <AdminTabBar />
+      <AdminServiceWorker />
     </div>
   );
 }

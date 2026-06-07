@@ -1,0 +1,17 @@
+{
+  "name": "The Potter Sanctuary Admin",
+  "short_name": "Sanctuary Admin",
+  "description": "Private admin diary for The Potter Sanctuary — bookings, availability and overview.",
+  "start_url": "/admin/dashboard",
+  "scope": "/admin",
+  "id": "/admin/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#8A9E85",
+  "background_color": "#F5F0E8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

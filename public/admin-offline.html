@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Offline · Sanctuary Admin</title>
+    <style>
+      :root {
+        --cream: #f5f0e8;
+        --cream-soft: #fbf7ec;
+        --sage: #8a9e85;
+        --sage-deep: #6e8068;
+        --ink: #1c1c1c;
+        --ink-soft: #4a4a4a;
+        --line: rgba(28, 28, 28, 0.12);
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--cream);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+        text-align: center;
+      }
+      .card {
+        max-width: 360px;
+        width: 100%;
+        background: var(--cream-soft);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 36px 28px;
+      }
+      .brand {
+        font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+        font-size: 24px;
+        letter-spacing: 0.01em;
+        color: var(--ink);
+        margin: 0 0 4px;
+      }
+      .brand em { font-style: italic; font-weight: 300; opacity: 0.7; }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--sage);
+        display: inline-block;
+        margin-bottom: 18px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 10px;
+        color: var(--ink);
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        margin: 0 0 24px;
+      }
+      button {
+        appearance: none;
+        border: 1px solid var(--sage-deep);
+        background: var(--sage-deep);
+        color: var(--cream);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding: 12px 24px;
+        min-height: 44px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      button:active { opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <p class="brand">The Potter <em>Sanctuary</em></p>
+      <span class="dot" aria-hidden="true"></span>
+      <h1>You&rsquo;re offline</h1>
+      <p>
+        The admin diary needs a connection. No data is shown while you&rsquo;re
+        offline, so you&rsquo;ll never see stale bookings or availability.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
