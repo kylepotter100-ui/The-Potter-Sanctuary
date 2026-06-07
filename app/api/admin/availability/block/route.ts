@@ -32,6 +32,12 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  if (typeof reason === "string" && reason.length > 500) {
+    return NextResponse.json(
+      { error: "Reason too long (max 500 characters)" },
+      { status: 400 }
+    );
+  }
 
   // Idempotent — the day-toggle workflow may call this for a date that was
   // already blocked (e.g. quick double-tap). Upsert avoids the unique
@@ -46,7 +52,8 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[availability/block] upsert failed", JSON.stringify(error));
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
   return NextResponse.json(data);
 }

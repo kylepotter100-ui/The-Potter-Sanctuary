@@ -5,6 +5,7 @@ import { render } from "@react-email/render";
 import CustomerCancellationByOwner from "@/emails/CustomerCancellationByOwner";
 import { supabaseAdmin } from "@/lib/supabase";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { isValidEmail } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,12 @@ export async function POST(
   if (!reason) {
     return NextResponse.json(
       { error: "A cancellation reason is required" },
+      { status: 400 }
+    );
+  }
+  if (reason.length > 1000) {
+    return NextResponse.json(
+      { error: "Cancellation reason too long (max 1000 characters)" },
       { status: 400 }
     );
   }
@@ -92,7 +99,7 @@ export async function POST(
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey) {
+  if (apiKey && isValidEmail(booking.customer_email)) {
     const resend = new Resend(apiKey);
     const siteUrl = new URL(req.url).origin;
     try {
@@ -125,8 +132,10 @@ export async function POST(
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
     }
-  } else {
+  } else if (!apiKey) {
     console.error("[admin cancel] RESEND_API_KEY missing — email skipped");
+  } else {
+    console.error("[admin cancel] invalid customer email — email skipped");
   }
 
   return NextResponse.json({ ok: true });

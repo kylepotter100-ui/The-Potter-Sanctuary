@@ -11,7 +11,12 @@ async function isAdmin(): Promise<boolean> {
 
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const s = String(value);
+  let s = String(value);
+  // Formula-injection guard: a leading = + - @ (or tab/CR) makes Excel/Sheets
+  // execute the cell as a formula. Prefix a single quote so it stays literal text.
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = `'${s}`;
+  }
   // Quote and escape if the value contains comma, quote, or newline.
   if (/[",\n\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
@@ -50,7 +55,7 @@ export async function GET(req: Request) {
   const { data: rows, error } = await query;
   if (error) {
     console.error("[export] query failed", JSON.stringify(error));
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 
   // Which bookings have a consultation linked, for the "Consultation

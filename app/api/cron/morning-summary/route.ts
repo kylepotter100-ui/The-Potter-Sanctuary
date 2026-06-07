@@ -115,7 +115,7 @@ export async function GET(req: Request) {
 
   if (error) {
     console.error("[cron morning-summary] query failed", JSON.stringify(error));
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 
   const ids = (bookings ?? []).map((b) => b.id);

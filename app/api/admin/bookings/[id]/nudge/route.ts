@@ -5,6 +5,7 @@ import { render } from "@react-email/render";
 import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { isValidEmail } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,14 @@ export async function POST(
 
   if ((consultCount ?? 0) > 0) {
     return NextResponse.json({ ok: true, alreadyCompleted: true });
+  }
+
+  if (!isValidEmail(booking.customer_email)) {
+    console.error("[admin nudge] invalid customer email — email skipped");
+    return NextResponse.json(
+      { error: "Customer email is invalid" },
+      { status: 400 }
+    );
   }
 
   const apiKey = process.env.RESEND_API_KEY;

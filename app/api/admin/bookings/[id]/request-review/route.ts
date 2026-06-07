@@ -5,6 +5,7 @@ import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
 import { customerHasReviewed } from "@/lib/reviews";
+import { isValidEmail, safeSubject } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -118,7 +119,7 @@ export async function POST(
 
   // 3) The claim won — send the branded review request.
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey) {
+  if (apiKey && isValidEmail(booking.customer_email)) {
     const resend = new Resend(apiKey);
     const siteUrl = new URL(req.url).origin;
     try {
@@ -134,7 +135,9 @@ export async function POST(
         from: FROM,
         to: booking.customer_email,
         replyTo: REPLY_TO,
-        subject: `How was your ${booking.treatment_name}? — The Potter Sanctuary`,
+        subject: safeSubject(
+          `How was your ${booking.treatment_name}? — The Potter Sanctuary`
+        ),
         html,
       });
       if (result.error) {
@@ -149,9 +152,13 @@ export async function POST(
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
     }
-  } else {
+  } else if (!apiKey) {
     console.error(
       "[admin request-review] RESEND_API_KEY missing — email skipped"
+    );
+  } else {
+    console.error(
+      "[admin request-review] invalid customer email — email skipped"
     );
   }
 

@@ -62,7 +62,7 @@ export async function GET(req: Request) {
       "[cron appointment-reminders] query failed",
       JSON.stringify(error)
     );
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 
   const rows = candidates ?? [];

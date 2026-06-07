@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { firstTooLong } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,30 @@ export async function POST(req: Request) {
   if (!payload.response?.signature_name?.trim()) {
     return NextResponse.json(
       { error: "Signature is required" },
+      { status: 400 }
+    );
+  }
+
+  // Server-side length caps (DoS / DB bloat) on the free-text fields.
+  const r0 = payload.response;
+  const c0 = payload.customer ?? ({} as Payload["customer"]);
+  const tooLong = firstTooLong({
+    allergies_specify: [r0.allergies_specify, 500],
+    other_medical_conditions: [r0.other_medical_conditions, 1000],
+    medical_care_explanation: [r0.medical_care_explanation, 1000],
+    areas_to_avoid: [r0.areas_to_avoid, 500],
+    primary_reason: [r0.primary_reason, 500],
+    additional_info: [r0.additional_info, 1000],
+    signature_name: [r0.signature_name, 100],
+    full_name: [c0.full_name, 200],
+    phone_number: [c0.phone_number, 30],
+    address: [c0.address, 500],
+    emergency_contact_name: [c0.emergency_contact_name, 200],
+    emergency_contact_phone: [c0.emergency_contact_phone, 30],
+  });
+  if (tooLong) {
+    return NextResponse.json(
+      { error: `Field too long: ${tooLong}` },
       { status: 400 }
     );
   }

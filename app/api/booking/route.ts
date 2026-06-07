@@ -7,6 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { validateSlotAvailable } from "@/lib/availability";
 import { durationMinutesForTreatmentId } from "@/lib/services";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
+import { firstTooLong, safeSubject } from "@/lib/validation";
 
 type Payload = {
   date: string;
@@ -54,6 +55,22 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json(
       { error: "Missing or invalid required fields" },
+      { status: 400 }
+    );
+  }
+
+  // Server-side length caps (DoS / DB bloat / UI + email overflow).
+  const tooLong = firstTooLong({
+    fname: [payload.fname, 100],
+    lname: [payload.lname, 100],
+    phone: [payload.phone, 30],
+    email: [payload.email, 254],
+    message: [payload.message, 5000],
+    "service.name": [payload.service?.name, 200],
+  });
+  if (tooLong) {
+    return NextResponse.json(
+      { error: `Field too long: ${tooLong}` },
       { status: 400 }
     );
   }
@@ -287,7 +304,9 @@ export async function POST(req: Request) {
         from: FROM,
         to: OWNER_TO,
         replyTo: payload.email,
-        subject: `New booking — ${payload.service.name} — ${payload.fname} ${payload.lname}`,
+        subject: safeSubject(
+          `New booking — ${payload.service.name} — ${payload.fname} ${payload.lname}`
+        ),
         html: ownerHtml,
       }),
     ]);

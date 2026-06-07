@@ -5,6 +5,7 @@ import { render } from "@react-email/render";
 import BookingConfirmed from "@/emails/BookingConfirmed";
 import { supabaseAdmin } from "@/lib/supabase";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { isValidEmail } from "@/lib/validation";
 
 const VALID = new Set(["pending", "confirmed", "cancelled"]);
 const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
@@ -62,7 +63,8 @@ export async function POST(
   );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[admin status] update failed", JSON.stringify(error));
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 
   if (!rows || rows.length === 0) {
@@ -82,7 +84,7 @@ export async function POST(
 
   // Send the customer a confirmation email when the admin moves a booking to
   // 'confirmed'. Best-effort — failures here don't fail the API call.
-  if (status === "confirmed" && data?.customer_email) {
+  if (status === "confirmed" && isValidEmail(data?.customer_email)) {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.error("[admin status] RESEND_API_KEY missing — confirmation email skipped");

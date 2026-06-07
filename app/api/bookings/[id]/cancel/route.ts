@@ -6,6 +6,7 @@ import OwnerCancellationByCustomer from "@/emails/OwnerCancellationByCustomer";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { safeSubject } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,12 @@ export async function POST(
     // No body is fine — reason is optional.
   }
   const reason = (body.reason ?? "").trim() || null;
+  if (reason && reason.length > 1000) {
+    return NextResponse.json(
+      { error: "Cancellation reason too long (max 1000 characters)" },
+      { status: 400 }
+    );
+  }
 
   // Verify the booking belongs to the signed-in customer before mutating.
   const { data: customer } = await supabaseAdmin
@@ -168,7 +175,9 @@ export async function POST(
           from: FROM,
           to: OWNER_TO,
           replyTo: booking.customer_email,
-          subject: `Cancellation — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
+          subject: safeSubject(
+            `Cancellation — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`
+          ),
           html: ownerHtml,
         }),
       ]);

@@ -947,6 +947,7 @@ export default function Booking({ preselectId }: Props) {
               id="fname"
               type="text"
               placeholder="Your first name"
+              maxLength={100}
               value={fname}
               onChange={(e) => setFname(e.target.value)}
             />
@@ -957,6 +958,7 @@ export default function Booking({ preselectId }: Props) {
               id="lname"
               type="text"
               placeholder="Your last name"
+              maxLength={100}
               value={lname}
               onChange={(e) => setLname(e.target.value)}
             />
@@ -969,6 +971,7 @@ export default function Booking({ preselectId }: Props) {
               id="phone"
               type="tel"
               placeholder="07000 000 000"
+              maxLength={30}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
@@ -979,6 +982,7 @@ export default function Booking({ preselectId }: Props) {
               id="email"
               type="email"
               placeholder="you@example.com"
+              maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -1002,6 +1006,7 @@ export default function Booking({ preselectId }: Props) {
           <textarea
             id="message"
             placeholder="Anything we should know — pregnancy, allergies, areas to avoid, scent preferences…"
+            maxLength={5000}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />

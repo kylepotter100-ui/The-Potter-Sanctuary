@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { firstTooLong } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,20 @@ export async function POST(req: Request) {
     payload = (await req.json()) as Payload;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const tooLong = firstTooLong({
+    full_name: [payload.full_name, 200],
+    phone_number: [payload.phone_number, 30],
+    address: [payload.address, 500],
+    emergency_contact_name: [payload.emergency_contact_name, 200],
+    emergency_contact_phone: [payload.emergency_contact_phone, 30],
+  });
+  if (tooLong) {
+    return NextResponse.json(
+      { error: `Field too long: ${tooLong}` },
+      { status: 400 }
+    );
   }
 
   const supabase = await createSupabaseServerClient();
