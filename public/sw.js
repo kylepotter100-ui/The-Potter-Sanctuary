@@ -16,22 +16,48 @@
  *
  * Bump CACHE on any meaningful change to purge old caches on activation.
  */
-const CACHE = "ps-admin-shell-v1";
+const CACHE = "ps-admin-shell-v2";
 
-// Stable, non-hashed paths we control — safe to precache by name.
+const OFFLINE_URL = "/admin-offline.html";
+
+// Stable, non-hashed static assets — safe to precache by name. These are never
+// returned for a navigation, so a redirect flag on them is harmless: plain addAll.
 const PRECACHE = [
-  "/admin-offline.html",
   "/manifest.webmanifest",
   "/icon-192.png",
   "/icon-512.png",
   "/apple-touch-icon.png",
 ];
 
-const OFFLINE_URL = "/admin-offline.html";
+// Rebuild a guaranteed NON-redirected 200 HTML Response. A Response built via
+// `new Response(body, ...)` always has `redirected === false` (the flag cannot be
+// set), so this is what makes the offline page safe to return for a navigation —
+// a service worker may not return a redirected/3xx response to a navigate request
+// (Safari rejects it: "response served by service worker has redirections").
+async function toCleanHtmlResponse(res) {
+  const body = await res.blob();
+  return new Response(body, {
+    status: 200,
+    statusText: "OK",
+    headers: {
+      "Content-Type": res.headers.get("Content-Type") || "text/html; charset=utf-8",
+    },
+  });
+}
+
+// Precache the offline page as a clean 200, never a redirect. We follow redirects
+// while fetching, then store a reconstructed (non-redirected) copy.
+async function precacheOfflinePage(cache) {
+  const res = await fetch(OFFLINE_URL, { redirect: "follow", cache: "reload" });
+  const clean = res.redirected || res.status !== 200 ? await toCleanHtmlResponse(res) : res;
+  await cache.put(OFFLINE_URL, clean);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE))
+    caches.open(CACHE).then(async (cache) => {
+      await Promise.all([cache.addAll(PRECACHE), precacheOfflinePage(cache)]);
+    })
   );
   self.skipWaiting();
 });
@@ -91,10 +117,25 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 2) Page navigations (HTML) — always fresh; never cache the data-bearing
-  //    document. On failure show the honest offline page.
+  //    document. On failure serve the honest offline page as a clean, NON-redirected
+  //    200 (returning a redirected/3xx response here triggers the Safari error
+  //    "response served by service worker has redirections").
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match(OFFLINE_URL))
+      (async () => {
+        try {
+          return await fetch(request);
+        } catch {
+          const cached = await caches.match(OFFLINE_URL);
+          if (cached && !cached.redirected) return cached;
+          if (cached) return toCleanHtmlResponse(cached);
+          // Last-resort inline fallback if the precache is somehow missing.
+          return new Response(
+            "<!doctype html><meta charset=utf-8><title>Offline</title><p>You're offline.",
+            { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
+        }
+      })()
     );
     return;
   }
