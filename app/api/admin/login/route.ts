@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
-import { createHash, timingSafeEqual } from "node:crypto";
 import { adminSessionCookie } from "@/lib/admin-session";
 
-// Constant-time password check. We SHA-256 both sides first so the buffers are
-// always equal length — this avoids timingSafeEqual throwing on length mismatch
-// (which would itself leak the password length) and removes the early-exit timing
-// side-channel of `===`.
-function passwordMatches(provided: string, expected: string): boolean {
-  const a = createHash("sha256").update(provided).digest();
-  const b = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(a, b);
+// Constant-time password check using Web Crypto (crypto.subtle) — a standard
+// global available in BOTH Node and the Cloudflare Workers runtime. node:crypto
+// (createHash/timingSafeEqual) threw in workerd and 500'd login in production, so
+// we avoid it. SHA-256 both sides to equal-length digests, then compare in
+// constant time.
+async function passwordMatches(
+  provided: string,
+  expected: string
+): Promise<boolean> {
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(provided)),
+    crypto.subtle.digest("SHA-256", enc.encode(expected)),
+  ]);
+  const av = new Uint8Array(a);
+  const bv = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < av.length; i++) diff |= av[i] ^ bv[i];
+  return diff === 0;
 }
 
 export async function POST(req: Request) {
@@ -28,7 +38,10 @@ export async function POST(req: Request) {
     );
   }
 
-  if (typeof body.password !== "string" || !passwordMatches(body.password, expected)) {
+  if (
+    typeof body.password !== "string" ||
+    !(await passwordMatches(body.password, expected))
+  ) {
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
