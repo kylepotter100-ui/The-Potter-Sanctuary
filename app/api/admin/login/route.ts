@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminSessionCookie } from "@/lib/admin-session";
 
 export async function POST(req: Request) {
   let body: { password?: string };
@@ -21,12 +22,6 @@ export async function POST(req: Request) {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("admin_session", "authenticated", {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-    path: "/",
-    maxAge: 60 * 60 * 24,
-  });
+  res.cookies.set(adminSessionCookie());
   return res;
 }

@@ -66,10 +66,26 @@ function LoginForm() {
               {error}
             </div>
           )}
+          {/* Fixed identifier so iOS Keychain can associate the saved password
+              with an account and offer FaceID autofill on return. Visible (not
+              display:none) because Safari ignores hidden username fields; readOnly
+              + fixed value. The server ignores this — password is the only gate. */}
+          <div className="field">
+            <label htmlFor="username">Studio</label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              value="The Potter Sanctuary"
+              readOnly
+            />
+          </div>
           <div className="field">
             <label htmlFor="password">Password</label>
             <input
               id="password"
+              name="password"
               type="password"
               autoComplete="current-password"
               value={password}

@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
+import { clearAdminSessionCookie } from "@/lib/admin-session";
 
 function clearCookie(res: NextResponse) {
-  res.cookies.set("admin_session", "", {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-    path: "/",
-    maxAge: 0,
-  });
+  res.cookies.set(clearAdminSessionCookie());
   return res;
 }
 
