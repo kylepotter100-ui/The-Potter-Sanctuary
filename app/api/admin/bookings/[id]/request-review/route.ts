@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { customerHasReviewed } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
@@ -120,7 +121,7 @@ export async function POST(
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     const resend = new Resend(apiKey);
-    const siteUrl = new URL(req.url).origin;
+    const siteUrl = siteConfig.url;
     try {
       const html = await render(
         ReviewRequest({

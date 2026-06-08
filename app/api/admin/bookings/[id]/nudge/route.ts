@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -83,7 +84,7 @@ export async function POST(
   }
 
   const resend = new Resend(apiKey);
-  const siteUrl = new URL(req.url).origin;
+  const siteUrl = siteConfig.url;
   try {
     const html = await render(
       ConsultationReminder({

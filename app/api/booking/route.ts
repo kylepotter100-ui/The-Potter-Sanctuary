@@ -4,6 +4,7 @@ import { render } from "@react-email/render";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { validateSlotAvailable } from "@/lib/availability";
 import { durationMinutesForTreatmentId } from "@/lib/services";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
@@ -241,7 +242,7 @@ export async function POST(req: Request) {
 
   const dateLong = formatLongDate(payload.date);
   const timeNice = formatTime12h(payload.time);
-  const siteUrl = new URL(req.url).origin;
+  const siteUrl = siteConfig.url;
 
   try {
     const [customerHtml, ownerHtml] = await Promise.all([

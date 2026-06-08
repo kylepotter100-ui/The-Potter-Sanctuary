@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import BookingConfirmed from "@/emails/BookingConfirmed";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
 const VALID = new Set(["pending", "confirmed", "cancelled"]);
@@ -88,7 +89,7 @@ export async function POST(
       console.error("[admin status] RESEND_API_KEY missing — confirmation email skipped");
     } else {
       const resend = new Resend(apiKey);
-      const siteUrl = new URL(req.url).origin;
+      const siteUrl = siteConfig.url;
       try {
         const html = await render(
           BookingConfirmed({

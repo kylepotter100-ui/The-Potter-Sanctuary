@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { durationMinutesForTreatmentId } from "@/lib/services";
 import { customerHasReviewed } from "@/lib/reviews";
 
@@ -71,7 +72,7 @@ export async function GET(req: Request) {
 
   const rows = candidates ?? [];
   const resend = new Resend(apiKey);
-  const siteUrl = new URL(req.url).origin;
+  const siteUrl = siteConfig.url;
 
   let sent = 0;
   let skipped = 0;
