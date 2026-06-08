@@ -50,7 +50,7 @@ export default {
         return;
       }
       const baseUrl =
-        env.NEXT_PUBLIC_SITE_URL || "https://www.thepottersanctuary.co.uk";
+        env.NEXT_PUBLIC_SITE_URL || "https://thepottersanctuary.co.uk";
       const headers = { Authorization: `Bearer ${secret}` };
       const binding = env.WORKER_SELF_REFERENCE;
       if (!binding || typeof binding.fetch !== "function") {

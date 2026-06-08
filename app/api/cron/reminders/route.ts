@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -71,7 +72,7 @@ export async function GET(req: Request) {
 
   const rows = candidates ?? [];
   const resend = new Resend(apiKey);
-  const siteUrl = new URL(req.url).origin;
+  const siteUrl = siteConfig.url;
 
   let sent = 0;
   let skipped = 0;

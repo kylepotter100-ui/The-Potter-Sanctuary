@@ -4,7 +4,7 @@ export const siteConfig = {
   description:
     "A private body-therapy studio in Beck Row, Suffolk. Every session is led personally by a fully trained Clarins therapist using whipped, plant-based products made in small batches by Precyse By Nature.",
   url:
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thepottersanctuary.co.uk",
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://thepottersanctuary.co.uk",
   // BEFORE LAUNCH: add the studio's real street address to `streetAddress`
   // and the contact phone to `contact.phone`. Both render in the Footer
   // and JSON-LD only when non-empty.

@@ -5,6 +5,7 @@ import CustomerCancellationConfirmation from "@/emails/CustomerCancellationConfi
 import OwnerCancellationByCustomer from "@/emails/OwnerCancellationByCustomer";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -127,7 +128,7 @@ export async function POST(
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     const resend = new Resend(apiKey);
-    const siteUrl = new URL(req.url).origin;
+    const siteUrl = siteConfig.url;
     const dateLong = formatLongDate(booking.booking_date);
     const timeNice = formatTime12h(booking.booking_time);
     try {

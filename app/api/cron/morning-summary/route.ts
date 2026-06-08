@@ -5,6 +5,7 @@ import MorningSummary, {
   type SummaryBooking,
 } from "@/emails/MorningSummary";
 import { supabaseAdmin } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -168,7 +169,7 @@ export async function GET(req: Request) {
     }
   }
 
-  const siteUrl = new URL(req.url).origin;
+  const siteUrl = siteConfig.url;
   const adminUrl = `${siteUrl}/admin/bookings`;
 
   try {
