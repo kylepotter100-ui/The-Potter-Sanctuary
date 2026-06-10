@@ -6,7 +6,7 @@ import OwnerNotification from "@/emails/OwnerNotification";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { validateSlotAvailable } from "@/lib/availability";
-import { durationMinutesForTreatmentId } from "@/lib/services";
+import { services } from "@/lib/services";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
 
 type Payload = {
@@ -70,10 +70,17 @@ export async function POST(req: Request) {
   const emailLower = payload.email.toLowerCase();
   const fullName = `${payload.fname} ${payload.lname}`.trim();
 
-  // The CORRECTED duration for this treatment (new bookings use the updated
-  // lengths). Falls back to 60 if the treatment_id is somehow unknown.
-  const durationMinutes =
-    durationMinutesForTreatmentId(payload.service.svc) ?? 60;
+  // The services list is the source of truth for treatment id, display name,
+  // price AND duration — never the client payload. The UI only submits ids
+  // from this list, so rejecting unknown ids changes nothing for legitimate
+  // customers; it stops a tampered payload recording an arbitrary name/price.
+  const service = services.find((s) => s.bookingId === payload.service.svc);
+  if (!service) {
+    return NextResponse.json({ error: "Unknown treatment" }, { status: 400 });
+  }
+  const treatmentName = `${service.name} ${service.nameEm}`.trim();
+  const treatmentPrice = Math.round(service.price);
+  const durationMinutes = service.durationMinutes;
 
   // Server-side slot validation — never trust the client's date/time/duration.
   // Runs the same shared interval check the calendar uses (finishes by close;
@@ -132,9 +139,9 @@ export async function POST(req: Request) {
       customer_email: payload.email,
       customer_phone: payload.phone,
       customer_gender: payload.gender ?? null,
-      treatment_id: payload.service.svc,
-      treatment_name: payload.service.name,
-      treatment_price: Math.round(payload.service.price),
+      treatment_id: service.bookingId,
+      treatment_name: treatmentName,
+      treatment_price: treatmentPrice,
       booking_date: payload.date,
       booking_time: slotTime,
       duration_minutes: durationMinutes,
@@ -237,10 +244,10 @@ export async function POST(req: Request) {
       render(
         BookingConfirmation({
           firstName: payload.fname,
-          treatmentName: payload.service.name,
+          treatmentName: treatmentName,
           bookingDate: dateLong,
           bookingTime: timeNice,
-          treatmentPrice: payload.service.price,
+          treatmentPrice: treatmentPrice,
           bookingId: inserted.id,
           siteUrl,
           includeConsultationCTA,
@@ -252,10 +259,10 @@ export async function POST(req: Request) {
           lastName: payload.lname,
           phone: payload.phone,
           customerEmail: payload.email,
-          treatmentName: payload.service.name,
+          treatmentName: treatmentName,
           bookingDate: dateLong,
           bookingTime: timeNice,
-          treatmentPrice: payload.service.price,
+          treatmentPrice: treatmentPrice,
           gender: payload.gender ?? "—",
           message: payload.message ?? "",
           timestamp: formatTimestamp(),
@@ -276,7 +283,7 @@ export async function POST(req: Request) {
         from: FROM,
         to: OWNER_TO,
         replyTo: payload.email,
-        subject: `New booking — ${payload.service.name} — ${payload.fname} ${payload.lname}`,
+        subject: `New booking — ${treatmentName} — ${payload.fname} ${payload.lname}`,
         html: ownerHtml,
       }),
     ]);
