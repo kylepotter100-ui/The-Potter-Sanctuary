@@ -101,6 +101,26 @@ export async function GET(req: Request) {
       continue;
     }
 
+    // CLAIM-then-send — the exact pattern the admin request-review route uses
+    // on the same flag, so cron and admin race fairly and neither can
+    // double-send. Claim released on failure so the next hourly run retries
+    // while still inside the 15–75 min window.
+    const { data: claimed } = await supabaseAdmin
+      .from("bookings")
+      .update({ review_email_sent_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .is("review_email_sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      skipped++;
+      continue;
+    }
+    const unclaim = () =>
+      supabaseAdmin!
+        .from("bookings")
+        .update({ review_email_sent_at: null })
+        .eq("id", b.id);
+
     try {
       const html = await render(
         ReviewRequest({
@@ -122,18 +142,16 @@ export async function GET(req: Request) {
           "[cron review-requests] Resend error:",
           JSON.stringify(result.error)
         );
+        await unclaim();
         continue;
       }
-      await supabaseAdmin
-        .from("bookings")
-        .update({ review_email_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
       sent++;
     } catch (err) {
       console.error(
         "[cron review-requests] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
+      await unclaim();
     }
   }
 

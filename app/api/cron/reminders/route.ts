@@ -104,14 +104,37 @@ export async function GET(req: Request) {
       .select("id", { count: "exact", head: true })
       .eq("booking_id", b.id);
     if ((consultCount ?? 0) > 0) {
-      // Mark as sent so we don't keep checking each hour.
+      // Mark as sent so we don't keep checking each hour (conditional, so a
+      // concurrent run can't fight over it).
       await supabaseAdmin
         .from("bookings")
         .update({ consultation_reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
+        .eq("id", b.id)
+        .is("consultation_reminder_sent_at", null);
       skipped++;
       continue;
     }
+
+    // CLAIM-then-send (mirrors morning-summary / admin request-review): set
+    // the dedupe flag atomically BEFORE sending so a concurrent or retried
+    // run can never double-send; release the claim if the send fails so the
+    // next hourly run retries. The old send-then-mark order duplicated the
+    // email whenever the send succeeded but the mark didn't land.
+    const { data: claimed } = await supabaseAdmin
+      .from("bookings")
+      .update({ consultation_reminder_sent_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .is("consultation_reminder_sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      skipped++;
+      continue;
+    }
+    const unclaim = () =>
+      supabaseAdmin!
+        .from("bookings")
+        .update({ consultation_reminder_sent_at: null })
+        .eq("id", b.id);
 
     try {
       const html = await render(
@@ -136,18 +159,16 @@ export async function GET(req: Request) {
           "[cron reminders] Resend error:",
           JSON.stringify(result.error)
         );
+        await unclaim();
         continue;
       }
-      await supabaseAdmin
-        .from("bookings")
-        .update({ consultation_reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
       sent++;
     } catch (err) {
       console.error(
         "[cron reminders] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
+      await unclaim();
     }
   }
 

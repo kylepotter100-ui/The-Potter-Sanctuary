@@ -83,6 +83,25 @@ export async function GET(req: Request) {
       continue;
     }
 
+    // CLAIM-then-send: flag set atomically before the send (no double-send
+    // under concurrent/retried runs); claim released on failure so the next
+    // hourly run retries while the booking is still inside the 23–25h window.
+    const { data: claimed } = await supabaseAdmin
+      .from("bookings")
+      .update({ appointment_reminder_sent_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .is("appointment_reminder_sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      skipped++;
+      continue;
+    }
+    const unclaim = () =>
+      supabaseAdmin!
+        .from("bookings")
+        .update({ appointment_reminder_sent_at: null })
+        .eq("id", b.id);
+
     try {
       const html = await render(
         AppointmentReminder({
@@ -105,18 +124,16 @@ export async function GET(req: Request) {
           "[cron appointment-reminders] Resend error:",
           JSON.stringify(result.error)
         );
+        await unclaim();
         continue;
       }
-      await supabaseAdmin
-        .from("bookings")
-        .update({ appointment_reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
       sent++;
     } catch (err) {
       console.error(
         "[cron appointment-reminders] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
+      await unclaim();
     }
   }
 
