@@ -205,13 +205,18 @@ export async function POST(req: Request) {
     }
 
     if (prior) {
+      // Upsert on booking_id (unique index consultation_one_per_booking) so a
+      // retried/duplicated request can't write two snapshots for one booking.
       const { error: copyError } = await supabaseAdmin
         .from("consultation_responses")
-        .insert({
-          customer_id: customerId,
-          booking_id: inserted.id,
-          ...prior,
-        });
+        .upsert(
+          {
+            customer_id: customerId,
+            booking_id: inserted.id,
+            ...prior,
+          },
+          { onConflict: "booking_id" }
+        );
       if (copyError) {
         console.error("[booking] consult copy failed", JSON.stringify(copyError));
         // If we couldn't copy the prior consult, fall back to asking again.
