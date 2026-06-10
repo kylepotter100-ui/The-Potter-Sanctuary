@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
 import SignOutButton from "@/components/SignOutButton";
 import CancelBookingButton from "@/components/CancelBookingButton";
+import { ukTodayIso, ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +72,7 @@ export default async function AccountPage({
     .eq("email", emailLower)
     .maybeSingle();
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = ukTodayIso();
 
   let upcoming: BookingRow[] = [];
   let past: BookingRow[] = [];
@@ -162,7 +163,10 @@ export default async function AccountPage({
                         treatmentName={b.treatment_name}
                         bookingDate={formatDate(b.booking_date)}
                         bookingTime={formatTime(b.booking_time)}
-                        startsAt={`${b.booking_date}T${b.booking_time}`}
+                        startsAt={ukWallTimeToUtc(
+                          b.booking_date,
+                          b.booking_time
+                        ).toISOString()}
                       />
                     </div>
                   </li>

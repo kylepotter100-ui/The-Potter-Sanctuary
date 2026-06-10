@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ukTodayIso } from "@/lib/uk-time";
 
 export type CustomerSeed = {
   full_name: string | null;
@@ -57,12 +58,11 @@ const FOCUS_AREAS = [
   "Full Body",
 ];
 
+// Consent is dated with the STUDIO's calendar day (Europe/London), not the
+// visitor's device timezone — a customer filling this in from abroad should
+// still sign with the UK date their record/appointment uses.
 function todayIso(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  return ukTodayIso();
 }
 
 export default function QuestionnaireForm({

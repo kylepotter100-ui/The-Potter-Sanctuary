@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { services } from "@/lib/services";
+import { ukNow } from "@/lib/uk-time";
 
 // ============================================================================
 // Duration-aware availability — the single source of truth for slot logic,
@@ -174,11 +175,21 @@ export async function validateSlotAvailable(
   durationMinutes: number
 ): Promise<SlotValidation> {
   const slot = toHHMM(time);
-  const todayIso = new Date().toISOString().slice(0, 10);
+  // UK business date/time, not the server's UTC clock — during BST the two
+  // diverge for an hour around midnight (and a UK wall time read as UTC is an
+  // hour late all summer).
+  const { dateIso: todayIso, minutes: nowMinutes } = ukNow();
 
   // 1. Past date.
   if (dateIso < todayIso) {
     return { ok: false, reason: "That date has already passed." };
+  }
+
+  // 1b. Same-day lead time: mirror the calendar's rule (a slot must start at
+  // least 15 minutes from now) so a direct API call can't book a slot the UI
+  // would never offer — including ones that have already started.
+  if (dateIso === todayIso && timeToMinutes(slot) < nowMinutes + 15) {
+    return { ok: false, reason: "That time has already passed — please pick a later slot." };
   }
 
   const dow = weekdayOf(dateIso);

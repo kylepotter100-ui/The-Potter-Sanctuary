@@ -6,6 +6,7 @@ import MorningSummary, {
 } from "@/emails/MorningSummary";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
+import { ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +137,7 @@ export async function GET(req: Request) {
   const now = new Date();
   const decorated: SummaryBooking[] = (bookings ?? []).map((b) => {
     const completed = consultedSet.has(b.id);
-    const apptTime = new Date(`${b.booking_date}T${b.booking_time}`);
+    const apptTime = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const within12h = apptTime.getTime() - now.getTime() <= 12 * 60 * 60 * 1000;
     return {
       id: b.id,

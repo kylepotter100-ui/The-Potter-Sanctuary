@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { durationMinutesForTreatmentId } from "@/lib/services";
 import { BUFFER_MINUTES } from "@/lib/availability";
+import { ukTodayIso } from "@/lib/uk-time";
 
 type AvailabilityRow = {
   id: string;
@@ -78,18 +79,8 @@ function minToTime(min: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-// Today's date (YYYY-MM-DD) in Europe/London, so the blocked-date list can hide
-// past dates regardless of the admin's own timezone.
-function ukTodayIso(): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
-  return `${get("year")}-${get("month")}-${get("day")}`;
-}
+// Past-date hiding uses ukTodayIso() from @/lib/uk-time (Europe/London,
+// regardless of the admin's own timezone).
 
 function isoDate(d: Date): string {
   const y = d.getFullYear();

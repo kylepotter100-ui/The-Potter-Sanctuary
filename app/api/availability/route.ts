@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,11 +23,10 @@ export async function GET() {
     );
   }
 
-  const today = new Date();
-  const todayIso = today.toISOString().slice(0, 10);
-  const horizon = new Date(today);
-  horizon.setDate(horizon.getDate() + HORIZON_DAYS);
-  const horizonIso = horizon.toISOString().slice(0, 10);
+  // UK business "today", not the server's UTC date (they differ for an hour
+  // around midnight during BST).
+  const todayIso = ukTodayIso();
+  const horizonIso = addDaysIso(todayIso, HORIZON_DAYS);
 
   const [
     { data: availability, error: availErr },

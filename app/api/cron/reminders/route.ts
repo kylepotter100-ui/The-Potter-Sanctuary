@@ -5,6 +5,7 @@ import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -49,11 +50,14 @@ export async function GET(req: Request) {
   // Reminder window: 12–13 hours from now. We compute date+time bounds and
   // filter in SQL on booking_date (range), then narrow further in JS by
   // exact booking_time.
+  // SQL prefilter is coarse (dates only) and padded ±1 day so the UTC↔UK
+  // offset can never exclude a candidate; the exact DST-aware gate is the
+  // hoursOut check below.
   const now = new Date();
   const windowStart = new Date(now.getTime() + 12 * 60 * 60 * 1000);
   const windowEnd = new Date(now.getTime() + 13 * 60 * 60 * 1000);
-  const startIso = windowStart.toISOString().slice(0, 10);
-  const endIso = windowEnd.toISOString().slice(0, 10);
+  const startIso = addDaysIso(windowStart.toISOString().slice(0, 10), -1);
+  const endIso = addDaysIso(windowEnd.toISOString().slice(0, 10), 1);
 
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
@@ -77,7 +81,7 @@ export async function GET(req: Request) {
   let sent = 0;
   let skipped = 0;
   for (const b of rows) {
-    const bookingDateTime = new Date(`${b.booking_date}T${b.booking_time}`);
+    const bookingDateTime = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const ms = bookingDateTime.getTime() - now.getTime();
     const hoursOut = ms / (60 * 60 * 1000);
     if (hoursOut < 12 || hoursOut > 13) {
