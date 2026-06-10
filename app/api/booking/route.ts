@@ -94,45 +94,33 @@ export async function POST(req: Request) {
   }
 
   // Look up or create the customer record so every booking is linked to one.
+  // Atomic upsert on the unique email: two concurrent first-time bookings from
+  // the same address both resolve to the SAME row (the racy select→insert used
+  // here previously left the loser's booking with customer_id = NULL when its
+  // insert hit the unique constraint). Existing customers get their basic
+  // fields refreshed, same as before.
   let customerId: string | null = null;
-  const { data: existingCustomer } = await supabaseAdmin
+  const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
     .from("customers")
-    .select("id")
-    .eq("email", emailLower)
-    .maybeSingle();
-
-  if (existingCustomer) {
-    customerId = existingCustomer.id;
-    // Refresh the basic fields the customer just gave us.
-    await supabaseAdmin
-      .from("customers")
-      .update({
-        full_name: fullName,
-        first_name: payload.fname,
-        last_name: payload.lname,
-        phone_number: payload.phone,
-        gender: payload.gender ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", customerId);
-  } else {
-    const { data: newCustomer, error: customerError } = await supabaseAdmin
-      .from("customers")
-      .insert({
+    .upsert(
+      {
         email: emailLower,
         full_name: fullName,
         first_name: payload.fname,
         last_name: payload.lname,
         phone_number: payload.phone,
         gender: payload.gender ?? null,
-      })
-      .select("id")
-      .single();
-    if (customerError) {
-      console.error("[booking] customer insert failed", customerError);
-    } else {
-      customerId = newCustomer.id;
-    }
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "email" }
+    )
+    .select("id")
+    .single();
+  if (customerError) {
+    // Booking still proceeds (unlinked) — the linkage is repairable later.
+    console.error("[booking] customer upsert failed", customerError);
+  } else {
+    customerId = upsertedCustomer.id;
   }
 
   const { data: inserted, error: insertError } = await supabaseAdmin
