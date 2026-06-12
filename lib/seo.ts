@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { siteConfig } from "./site";
 import type { Service } from "./services";
 
-// TODO: replace with a 1200x630 PNG before launch — most social platforms
-// don't render SVG previews. The SVG below is a placeholder so metadata
-// validates locally.
-const DEFAULT_OG_IMAGE = "/og/default.svg";
+// 1200x630 PNG — most social platforms don't render SVG previews. Used as the
+// default OG/Twitter card image and as the LocalBusiness JSON-LD `image`.
+const DEFAULT_OG_IMAGE = "/og-image.png";
 
 type PageMetaInput = {
   title: string;

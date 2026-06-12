@@ -1,5 +1,5 @@
 module.exports = {
-  siteUrl: 'https://thepottersanctuary.co.uk',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thepottersanctuary.co.uk',
   generateRobotsTxt: true,
   sitemapSize: 7000,
   exclude: ['/admin', '/admin/*', '/auth/*', '/api/*'],

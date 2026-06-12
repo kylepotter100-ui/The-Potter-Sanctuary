@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Cookies Policy",
   description:
     "How The Potter Sanctuary uses cookies on its website and how you can manage them.",
-};
+  path: "/legal/cookies",
+});
 
 const LAST_UPDATED = "2 May 2026";
 
