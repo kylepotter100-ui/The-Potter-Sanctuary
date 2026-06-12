@@ -7,6 +7,7 @@ import {
   validStartTimes,
   type ExistingBooking,
 } from "@/lib/availability";
+import { ukNow } from "@/lib/uk-time";
 import InlineSignInModal from "@/components/InlineSignInModal";
 
 // Shortest treatment on offer — a start time is only worth showing if at least
@@ -70,27 +71,8 @@ function isoDate(d: Date) {
   return `${y}-${m}-${dd}`;
 }
 
-// Current date (YYYY-MM-DD) and minutes-since-midnight in Europe/London,
-// independent of the visitor's own timezone. Used to hide past time slots
-// on same-day bookings.
-function ukNow(): { dateIso: string; minutes: number } {
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const parts = fmt.formatToParts(new Date());
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
-  const dateIso = `${get("year")}-${get("month")}-${get("day")}`;
-  // "24" can appear at midnight in some engines — normalise to 0.
-  const hh = parseInt(get("hour"), 10) % 24;
-  const mm = parseInt(get("minute"), 10);
-  return { dateIso, minutes: hh * 60 + mm };
-}
+// Same-day past-slot hiding uses ukNow() from @/lib/uk-time (Europe/London,
+// independent of the visitor's own timezone).
 
 function slotToMinutes(t: string): number {
   const [hh, mm] = t.slice(0, 5).split(":");

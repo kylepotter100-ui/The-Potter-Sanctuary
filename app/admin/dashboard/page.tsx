@@ -3,6 +3,7 @@ import AdminHeader from "@/components/AdminHeader";
 import DashboardMonthNav from "@/components/DashboardMonthNav";
 import ExportBookingsButton from "@/components/ExportBookingsButton";
 import { supabaseAdmin } from "@/lib/supabase";
+import { ukYearMonth } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,17 +40,8 @@ function formatMoney(n: number): string {
   return `£${Math.round(n).toLocaleString("en-GB")}`;
 }
 
-// Current year/month in Europe/London, so "this month"/"this year" defaults are
-// correct regardless of server timezone (mirrors ukTodayIso in AvailabilityPanel).
-function ukNowParts(): { year: number; month: number } {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    year: "numeric",
-    month: "2-digit",
-  }).formatToParts(new Date());
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  return { year: Number(get("year")), month: Number(get("month")) };
-}
+// "This month"/"this year" defaults use ukYearMonth() from @/lib/uk-time
+// (Europe/London, regardless of server timezone).
 
 export default async function DashboardPage({
   searchParams,
@@ -58,7 +50,7 @@ export default async function DashboardPage({
 }) {
   const params = await searchParams;
 
-  const ukNow = ukNowParts();
+  const ukNow = ukYearMonth();
   const yearParam = Number(params.year);
   const monthParam = Number(params.month);
   const year =

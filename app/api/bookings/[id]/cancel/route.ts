@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { minutesUntilUk } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +75,8 @@ export async function POST(
 
   // Cancellation cut-off: no online cancellations within 15 minutes of the
   // appointment start. Enforced server-side regardless of what the UI shows.
-  const startsAt = new Date(`${booking.booking_date}T${booking.booking_time}`);
-  const minutesUntil = (startsAt.getTime() - Date.now()) / (60 * 1000);
+  // DST-aware: booking_time is a UK wall time, not UTC (lib/uk-time.ts).
+  const minutesUntil = minutesUntilUk(booking.booking_date, booking.booking_time);
   if (minutesUntil < 15) {
     return NextResponse.json(
       {

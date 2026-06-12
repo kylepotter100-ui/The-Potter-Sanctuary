@@ -5,6 +5,7 @@ import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -49,11 +50,14 @@ export async function GET(req: Request) {
   // Reminder window: 12–13 hours from now. We compute date+time bounds and
   // filter in SQL on booking_date (range), then narrow further in JS by
   // exact booking_time.
+  // SQL prefilter is coarse (dates only) and padded ±1 day so the UTC↔UK
+  // offset can never exclude a candidate; the exact DST-aware gate is the
+  // hoursOut check below.
   const now = new Date();
   const windowStart = new Date(now.getTime() + 12 * 60 * 60 * 1000);
   const windowEnd = new Date(now.getTime() + 13 * 60 * 60 * 1000);
-  const startIso = windowStart.toISOString().slice(0, 10);
-  const endIso = windowEnd.toISOString().slice(0, 10);
+  const startIso = addDaysIso(windowStart.toISOString().slice(0, 10), -1);
+  const endIso = addDaysIso(windowEnd.toISOString().slice(0, 10), 1);
 
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
@@ -77,7 +81,7 @@ export async function GET(req: Request) {
   let sent = 0;
   let skipped = 0;
   for (const b of rows) {
-    const bookingDateTime = new Date(`${b.booking_date}T${b.booking_time}`);
+    const bookingDateTime = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const ms = bookingDateTime.getTime() - now.getTime();
     const hoursOut = ms / (60 * 60 * 1000);
     if (hoursOut < 12 || hoursOut > 13) {
@@ -100,14 +104,37 @@ export async function GET(req: Request) {
       .select("id", { count: "exact", head: true })
       .eq("booking_id", b.id);
     if ((consultCount ?? 0) > 0) {
-      // Mark as sent so we don't keep checking each hour.
+      // Mark as sent so we don't keep checking each hour (conditional, so a
+      // concurrent run can't fight over it).
       await supabaseAdmin
         .from("bookings")
         .update({ consultation_reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
+        .eq("id", b.id)
+        .is("consultation_reminder_sent_at", null);
       skipped++;
       continue;
     }
+
+    // CLAIM-then-send (mirrors morning-summary / admin request-review): set
+    // the dedupe flag atomically BEFORE sending so a concurrent or retried
+    // run can never double-send; release the claim if the send fails so the
+    // next hourly run retries. The old send-then-mark order duplicated the
+    // email whenever the send succeeded but the mark didn't land.
+    const { data: claimed } = await supabaseAdmin
+      .from("bookings")
+      .update({ consultation_reminder_sent_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .is("consultation_reminder_sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      skipped++;
+      continue;
+    }
+    const unclaim = () =>
+      supabaseAdmin!
+        .from("bookings")
+        .update({ consultation_reminder_sent_at: null })
+        .eq("id", b.id);
 
     try {
       const html = await render(
@@ -132,18 +159,16 @@ export async function GET(req: Request) {
           "[cron reminders] Resend error:",
           JSON.stringify(result.error)
         );
+        await unclaim();
         continue;
       }
-      await supabaseAdmin
-        .from("bookings")
-        .update({ consultation_reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
       sent++;
     } catch (err) {
       console.error(
         "[cron reminders] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
+      await unclaim();
     }
   }
 

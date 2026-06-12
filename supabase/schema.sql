@@ -233,3 +233,30 @@ FROM
   generate_series(2, 6)  AS day,
   generate_series(0, 37) AS slot_number
 ON CONFLICT (day_of_week, slot_time) DO NOTHING;
+
+-- ===== Booking-audit hardening (June 2026) =====
+-- Applied by the owner via the Supabase dashboard SQL editor; recorded here so
+-- the schema file matches the live database.
+
+-- Row Level Security on every remaining public table. No policies are created
+-- on purpose: with RLS enabled and zero policies these tables are
+-- deny-by-default for the anon/authenticated PostgREST roles, while every app
+-- path (API routes, server components, crons) uses the service role, which
+-- bypasses RLS. Before this, `bookings` rows — customer names, emails,
+-- phones — were readable AND writable by anyone holding the public anon key.
+ALTER TABLE public.bookings       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blocked_dates  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.slot_overrides ENABLE ROW LEVEL SECURITY;
+
+-- One consultation snapshot per booking. Deliberately a FULL unique index,
+-- not a partial one: PostgREST's ON CONFLICT inference (used by the
+-- questionnaire/booking upserts via supabase-js `onConflict: "booking_id"`)
+-- cannot target partial indexes. Postgres treats NULLs as distinct, so the
+-- index still allows unlimited rows with booking_id IS NULL (unlinked
+-- consultations) and only enforces uniqueness for real booking links.
+-- MUST exist BEFORE the app code that upserts on booking_id is deployed —
+-- without it those upserts fail ("no unique or exclusion constraint matching
+-- the ON CONFLICT specification").
+CREATE UNIQUE INDEX IF NOT EXISTS consultation_one_per_booking
+  ON public.consultation_responses (booking_id);

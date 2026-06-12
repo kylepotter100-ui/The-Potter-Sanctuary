@@ -12,7 +12,8 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.4",
@@ -35,6 +36,7 @@
     "postcss": "8.5.10",
     "tailwindcss": "3.4.17",
     "typescript": "5.7.3",
+    "vitest": "^4.1.8",
     "wrangler": "^4.85.0"
   },
   "overrides": {

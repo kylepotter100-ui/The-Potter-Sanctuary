@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +45,8 @@ export async function GET() {
       // Run the consult-count and upcoming-bookings queries in parallel.
       // Window the bookings to the next 60 days — anything further out
       // isn't useful in the homepage panel and saves CPU.
-      const todayIso = new Date().toISOString().slice(0, 10);
-      const horizon = new Date();
-      horizon.setDate(horizon.getDate() + 60);
-      const horizonIso = horizon.toISOString().slice(0, 10);
+      const todayIso = ukTodayIso();
+      const horizonIso = addDaysIso(todayIso, 60);
 
       const [{ count }, { data: upcoming }] = await Promise.all([
         supabaseAdmin

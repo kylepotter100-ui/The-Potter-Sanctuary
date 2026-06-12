@@ -5,6 +5,7 @@ import AppointmentReminder from "@/emails/AppointmentReminder";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
+import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +42,13 @@ export async function GET(req: Request) {
     );
   }
 
+  // Coarse date prefilter padded ±1 day (UTC↔UK safety); the exact DST-aware
+  // gate is the hoursOut check below.
   const now = new Date();
   const startWindow = new Date(now.getTime() + 23 * 60 * 60 * 1000);
   const endWindow = new Date(now.getTime() + 25 * 60 * 60 * 1000);
-  const startIso = startWindow.toISOString().slice(0, 10);
-  const endIso = endWindow.toISOString().slice(0, 10);
+  const startIso = addDaysIso(startWindow.toISOString().slice(0, 10), -1);
+  const endIso = addDaysIso(endWindow.toISOString().slice(0, 10), 1);
 
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
@@ -73,12 +76,31 @@ export async function GET(req: Request) {
   let sent = 0;
   let skipped = 0;
   for (const b of rows) {
-    const apptTime = new Date(`${b.booking_date}T${b.booking_time}`);
+    const apptTime = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const hoursOut = (apptTime.getTime() - now.getTime()) / (60 * 60 * 1000);
     if (hoursOut < 23 || hoursOut > 25) {
       skipped++;
       continue;
     }
+
+    // CLAIM-then-send: flag set atomically before the send (no double-send
+    // under concurrent/retried runs); claim released on failure so the next
+    // hourly run retries while the booking is still inside the 23–25h window.
+    const { data: claimed } = await supabaseAdmin
+      .from("bookings")
+      .update({ appointment_reminder_sent_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .is("appointment_reminder_sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      skipped++;
+      continue;
+    }
+    const unclaim = () =>
+      supabaseAdmin!
+        .from("bookings")
+        .update({ appointment_reminder_sent_at: null })
+        .eq("id", b.id);
 
     try {
       const html = await render(
@@ -102,18 +124,16 @@ export async function GET(req: Request) {
           "[cron appointment-reminders] Resend error:",
           JSON.stringify(result.error)
         );
+        await unclaim();
         continue;
       }
-      await supabaseAdmin
-        .from("bookings")
-        .update({ appointment_reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
       sent++;
     } catch (err) {
       console.error(
         "[cron appointment-reminders] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
+      await unclaim();
     }
   }
 

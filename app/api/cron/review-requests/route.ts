@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { durationMinutesForTreatmentId } from "@/lib/services";
 import { customerHasReviewed } from "@/lib/reviews";
+import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +49,11 @@ export async function GET(req: Request) {
   const now = new Date();
   // Appointments that *ended* 15–75 min ago could have started up to
   // (75 + treatment-length) minutes ago. We pull a generous window by
-  // date and filter precisely in JS using each treatment's duration.
-  const todayIso = now.toISOString().slice(0, 10);
-  const yesterdayIso = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  // date — padded a day each side so the UTC↔UK offset can never exclude a
+  // candidate — and filter precisely in JS using each treatment's duration.
+  const utcTodayIso = now.toISOString().slice(0, 10);
+  const todayIso = addDaysIso(utcTodayIso, 1);
+  const yesterdayIso = addDaysIso(utcTodayIso, -1);
 
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
@@ -78,7 +79,7 @@ export async function GET(req: Request) {
   let skipped = 0;
   for (const b of rows) {
     const durationMin = durationMinutesForTreatmentId(b.treatment_id) ?? 60;
-    const startedAt = new Date(`${b.booking_date}T${b.booking_time}`);
+    const startedAt = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const endedAt = new Date(startedAt.getTime() + durationMin * 60 * 1000);
     const minsSinceEnd = (now.getTime() - endedAt.getTime()) / (60 * 1000);
     if (minsSinceEnd < 15 || minsSinceEnd > 75) {
@@ -99,6 +100,26 @@ export async function GET(req: Request) {
       skipped++;
       continue;
     }
+
+    // CLAIM-then-send — the exact pattern the admin request-review route uses
+    // on the same flag, so cron and admin race fairly and neither can
+    // double-send. Claim released on failure so the next hourly run retries
+    // while still inside the 15–75 min window.
+    const { data: claimed } = await supabaseAdmin
+      .from("bookings")
+      .update({ review_email_sent_at: new Date().toISOString() })
+      .eq("id", b.id)
+      .is("review_email_sent_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      skipped++;
+      continue;
+    }
+    const unclaim = () =>
+      supabaseAdmin!
+        .from("bookings")
+        .update({ review_email_sent_at: null })
+        .eq("id", b.id);
 
     try {
       const html = await render(
@@ -121,18 +142,16 @@ export async function GET(req: Request) {
           "[cron review-requests] Resend error:",
           JSON.stringify(result.error)
         );
+        await unclaim();
         continue;
       }
-      await supabaseAdmin
-        .from("bookings")
-        .update({ review_email_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
       sent++;
     } catch (err) {
       console.error(
         "[cron review-requests] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
+      await unclaim();
     }
   }
 

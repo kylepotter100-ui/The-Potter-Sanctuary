@@ -113,9 +113,14 @@ export async function POST(req: Request) {
   }
 
   const r = payload.response;
+  // Upsert on booking_id (unique index consultation_one_per_booking): one
+  // consultation snapshot per booking — resubmitting the questionnaire for the
+  // same booking updates the existing row instead of stacking duplicates.
+  // Rows with booking_id = NULL never conflict (NULLs are distinct), so
+  // unlinked submissions still insert normally.
   const { error: insertErr } = await supabaseAdmin
     .from("consultation_responses")
-    .insert({
+    .upsert({
       customer_id: customer.id,
       booking_id: bookingId,
       conditions: r.conditions ?? {},
@@ -133,7 +138,8 @@ export async function POST(req: Request) {
       consent_given: r.consent_given,
       signature_name: r.signature_name.trim(),
       consent_date: r.consent_date,
-    });
+    },
+    { onConflict: "booking_id" });
 
   if (insertErr) {
     console.error("[questionnaire] insert failed", insertErr);
