@@ -40,6 +40,11 @@ type Props = {
   blocked: BlockedRow[];
   bookings: BookingRow[];
   overrides: SlotOverrideRow[];
+  // Last date the server fetched data for (today + HORIZON_DAYS, YYYY-MM-DD).
+  // Week navigation is capped to this so every reachable date is inside the
+  // fetched window — otherwise far-future toggles save but never re-read,
+  // flashing green then reverting.
+  horizonIso: string;
 };
 
 const DAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -105,6 +110,13 @@ function addDays(d: Date, n: number): Date {
   return out;
 }
 
+// Parse a YYYY-MM-DD into a LOCAL Date (midnight local), matching isoDate()'s
+// local-calendar basis so horizon comparisons line up with the rendered week.
+function parseIsoLocal(iso: string): Date {
+  const [y, m, d] = iso.split("-").map((s) => parseInt(s, 10));
+  return new Date(y, m - 1, d);
+}
+
 function formatLong(d: Date): string {
   return d.toLocaleDateString("en-GB", {
     weekday: "long",
@@ -127,16 +139,30 @@ export default function AvailabilityPanel({
   blocked,
   bookings,
   overrides,
+  horizonIso,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [, setRefreshTick] = useState(0);
+  // Surfaced when an optimistic toggle's save fails, so a genuine server error
+  // is distinguishable from success (the bug was: fetch doesn't reject on a
+  // 500, so a failed save silently flashed green then reverted on refresh).
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
 
   // Today (Europe/London). Past days are greyed out and inert — the studio
   // can't open or edit slots for dates that have already gone.
   const todayIso = ukTodayIso();
+
+  // Latest week the admin may navigate to: the week containing the horizon.
+  // Beyond it, dates fall outside the fetched window and can't be managed.
+  const maxWeekStart = useMemo(
+    () => startOfWeek(parseIsoLocal(horizonIso)),
+    [horizonIso]
+  );
+  const maxWeekStartIso = isoDate(maxWeekStart);
+  const atHorizonEdge = isoDate(weekStart) >= maxWeekStartIso;
 
   // Recurring weekly template — used as the default for any date that
   // doesn't have explicit slot overrides.
@@ -202,12 +228,15 @@ export default function AvailabilityPanel({
   );
 
   function shiftWeek(delta: number) {
-    // Don't let the admin navigate to a week that's entirely in the past —
-    // the current week is the earliest reachable.
+    // Clamp both edges: the current week is the earliest reachable (past weeks
+    // are inert), and the horizon week is the latest (beyond it, dates are
+    // outside the fetched window and toggles couldn't reconcile on refresh).
     setWeekStart((prev) => {
       const next = addDays(prev, delta * 7);
       const currentStart = startOfWeek(new Date());
-      return next < currentStart ? prev : next;
+      if (next < currentStart) return prev;
+      if (isoDate(next) > maxWeekStartIso) return prev;
+      return next;
     });
   }
   function thisWeek() {
@@ -235,21 +264,40 @@ export default function AvailabilityPanel({
   // day_of_week template by default) toggling on also seeds the full
   // 09:30–19:00 slot list as active overrides for that specific date so
   // the day actually has slots to show.
+  // fetch() only rejects on a network error, not on an HTTP 4xx/5xx — so a
+  // failed save must be detected via res.ok, otherwise the optimistic green
+  // state survives until router.refresh() silently reverts it.
+  async function postOk(url: string, payload: unknown): Promise<boolean> {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   async function toggleDay(date: Date) {
     const iso = isoDate(date);
-    if (iso < todayIso) return; // past days are inert
+    if (iso < todayIso || iso > horizonIso) return; // past / beyond-horizon are inert
     const dow = date.getDay();
     const currentlyOpen = isDayOpen(iso, dow);
+    setToggleError(null);
 
     if (currentlyOpen) {
       // Close the day — block this specific date.
       blockedSet.add(iso);
       setRefreshTick((n) => n + 1);
-      await fetch("/api/admin/availability/block", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: iso }),
-      });
+      const ok = await postOk("/api/admin/availability/block", { date: iso });
+      if (!ok) {
+        blockedSet.delete(iso); // roll back
+        setRefreshTick((n) => n + 1);
+        setToggleError("Couldn't close that day — please try again.");
+        return;
+      }
     } else {
       // Open the day. First unblock if blocked.
       if (blockedSet.has(iso)) {
@@ -257,11 +305,15 @@ export default function AvailabilityPanel({
         setRefreshTick((n) => n + 1);
         const blockedRow = blocked.find((b) => b.blocked_date === iso);
         if (blockedRow) {
-          await fetch("/api/admin/availability/unblock", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: blockedRow.id }),
+          const ok = await postOk("/api/admin/availability/unblock", {
+            id: blockedRow.id,
           });
+          if (!ok) {
+            blockedSet.add(iso); // roll back
+            setRefreshTick((n) => n + 1);
+            setToggleError("Couldn't open that day — please try again.");
+            return;
+          }
         }
       }
 
@@ -269,23 +321,32 @@ export default function AvailabilityPanel({
       // slots as active overrides so the day actually shows slots to
       // customers and to the slot grid below.
       const baseSlots = dayPattern[dow] ?? new Set<string>();
-      const overrides = overrideMap[iso] ?? {};
+      const existingOv = overrideMap[iso] ?? {};
       const resolved = new Set(baseSlots);
-      for (const [time, active] of Object.entries(overrides)) {
+      for (const [time, active] of Object.entries(existingOv)) {
         if (active) resolved.add(time);
         else resolved.delete(time);
       }
       if (resolved.size === 0) {
         const seedRows = SLOTS.map((s) => ({ slot_time: s, is_active: true }));
         // Reflect optimistically in the local map.
+        const hadEntry = !!overrideMap[iso];
         if (!overrideMap[iso]) overrideMap[iso] = {};
         for (const s of SLOTS) overrideMap[iso][s] = true;
         setRefreshTick((n) => n + 1);
-        await fetch("/api/admin/availability/slot-override-bulk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ override_date: iso, slots: seedRows }),
+        const ok = await postOk("/api/admin/availability/slot-override-bulk", {
+          override_date: iso,
+          slots: seedRows,
         });
+        if (!ok) {
+          // Roll back the optimistic seed (any prior unblock has persisted, so
+          // the day simply returns to closed — its real state).
+          if (hadEntry) for (const s of SLOTS) delete overrideMap[iso][s];
+          else delete overrideMap[iso];
+          setRefreshTick((n) => n + 1);
+          setToggleError("Couldn't open that day — please try again.");
+          return;
+        }
       }
     }
     startTransition(() => router.refresh());
@@ -294,25 +355,28 @@ export default function AvailabilityPanel({
   // Toggle a specific slot on a specific date via slot_overrides.
   async function toggleSlot(date: Date, slot: string, currentlyActive: boolean) {
     const iso = isoDate(date);
-    if (iso < todayIso) return; // past days are inert
+    if (iso < todayIso || iso > horizonIso) return; // past / beyond-horizon are inert
     const next = !currentlyActive;
     if (!overrideMap[iso]) overrideMap[iso] = {};
+    const hadEntry = slot in overrideMap[iso];
+    const prevVal = overrideMap[iso][slot];
     overrideMap[iso][slot] = next;
     setRefreshTick((n) => n + 1);
-    try {
-      await fetch("/api/admin/availability/slot-override", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          override_date: iso,
-          slot_time: normalize(slot),
-          is_active: next,
-        }),
-      });
+    setToggleError(null);
+
+    const ok = await postOk("/api/admin/availability/slot-override", {
+      override_date: iso,
+      slot_time: normalize(slot),
+      is_active: next,
+    });
+    if (ok) {
       startTransition(() => router.refresh());
-    } catch {
-      overrideMap[iso][slot] = currentlyActive;
+    } else {
+      // Roll back to the slot's exact prior state (which may be "no override").
+      if (hadEntry) overrideMap[iso][slot] = prevVal;
+      else delete overrideMap[iso][slot];
       setRefreshTick((n) => n + 1);
+      setToggleError("Couldn't update that slot — please try again.");
     }
   }
 
@@ -365,10 +429,12 @@ export default function AvailabilityPanel({
     month: "long",
   })}`;
 
-  // Open days that are today or later — past days never show an editable grid.
-  const openDays = weekDays.filter(
-    (d) => isoDate(d) >= todayIso && isDayOpen(isoDate(d), d.getDay())
-  );
+  // Open days within the managed window — past and beyond-horizon days never
+  // show an editable grid (their data isn't fetched, so they can't reconcile).
+  const openDays = weekDays.filter((d) => {
+    const iso = isoDate(d);
+    return iso >= todayIso && iso <= horizonIso && isDayOpen(iso, d.getDay());
+  });
 
   return (
     <>
@@ -394,6 +460,12 @@ export default function AvailabilityPanel({
             type="button"
             className="btn btn-ghost btn-sm"
             onClick={() => shiftWeek(1)}
+            disabled={atHorizonEdge}
+            title={
+              atHorizonEdge
+                ? "You can manage availability up to about 8 weeks ahead."
+                : undefined
+            }
           >
             Next →
           </button>
@@ -405,22 +477,28 @@ export default function AvailabilityPanel({
         Tick the days the studio is open this week. Each open day reveals its
         slots below for fine-tuning.
       </p>
+      {toggleError && (
+        <div className="error-text" style={{ marginBottom: 10 }}>
+          {toggleError}
+        </div>
+      )}
       <div className="avail-day-row">
         {weekDays.map((d) => {
           const iso = isoDate(d);
           const dow = d.getDay();
           const open = isDayOpen(iso, dow);
-          const isPast = iso < todayIso;
+          // Past and beyond-horizon days share the dimmed, inert treatment.
+          const inert = iso < todayIso || iso > horizonIso;
           return (
             <button
               key={iso}
               type="button"
               className={`avail-day-btn${open ? " is-selected" : ""}${
-                isPast ? " is-past" : ""
+                inert ? " is-past" : ""
               }`}
               onClick={() => toggleDay(d)}
               aria-pressed={open}
-              disabled={isPast || pending}
+              disabled={inert || pending}
             >
               <span className="avail-day-name">{DAYS_SHORT[dow]}</span>
               <span className="avail-day-date">

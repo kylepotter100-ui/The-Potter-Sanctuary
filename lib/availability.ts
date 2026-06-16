@@ -31,6 +31,16 @@ export const OPEN_TIME = "09:30";
 /** Studio closing time — sessions must finish by this. */
 export const CLOSE_TIME = "19:00";
 
+/**
+ * How many days ahead availability is read and managed. The admin panel, the
+ * public availability API and the admin week-navigation cap all derive their
+ * forward window from this ONE value, so the read window, the write surface and
+ * the navigable range can never drift apart (a mismatch silently dropped
+ * far-future slot toggles — they saved but were never re-read, so the day
+ * flashed green then reverted). Caitlin confirmed 60 days is sufficient.
+ */
+export const HORIZON_DAYS = 60;
+
 /** Grid granularity in minutes. */
 const GRID_MINUTES = 15;
 
