@@ -594,6 +594,36 @@
   border-color: var(--admin-sage);
 }
 .avail-day-btn.is-past { opacity: 0.55; }
+/* Beyond the ~8-week horizon: a distinct "Soon" lock state — clearly different
+   from both an open day (sage) and a past day (flat-dimmed) — so the rolling
+   end-of-window day never reads as a broken button. Declared after .is-selected
+   so it wins even when the date matches the weekly template. */
+.avail-day-btn.is-beyond,
+.avail-day-btn.is-beyond.is-selected {
+  background: #f3eee3;
+  border: 1px dashed #d9b87a;
+  color: #7a5b1a;
+  opacity: 1;
+}
+.avail-day-btn.is-beyond:hover { border-color: #c8a35f; }
+.avail-day-soon {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #7a5b1a;
+}
+.avail-edge-hint {
+  margin: 10px 0 4px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f4e7cf;
+  border: 1px solid #d9b87a;
+  color: #7a5b1a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.avail-edge-hint strong { font-weight: 700; }
 .avail-day-name {
   font-size: 11px;
   letter-spacing: 0.18em;

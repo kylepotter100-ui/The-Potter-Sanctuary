@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
-import { HORIZON_DAYS } from "@/lib/availability";
+import { HORIZON_DAYS, fetchSlotOverridesInWindow } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -49,11 +49,10 @@ export async function GET() {
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),
-    supabaseAdmin
-      .from("slot_overrides")
-      .select("override_date, slot_time, is_active")
-      .gte("override_date", todayIso)
-      .lte("override_date", horizonIso),
+    // Paged: a plain select caps at 1000 rows and silently dropped the later
+    // in-window dates, making the public calendar wrong there (see
+    // lib/availability.ts).
+    fetchSlotOverridesInWindow(supabaseAdmin, todayIso, horizonIso),
   ]);
 
   if (availErr || blockErr || bookedErr) {
