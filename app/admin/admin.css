@@ -1393,3 +1393,241 @@
   text-transform: uppercase;
   color: var(--admin-ink-soft);
 }
+
+/* ===== Bookings redesign: range filter, cards, review chips ===== */
+.bk-range {
+  display: flex;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 18px;
+}
+.bk-range.is-pending { opacity: 0.75; }
+.bk-range-seg {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 9px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--admin-ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bk-range-seg:hover { color: var(--admin-sage-deep); }
+.bk-range-seg.is-active {
+  background: var(--admin-sage-deep);
+  color: #fff;
+  font-weight: 600;
+}
+
+.bk-list { display: flex; flex-direction: column; gap: 12px; }
+.bk-card {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.bk-card:hover {
+  border-color: var(--admin-sage);
+  box-shadow: 0 2px 10px rgba(28, 28, 28, 0.05);
+  color: inherit;
+}
+.bk-card.row-pending { background: var(--admin-amber-tint); }
+.bk-card.row-cancelled { opacity: 0.7; }
+.bk-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.bk-when {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--admin-ink-soft);
+}
+.bk-name {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 21px;
+  line-height: 1.1;
+}
+.bk-treat { font-size: 13px; color: var(--admin-ink-soft); margin-top: 2px; }
+.bk-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.bk-manage {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--admin-sage-deep);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.chip-ok { background: var(--admin-info-soft); color: var(--admin-sage-deep); }
+.chip-warn { background: var(--admin-amber-soft); color: #7a5b1a; }
+.chip-rev-left { background: var(--admin-info-soft); color: var(--admin-sage-deep); }
+.chip-rev-req { background: var(--admin-grey-soft); color: var(--admin-ink-soft); }
+.chip-rev-none {
+  background: var(--admin-amber-soft);
+  color: #7a5b1a;
+  border: 1px solid #d9b87a;
+}
+
+/* ===== Outstanding-reviews banner (top of Bookings) ===== */
+.review-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--admin-sage-deep);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  text-decoration: none;
+  color: #fff;
+}
+.review-banner:hover { background: #5f7059; color: #fff; }
+.review-banner-star { font-size: 20px; color: var(--admin-cream-soft); line-height: 1; }
+.review-banner-text { display: flex; flex-direction: column; }
+.review-banner-text strong { font-size: 15px; }
+.review-banner-text span { font-size: 12px; color: #dfe6da; }
+.review-banner-cta {
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--admin-cream-soft);
+  white-space: nowrap;
+}
+
+/* ===== Outstanding reviews page ===== */
+.outstanding-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.outstanding-submitted-link {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.outstanding-list { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.outstanding-card {
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.outstanding-card.is-open { border-color: var(--admin-sage-deep); }
+.outstanding-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 16px 18px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.outstanding-main { display: flex; flex-direction: column; gap: 2px; }
+.outstanding-name { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 20px; line-height: 1.1; }
+.outstanding-email { font-size: 12px; color: var(--admin-ink-soft); }
+.outstanding-meta { font-size: 11px; color: var(--admin-ink-soft); }
+.outstanding-chevron { margin-left: auto; color: var(--admin-sage-deep); font-size: 14px; }
+.outstanding-detail { padding: 0 18px 18px; }
+.outstanding-detail-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+  margin: 4px 0 8px;
+}
+.outstanding-sessions { list-style: none; margin: 0 0 14px; padding: 0; }
+.outstanding-sessions li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--admin-line);
+  font-size: 14px;
+}
+.outstanding-sessions li:last-child { border-bottom: none; }
+.outstanding-sessions li span:last-child { color: var(--admin-ink-soft); white-space: nowrap; }
+.outstanding-hint { font-size: 11px; color: var(--admin-ink-soft); margin: 8px 0 0; }
+.outstanding-empty { text-align: center; padding: 36px 24px; }
+.outstanding-empty-check {
+  width: 52px; height: 52px; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--admin-info-soft);
+  color: var(--admin-sage-deep);
+  font-size: 26px;
+}
+.outstanding-empty h2 { font-size: 24px; margin: 0 0 6px; }
+.outstanding-empty .lede { margin: 0 auto; max-width: 320px; }
+
+/* ===== Availability: week nav + slot legend polish ===== */
+.avail-week-label { flex: 1; text-align: center; }
+.avail-week-arrow {
+  flex: none;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-cream);
+  color: var(--admin-sage-deep);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.avail-week-arrow:hover:not(:disabled) { border-color: var(--admin-sage); }
+.avail-week-arrow:disabled { opacity: 0.4; cursor: default; }
+.avail-week-actions { display: flex; justify-content: flex-end; margin: -4px 0 14px; }
+.avail-thisweek {
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--admin-ink-soft);
+  cursor: pointer;
+}
+.avail-thisweek:hover { border-color: var(--admin-sage); color: var(--admin-sage-deep); }
+.avail-legend { display: flex; gap: 16px; margin-bottom: 14px; }
+.avail-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--admin-ink-soft); }
+.avail-legend-sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.avail-legend-sw.sw-public { background: var(--admin-sage); }
+.avail-legend-sw.sw-hidden { background: #fff; border: 1px solid var(--admin-line); }
+.avail-legend-sw.sw-booked { background: var(--admin-cream-soft); border: 1px solid var(--admin-amber-soft); }

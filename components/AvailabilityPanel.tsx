@@ -446,36 +446,34 @@ export default function AvailabilityPanel({
     <>
       {/* Week selector */}
       <div className="avail-week-bar">
+        <button
+          type="button"
+          className="avail-week-arrow"
+          onClick={() => shiftWeek(-1)}
+          aria-label="Previous week"
+        >
+          ‹
+        </button>
         <div className="avail-week-label">{weekHeader}</div>
-        <div className="avail-week-nav">
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => shiftWeek(-1)}
-          >
-            ← Previous
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={thisWeek}
-          >
-            This week
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => shiftWeek(1)}
-            disabled={atHorizonEdge}
-            title={
-              atHorizonEdge
-                ? "You can manage availability up to about 8 weeks ahead."
-                : undefined
-            }
-          >
-            Next →
-          </button>
-        </div>
+        <button
+          type="button"
+          className="avail-week-arrow"
+          onClick={() => shiftWeek(1)}
+          disabled={atHorizonEdge}
+          title={
+            atHorizonEdge
+              ? "You can manage availability up to about 8 weeks ahead."
+              : undefined
+          }
+          aria-label="Next week"
+        >
+          ›
+        </button>
+      </div>
+      <div className="avail-week-actions">
+        <button type="button" className="avail-thisweek" onClick={thisWeek}>
+          ↺ This week
+        </button>
       </div>
 
       {/* Day toggles */}
@@ -553,11 +551,18 @@ export default function AvailabilityPanel({
           const dayBookings = bookingsByDate[iso] ?? {};
           return (
             <section key={iso} className="avail-day-detail">
-              <h2 style={{ marginBottom: 6 }}>{formatLong(d)}</h2>
-              <p className="lede" style={{ marginBottom: 14 }}>
-                Sage = visible to public. Grey outline = hidden. Booked slots
-                can&apos;t be toggled.
-              </p>
+              <h2 style={{ marginBottom: 10 }}>{formatLong(d)}</h2>
+              <div className="avail-legend">
+                <span className="avail-legend-item">
+                  <span className="avail-legend-sw sw-public" /> Public
+                </span>
+                <span className="avail-legend-item">
+                  <span className="avail-legend-sw sw-hidden" /> Hidden
+                </span>
+                <span className="avail-legend-item">
+                  <span className="avail-legend-sw sw-booked" /> Booked
+                </span>
+              </div>
               <div className="avail-slot-grid">
                 {SLOTS.map((slot) => {
                   const seg = dayBookings[slot];
