@@ -302,12 +302,12 @@ export default async function DashboardPage({
         <div className="stat-hero">
           <div className="hero-top">
             <span className="label">Revenue — confirmed</span>
-            <span className="hero-delta">
-              <Delta pct={revenueDelta} />
-              <span className="hero-delta-sub">
-                {revenueDelta === null ? `no ${prevLabel} data` : `vs ${prevLabel}`}
+            {revenueDelta !== null && (
+              <span className="hero-delta">
+                <Delta pct={revenueDelta} />
+                <span className="hero-delta-sub">vs {prevLabel}</span>
               </span>
-            </span>
+            )}
           </div>
           <span className="value">{formatMoney(revenueTotal)}</span>
           <span className="caption">List price · excludes any discounts</span>
@@ -362,8 +362,11 @@ export default async function DashboardPage({
               <span className="kpi-sub">rate</span>
             </div>
           </div>
-          <div className="kpi-tile">
-            <span className="label">Avg rating</span>
+          <Link href="/admin/reviews" className="kpi-tile kpi-tile-link">
+            <span className="label">
+              Avg rating
+              <span className="kpi-link-cue" aria-hidden="true">View all →</span>
+            </span>
             <div className="kpi-val-row">
               <span className={`value${avgRating === null ? " is-empty" : ""}`}>
                 {avgRating === null ? "—" : avgRating.toFixed(1)}
@@ -375,7 +378,7 @@ export default async function DashboardPage({
                   : `${reviewCount} ${reviewCount === 1 ? "review" : "reviews"}`}
               </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {view === "year" && (

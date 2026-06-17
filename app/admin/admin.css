@@ -1056,9 +1056,9 @@
    ===================================================================== */
 
 /* Revenue headline — smaller, tighter than the old 56px hero. */
-.stat-hero { padding: 18px 20px; margin-bottom: 14px; }
-.stat-hero .value { font-size: 38px; }
-.stat-hero .caption { margin-top: 6px; }
+.stat-hero { padding: 14px 18px; margin-bottom: 14px; gap: 4px; }
+.stat-hero .value { font-size: 34px; }
+.stat-hero .caption { margin-top: 4px; }
 .stat-hero .hero-top {
   display: flex;
   justify-content: space-between;
@@ -1243,4 +1243,123 @@
 
 @media (min-width: 720px) {
   .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ----- Compact dashboard filter bar (chevron stepper + Year/Month) ----- */
+.dash-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.dash-filter.is-pending { opacity: 0.6; }
+.dash-filter-period { display: flex; align-items: center; gap: 6px; }
+.dash-filter-label {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 20px;
+  color: var(--admin-ink);
+  min-width: 64px;
+  text-align: center;
+}
+.dash-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-line);
+  background: #ffffff;
+  color: var(--admin-ink-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dash-step:hover { border-color: var(--admin-sage); color: var(--admin-ink); }
+.dash-step svg { width: 16px; height: 16px; }
+.dash-today {
+  margin-left: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--admin-sage-deep);
+}
+.dash-today:hover { color: var(--admin-ink); }
+
+/* ----- Clickable Avg-rating tile ----- */
+.kpi-tile-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.kpi-tile-link:hover {
+  border-color: var(--admin-sage);
+  box-shadow: 0 1px 8px rgba(28, 28, 28, 0.06);
+}
+.kpi-tile-link .label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kpi-link-cue {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--admin-sage-deep);
+}
+
+/* ----- Reviews page ----- */
+.review-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--admin-ink);
+}
+.review-summary-count { color: var(--admin-ink-soft); font-size: 13px; }
+.review-stars { display: inline-flex; align-items: center; gap: 2px; color: var(--admin-amber); }
+.review-stars svg { width: 15px; height: 15px; }
+.review-stars svg:not(.is-filled) { color: var(--admin-line); }
+
+.review-list { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.review-card {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.review-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.review-name {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 19px;
+  color: var(--admin-ink);
+}
+.review-comment {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--admin-ink);
+}
+.review-meta {
+  margin: 0;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
 }
