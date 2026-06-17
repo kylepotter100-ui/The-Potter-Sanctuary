@@ -1647,3 +1647,17 @@
   color: var(--admin-ink);
   margin: 0 0 10px;
 }
+
+/* ===== Loading skeletons =====
+   Shown instantly via each route's loading.tsx while the server component
+   streams in, so navigation never sits on a blank screen. */
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.sk-line {
+  display: block;
+  height: 14px;
+  border-radius: 6px;
+  background: #e9e3d6;
+  animation: sk-pulse 1.3s ease-in-out infinite;
+}
+.sk-stack { display: flex; flex-direction: column; gap: 10px; }
+.sk-card { margin-bottom: 12px; }
