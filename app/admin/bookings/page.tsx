@@ -132,21 +132,27 @@ export default async function BookingsPage({
 
   const { data, error } = await query;
   const rows = (data ?? []) as Booking[];
+  const rowIds = rows.map((b) => b.id);
 
-  const { data: consults } = await supabaseAdmin
-    .from("consultation_responses")
-    .select("booking_id");
+  // Everything below is independent of each other — run concurrently instead of
+  // a serial chain. The consultation read is bounded to the bookings actually on
+  // screen; getReviewedIndex is memoised (React cache) so the index it shares
+  // with listOutstandingReviewClients is scanned once, not twice.
+  const [consultsRes, reviewedIndex, outstanding] = await Promise.all([
+    rowIds.length
+      ? supabaseAdmin
+          .from("consultation_responses")
+          .select("booking_id")
+          .in("booking_id", rowIds)
+      : Promise.resolve({ data: [] as ConsultationLink[] }),
+    getReviewedIndex(supabaseAdmin),
+    listOutstandingReviewClients(supabaseAdmin, ukTodayIso()),
+  ]);
+
   const consultedSet = new Set(
-    ((consults ?? []) as ConsultationLink[])
+    ((consultsRes.data ?? []) as ConsultationLink[])
       .map((c) => c.booking_id)
       .filter((id): id is string => !!id)
-  );
-
-  // Review chips (bulk, one reviews read) + outstanding-reviews banner count.
-  const reviewedIndex = await getReviewedIndex(supabaseAdmin);
-  const outstanding = await listOutstandingReviewClients(
-    supabaseAdmin,
-    ukTodayIso()
   );
   const outstandingCount = outstanding.length;
 

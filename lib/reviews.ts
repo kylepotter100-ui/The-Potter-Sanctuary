@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 
 // Whether a customer has ALREADY left a review on ANY of their bookings — used
 // to make sure we never ask a repeat customer to review again.
@@ -79,7 +80,11 @@ export async function customerHasReviewed(
 
 export type ReviewedIndex = { emails: Set<string>; customerIds: Set<string> };
 
-export async function getReviewedIndex(
+// Wrapped in React `cache()` so the (single) reviews scan is computed at most
+// once per server request. The Bookings page reads the index directly AND calls
+// listOutstandingReviewClients (which needs it too); without this they'd each
+// scan the reviews table. `admin` is the stable singleton, so it dedupes cleanly.
+export const getReviewedIndex = cache(async function getReviewedIndex(
   admin: SupabaseClient
 ): Promise<ReviewedIndex> {
   const emails = new Set<string>();
@@ -118,7 +123,7 @@ export async function getReviewedIndex(
   }
 
   return { emails, customerIds };
-}
+});
 
 /** Local, query-free membership test against a prebuilt {@link ReviewedIndex}. */
 export function hasReviewed(
