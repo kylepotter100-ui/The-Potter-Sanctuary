@@ -1511,9 +1511,13 @@
   color: #fff;
 }
 .review-banner:hover { background: #5f7059; color: #fff; }
+/* Beat the global `.admin-shell a` colour (which is --admin-sage-deep, the same
+   green as the banner background) so the banner text never goes invisible. */
+.admin-shell a.review-banner,
+.admin-shell a.review-banner:hover { color: #fff; }
 .review-banner-star { font-size: 20px; color: var(--admin-cream-soft); line-height: 1; }
 .review-banner-text { display: flex; flex-direction: column; }
-.review-banner-text strong { font-size: 15px; }
+.review-banner-text strong { font-size: 15px; color: #fff; }
 .review-banner-text span { font-size: 12px; color: #dfe6da; }
 .review-banner-cta {
   margin-left: auto;
