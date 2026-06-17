@@ -37,7 +37,10 @@ export default async function OutstandingReviewsPage() {
         </p>
         <div className="outstanding-title-row">
           <h1>Outstanding reviews</h1>
-          <Link href="/admin/reviews" className="outstanding-submitted-link">
+          <Link
+            href="/admin/reviews?from=outstanding"
+            className="outstanding-submitted-link"
+          >
             Submitted →
           </Link>
         </div>

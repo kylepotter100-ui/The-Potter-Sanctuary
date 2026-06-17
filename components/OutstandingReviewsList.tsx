@@ -12,6 +12,7 @@ type Client = {
   lastDate: string;
   targetBookingId: string;
   reviewState: "requested" | "none";
+  lastRequestedAt: string | null;
 };
 
 const MONTHS_SHORT = [
@@ -55,7 +56,9 @@ export default function OutstandingReviewsList({
                 <span className="outstanding-meta">
                   {c.count} {c.count === 1 ? "session" : "sessions"} · last{" "}
                   {fmtDate(c.lastDate)}
-                  {c.reviewState === "requested" ? " · already requested" : ""}
+                  {c.reviewState === "requested" && c.lastRequestedAt
+                    ? ` · requested ${fmtDate(c.lastRequestedAt)}`
+                    : ""}
                 </span>
               </span>
               <span className="outstanding-chevron" aria-hidden="true">
@@ -78,6 +81,7 @@ export default function OutstandingReviewsList({
                   bookingId={c.targetBookingId}
                   reviewState={c.reviewState}
                   canRequest
+                  lastRequestedAt={c.lastRequestedAt}
                 />
                 {c.reviewState === "none" && (
                   <p className="outstanding-hint">

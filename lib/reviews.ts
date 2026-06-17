@@ -160,6 +160,9 @@ export type OutstandingClient = {
   // "requested" if that target already had its review email sent; else "none".
   // ("left" clients are excluded entirely.)
   reviewState: "requested" | "none";
+  // When that request went out (target booking's review_email_sent_at), so the
+  // UI can show the last-requested date; null when never requested.
+  lastRequestedAt: string | null;
 };
 
 /**
@@ -214,6 +217,7 @@ export async function listOutstandingReviewClients(
         lastDate: b.booking_date as string,
         targetBookingId: b.id as string,
         reviewState: b.review_email_sent_at ? "requested" : "none",
+        lastRequestedAt: (b.review_email_sent_at as string | null) ?? null,
       };
       groups.set(key, g);
     }

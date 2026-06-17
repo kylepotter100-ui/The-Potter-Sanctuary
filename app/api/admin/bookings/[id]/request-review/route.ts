@@ -41,6 +41,12 @@ export async function POST(
 
   const { id } = await params;
 
+  // Optional { resend: true } — a deliberate admin re-send (gated by an on-screen
+  // confirm). It bypasses the first-send-only atomic claim below. The cron and the
+  // first manual request never set this, so their claim-then-send dedupe is intact.
+  const body = (await req.json().catch(() => null)) as { resend?: boolean } | null;
+  const isResend = body?.resend === true;
+
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
     .select(
@@ -92,33 +98,55 @@ export async function POST(
     return NextResponse.json({ ok: true, alreadyReviewed: true });
   }
 
-  // 2) Atomic claim: only the request that flips review_email_sent_at from
-  // NULL → now() proceeds to send, so we never double-ask.
+  // 2) Mark the send.
+  //    - First request: atomic NULL → now() claim, so we never double-ask.
+  //    - Deliberate resend: overwrite unconditionally (the prior timestamp is kept
+  //      so we can restore it if the send then fails).
   const nowIso = new Date().toISOString();
-  const { data: claimedRows, error: claimError } = await supabaseAdmin
-    .from("bookings")
-    .update({ review_email_sent_at: nowIso })
-    .eq("id", id)
-    .is("review_email_sent_at", null)
-    .select("id");
+  const prevSentAt = (booking.review_email_sent_at as string | null) ?? null;
 
-  if (claimError) {
-    console.error(
-      "[admin request-review] claim failed",
-      JSON.stringify(claimError)
-    );
-    return NextResponse.json(
-      { error: "Could not request a review" },
-      { status: 500 }
-    );
-  }
-  if (!claimedRows || claimedRows.length === 0) {
-    // review_email_sent_at was already set by the cron or a prior request.
-    return NextResponse.json({ ok: true, alreadyRequested: true });
+  if (isResend) {
+    const { error: resendErr } = await supabaseAdmin
+      .from("bookings")
+      .update({ review_email_sent_at: nowIso })
+      .eq("id", id);
+    if (resendErr) {
+      console.error(
+        "[admin request-review] resend update failed",
+        JSON.stringify(resendErr)
+      );
+      return NextResponse.json(
+        { error: "Could not request a review" },
+        { status: 500 }
+      );
+    }
+  } else {
+    const { data: claimedRows, error: claimError } = await supabaseAdmin
+      .from("bookings")
+      .update({ review_email_sent_at: nowIso })
+      .eq("id", id)
+      .is("review_email_sent_at", null)
+      .select("id");
+
+    if (claimError) {
+      console.error(
+        "[admin request-review] claim failed",
+        JSON.stringify(claimError)
+      );
+      return NextResponse.json(
+        { error: "Could not request a review" },
+        { status: 500 }
+      );
+    }
+    if (!claimedRows || claimedRows.length === 0) {
+      // review_email_sent_at was already set by the cron or a prior request.
+      return NextResponse.json({ ok: true, alreadyRequested: true });
+    }
   }
 
-  // 3) The claim won — send the branded review request.
+  // 3) Send the branded review request.
   const apiKey = process.env.RESEND_API_KEY;
+  let sendFailed = false;
   if (apiKey) {
     const resend = new Resend(apiKey);
     const siteUrl = siteConfig.url;
@@ -139,21 +167,40 @@ export async function POST(
         html,
       });
       if (result.error) {
+        sendFailed = true;
         console.error(
           "[admin request-review] Resend error:",
           JSON.stringify(result.error)
         );
       }
     } catch (err) {
+      sendFailed = true;
       console.error(
         "[admin request-review] dispatch failed",
         JSON.stringify(err, Object.getOwnPropertyNames(err as object))
       );
     }
   } else {
+    sendFailed = true;
     console.error(
       "[admin request-review] RESEND_API_KEY missing — email skipped"
     );
+  }
+
+  // On a failed resend, roll the timestamp back to its previous value so the UI
+  // keeps showing the genuine last-requested date (mirrors the cron's
+  // release-on-failure). The first-send path leaves its claim as-is, unchanged.
+  if (isResend && sendFailed) {
+    const { error: restoreErr } = await supabaseAdmin
+      .from("bookings")
+      .update({ review_email_sent_at: prevSentAt })
+      .eq("id", id);
+    if (restoreErr) {
+      console.error(
+        "[admin request-review] resend rollback failed",
+        JSON.stringify(restoreErr)
+      );
+    }
   }
 
   return NextResponse.json({ ok: true, sent: true });

@@ -1631,3 +1631,15 @@
 .avail-legend-sw.sw-public { background: var(--admin-sage); }
 .avail-legend-sw.sw-hidden { background: #fff; border: 1px solid var(--admin-line); }
 .avail-legend-sw.sw-booked { background: var(--admin-cream-soft); border: 1px solid var(--admin-amber-soft); }
+
+/* ===== Review request: last-sent caption + re-send confirm ===== */
+.review-last-requested {
+  font-size: 12px;
+  color: var(--admin-ink-soft);
+  margin: 0 0 10px;
+}
+.review-confirm-q {
+  font-size: 14px;
+  color: var(--admin-ink);
+  margin: 0 0 10px;
+}
