@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
+import { HORIZON_DAYS } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,10 +11,9 @@ export const revalidate = 0;
 // because RLS isn't configured for anon reads on these tables — the data is
 // non-sensitive (opening hours / closed days) so this is fine.
 //
-// Booked slots, slot overrides and blocked dates are returned for a 60-day
-// horizon (was 90). Trimming the window keeps the response small enough to
-// stay well inside Cloudflare's per-request CPU budget.
-const HORIZON_DAYS = 60;
+// Booked slots, slot overrides and blocked dates are returned for the shared
+// HORIZON_DAYS window (lib/availability.ts). Trimming the window keeps the
+// response small enough to stay well inside Cloudflare's per-request CPU budget.
 
 export async function GET() {
   if (!supabaseAdmin) {

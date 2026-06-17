@@ -1,6 +1,7 @@
 import AdminHeader from "@/components/AdminHeader";
 import AvailabilityPanel from "@/components/AvailabilityPanel";
 import { supabaseAdmin } from "@/lib/supabase";
+import { HORIZON_DAYS } from "@/lib/availability";
 import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +23,13 @@ export default async function AvailabilityPage() {
     );
   }
 
-  // 60-day horizon covers the next ~8 weeks the admin is realistically
-  // managing. Bookings + slot overrides + blocked dates flow through.
+  // HORIZON_DAYS ahead covers the next ~8 weeks the admin is realistically
+  // managing. Bookings + slot overrides + blocked dates flow through, and the
+  // panel caps week navigation to this same window so every reachable date is
+  // inside the fetched data (see lib/availability.ts HORIZON_DAYS).
   // UK business date — not server-UTC, which lags an hour during BST.
   const todayIso = ukTodayIso();
-  const horizonIso = addDaysIso(todayIso, 60);
+  const horizonIso = addDaysIso(todayIso, HORIZON_DAYS);
 
   const [
     { data: availability },
@@ -82,6 +85,7 @@ export default async function AvailabilityPage() {
           blocked={blocked ?? []}
           bookings={bookings ?? []}
           overrides={overrides ?? []}
+          horizonIso={horizonIso}
         />
       </main>
     </>
