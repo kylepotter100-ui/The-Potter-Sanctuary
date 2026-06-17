@@ -9,22 +9,43 @@ type Props = {
   reviewState: "left" | "requested" | "none";
   // False for cancelled bookings — the active button is then hidden.
   canRequest: boolean;
+  // When the last request went out (review_email_sent_at), shown on the
+  // "requested" state so the admin can see how recently it was sent.
+  lastRequestedAt?: string | null;
 };
 
-// Renders the review control inside the Customer Review box. Three states:
-// "left" and "requested" are disabled markers; "none" (and not cancelled) is an
-// active button that sends the branded review request.
+const MONTHS_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+// "5 Jun 2026" from an ISO timestamp — sliced, not Date-parsed, so it never
+// drifts with the server/client clock.
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  const mi = Number(m) - 1;
+  if (!y || mi < 0 || mi > 11) return iso.slice(0, 10);
+  return `${Number(d)} ${MONTHS_SHORT[mi]} ${y}`;
+}
+
+// Renders the review control. Three states:
+//   "left"      → disabled ✓ marker (already reviewed).
+//   "requested" → shows the last-requested date + an active "Send another
+//                 request", gated by an inline confirm before re-sending.
+//   "none"      → active "Request review" (first send, no confirm).
 export default function RequestReviewButton({
   bookingId,
   reviewState,
   canRequest,
+  lastRequestedAt,
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  async function requestReview() {
+  async function requestReview(resend: boolean) {
     setBusy(true);
     setError(null);
     try {
@@ -33,6 +54,7 @@ export default function RequestReviewButton({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resend }),
         }
       );
       const data = (await res.json().catch(() => null)) as {
@@ -44,7 +66,8 @@ export default function RequestReviewButton({
       if (!res.ok) {
         throw new Error(data?.error || "Could not request review");
       }
-      setMsg("Review requested");
+      setConfirming(false);
+      setMsg(resend ? "Another request sent" : "Review requested");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not request review");
@@ -65,10 +88,53 @@ export default function RequestReviewButton({
 
   if (reviewState === "requested") {
     return (
-      <div className="btn-row" style={{ marginTop: 14 }}>
-        <button type="button" className="btn" disabled>
-          Review requested
-        </button>
+      <div style={{ marginTop: 14 }}>
+        {lastRequestedAt && (
+          <p className="review-last-requested">
+            Last requested {fmtDate(lastRequestedAt)}
+          </p>
+        )}
+        {confirming ? (
+          <>
+            <p className="review-confirm-q">
+              Are you sure you want to send another request for a review?
+            </p>
+            <div className="btn-row">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => requestReview(true)}
+                disabled={busy || msg !== null}
+              >
+                {busy ? "Sending…" : "Yes, send again"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setConfirming(false)}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="btn-row">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setConfirming(true)}
+              disabled={msg !== null}
+            >
+              {msg ?? "Send another request"}
+            </button>
+          </div>
+        )}
+        {error && (
+          <p role="alert" className="error-text" style={{ marginTop: 12 }}>
+            {error}
+          </p>
+        )}
       </div>
     );
   }
@@ -82,7 +148,7 @@ export default function RequestReviewButton({
         <button
           type="button"
           className="btn"
-          onClick={requestReview}
+          onClick={() => requestReview(false)}
           disabled={busy || msg !== null}
         >
           {busy ? "Sending…" : msg ?? "Request review"}

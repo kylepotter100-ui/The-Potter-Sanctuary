@@ -392,6 +392,7 @@ export default async function AdminBookingDetailPage({
             bookingId={booking.id}
             reviewState={reviewState}
             canRequest={booking.status !== "cancelled"}
+            lastRequestedAt={(booking.review_email_sent_at as string | null) ?? null}
           />
         </section>
 

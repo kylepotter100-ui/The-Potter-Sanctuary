@@ -56,7 +56,22 @@ function Stars({ value }: { value: number }) {
   );
 }
 
-export default async function ReviewsPage() {
+type SearchParams = Promise<{ from?: string }>;
+
+export default async function ReviewsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  // Back link is context-aware: reached from the Outstanding-reviews page it
+  // returns there; reached from the dashboard rating tile (no param) it returns
+  // to the dashboard.
+  const { from } = await searchParams;
+  const back =
+    from === "outstanding"
+      ? { href: "/admin/reviews/outstanding", label: "← Back to outstanding reviews" }
+      : { href: "/admin/dashboard", label: "← Back to dashboard" };
+
   if (!supabaseAdmin) {
     return (
       <>
@@ -100,8 +115,8 @@ export default async function ReviewsPage() {
       <AdminHeader active="dashboard" />
       <main className="admin-main">
         <p style={{ marginBottom: 8 }}>
-          <Link href="/admin/dashboard" className="admin-back-link">
-            ← Back to dashboard
+          <Link href={back.href} className="admin-back-link">
+            {back.label}
           </Link>
         </p>
         <h1>Reviews</h1>

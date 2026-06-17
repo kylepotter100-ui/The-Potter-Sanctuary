@@ -148,6 +148,9 @@ export default function AvailabilityPanel({
   // is distinguishable from success (the bug was: fetch doesn't reject on a
   // 500, so a failed save silently flashed green then reverted on refresh).
   const [toggleError, setToggleError] = useState<string | null>(null);
+  // Set to a "D Mon" label when the admin taps a beyond-horizon ("Soon") day,
+  // so the dead tap is explained rather than reading as a bug.
+  const [beyondHint, setBeyondHint] = useState<string | null>(null);
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
 
@@ -228,6 +231,7 @@ export default function AvailabilityPanel({
   );
 
   function shiftWeek(delta: number) {
+    setBeyondHint(null);
     // Clamp both edges: the current week is the earliest reachable (past weeks
     // are inert), and the horizon week is the latest (beyond it, dates are
     // outside the fetched window and toggles couldn't reconcile on refresh).
@@ -240,6 +244,7 @@ export default function AvailabilityPanel({
     });
   }
   function thisWeek() {
+    setBeyondHint(null);
     setWeekStart(startOfWeek(new Date()));
   }
 
@@ -286,6 +291,7 @@ export default function AvailabilityPanel({
     const dow = date.getDay();
     const currentlyOpen = isDayOpen(iso, dow);
     setToggleError(null);
+    setBeyondHint(null);
 
     if (currentlyOpen) {
       // Close the day — block this specific date.
@@ -440,36 +446,34 @@ export default function AvailabilityPanel({
     <>
       {/* Week selector */}
       <div className="avail-week-bar">
+        <button
+          type="button"
+          className="avail-week-arrow"
+          onClick={() => shiftWeek(-1)}
+          aria-label="Previous week"
+        >
+          ‹
+        </button>
         <div className="avail-week-label">{weekHeader}</div>
-        <div className="avail-week-nav">
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => shiftWeek(-1)}
-          >
-            ← Previous
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={thisWeek}
-          >
-            This week
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => shiftWeek(1)}
-            disabled={atHorizonEdge}
-            title={
-              atHorizonEdge
-                ? "You can manage availability up to about 8 weeks ahead."
-                : undefined
-            }
-          >
-            Next →
-          </button>
-        </div>
+        <button
+          type="button"
+          className="avail-week-arrow"
+          onClick={() => shiftWeek(1)}
+          disabled={atHorizonEdge}
+          title={
+            atHorizonEdge
+              ? "You can manage availability up to about 8 weeks ahead."
+              : undefined
+          }
+          aria-label="Next week"
+        >
+          ›
+        </button>
+      </div>
+      <div className="avail-week-actions">
+        <button type="button" className="avail-thisweek" onClick={thisWeek}>
+          ↺ This week
+        </button>
       </div>
 
       {/* Day toggles */}
@@ -487,27 +491,52 @@ export default function AvailabilityPanel({
           const iso = isoDate(d);
           const dow = d.getDay();
           const open = isDayOpen(iso, dow);
-          // Past and beyond-horizon days share the dimmed, inert treatment.
-          const inert = iso < todayIso || iso > horizonIso;
+          // Two distinct inert reasons, styled differently so the rolling
+          // end-of-window day never reads as a broken button:
+          //   - past days: flat-dimmed and truly disabled;
+          //   - beyond-horizon days: a "Soon" lock state that, when tapped,
+          //     explains the ~8-week window instead of doing nothing.
+          const isPast = iso < todayIso;
+          const isBeyond = iso > horizonIso;
           return (
             <button
               key={iso}
               type="button"
               className={`avail-day-btn${open ? " is-selected" : ""}${
-                inert ? " is-past" : ""
-              }`}
-              onClick={() => toggleDay(d)}
-              aria-pressed={open}
-              disabled={inert || pending}
+                isPast ? " is-past" : ""
+              }${isBeyond ? " is-beyond" : ""}`}
+              onClick={() => {
+                if (isBeyond) {
+                  // toggleDay no-ops beyond the horizon anyway; surface why.
+                  setBeyondHint(`${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`);
+                  return;
+                }
+                toggleDay(d);
+              }}
+              aria-pressed={isBeyond ? undefined : open}
+              aria-label={
+                isBeyond
+                  ? `${DAYS_SHORT[dow]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} — not yet available, about 8 weeks ahead`
+                  : undefined
+              }
+              disabled={isPast || pending}
             >
               <span className="avail-day-name">{DAYS_SHORT[dow]}</span>
               <span className="avail-day-date">
                 {d.getDate()} {MONTHS_SHORT[d.getMonth()]}
               </span>
+              {isBeyond && <span className="avail-day-soon">Soon</span>}
             </button>
           );
         })}
       </div>
+      {beyondHint && (
+        <div className="avail-edge-hint" role="status">
+          <strong>{beyondHint} isn&apos;t open to manage yet.</strong> You can set
+          availability about 8 weeks ahead — this day becomes editable as that
+          window rolls forward.
+        </div>
+      )}
 
       {/* One slot grid per active day */}
       {openDays.length === 0 ? (
@@ -522,11 +551,18 @@ export default function AvailabilityPanel({
           const dayBookings = bookingsByDate[iso] ?? {};
           return (
             <section key={iso} className="avail-day-detail">
-              <h2 style={{ marginBottom: 6 }}>{formatLong(d)}</h2>
-              <p className="lede" style={{ marginBottom: 14 }}>
-                Sage = visible to public. Grey outline = hidden. Booked slots
-                can&apos;t be toggled.
-              </p>
+              <h2 style={{ marginBottom: 10 }}>{formatLong(d)}</h2>
+              <div className="avail-legend">
+                <span className="avail-legend-item">
+                  <span className="avail-legend-sw sw-public" /> Public
+                </span>
+                <span className="avail-legend-item">
+                  <span className="avail-legend-sw sw-hidden" /> Hidden
+                </span>
+                <span className="avail-legend-item">
+                  <span className="avail-legend-sw sw-booked" /> Booked
+                </span>
+              </div>
               <div className="avail-slot-grid">
                 {SLOTS.map((slot) => {
                   const seg = dayBookings[slot];

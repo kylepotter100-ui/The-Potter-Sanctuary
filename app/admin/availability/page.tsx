@@ -1,7 +1,7 @@
 import AdminHeader from "@/components/AdminHeader";
 import AvailabilityPanel from "@/components/AvailabilityPanel";
 import { supabaseAdmin } from "@/lib/supabase";
-import { HORIZON_DAYS } from "@/lib/availability";
+import { HORIZON_DAYS, fetchSlotOverridesInWindow } from "@/lib/availability";
 import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
@@ -54,11 +54,9 @@ export default async function AvailabilityPage() {
       .gte("booking_date", todayIso)
       .lte("booking_date", horizonIso)
       .in("status", ["pending", "confirmed"]),
-    supabaseAdmin
-      .from("slot_overrides")
-      .select("override_date, slot_time, is_active")
-      .gte("override_date", todayIso)
-      .lte("override_date", horizonIso),
+    // Paged: a plain select caps at 1000 rows and silently dropped the later
+    // in-window dates, which then reverted on toggle (see lib/availability.ts).
+    fetchSlotOverridesInWindow(supabaseAdmin, todayIso, horizonIso),
   ]);
 
   if (overridesErr) {

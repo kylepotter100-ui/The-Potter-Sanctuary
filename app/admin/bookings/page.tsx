@@ -1,8 +1,14 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingFilters from "@/components/AdminBookingFilters";
-import AdminBookingRow from "@/components/AdminBookingRow";
 import { supabaseAdmin } from "@/lib/supabase";
+import {
+  getReviewedIndex,
+  reviewStateFor,
+  listOutstandingReviewClients,
+  type ReviewState,
+} from "@/lib/reviews";
+import { ukTodayIso } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,43 +18,33 @@ type Booking = {
   customer_first_name: string;
   customer_last_name: string;
   customer_email: string;
-  customer_phone: string;
-  treatment_id: string;
+  customer_id: string | null;
   treatment_name: string;
-  treatment_price: number;
   booking_date: string;
   booking_time: string;
   status: "pending" | "confirmed" | "cancelled";
+  review_email_sent_at: string | null;
 };
 
 type ConsultationLink = { booking_id: string | null };
-
 type Status = "active" | "pending" | "confirmed" | "cancelled" | "all";
-
 type Range = "today" | "week" | "month" | "next30" | "upcoming" | "";
 
-type SearchParams = Promise<{
-  status?: string;
-  range?: string;
-}>;
+type SearchParams = Promise<{ status?: string; range?: string }>;
 
-function formatDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
+// "WED 18 JUN · 14:00" — compact; uppercased via CSS.
+function fmtWhen(dateIso: string, t: string): string {
+  const d = new Date(dateIso + "T00:00:00").toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
-    year: "numeric",
   });
-}
-
-function formatTime(t: string): string {
-  return t.slice(0, 5);
+  return `${d} · ${t.slice(0, 5)}`;
 }
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
-
 function isoDate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
@@ -61,30 +57,37 @@ function rangeBounds(r: Range): { from?: string; to?: string } | null {
     const d = isoDate(now);
     return { from: d, to: d };
   }
-  if (r === "week") {
-    const monday = new Date(now);
-    const dow = monday.getDay();
-    const diff = dow === 0 ? -6 : 1 - dow;
-    monday.setDate(monday.getDate() + diff);
-    const sunday = new Date(monday);
-    sunday.setDate(sunday.getDate() + 6);
-    return { from: isoDate(monday), to: isoDate(sunday) };
-  }
   if (r === "month") {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { from: isoDate(start), to: isoDate(end) };
+  }
+  if (r === "upcoming") {
+    return { from: isoDate(now) };
+  }
+  // Legacy presets (week/next30) still resolve if linked directly.
+  if (r === "week") {
+    const monday = new Date(now);
+    const dow = monday.getDay();
+    monday.setDate(monday.getDate() + (dow === 0 ? -6 : 1 - dow));
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+    return { from: isoDate(monday), to: isoDate(sunday) };
   }
   if (r === "next30") {
     const end = new Date(now);
     end.setDate(end.getDate() + 30);
     return { from: isoDate(now), to: isoDate(end) };
   }
-  if (r === "upcoming") {
-    // From today onwards, no upper bound.
-    return { from: isoDate(now) };
-  }
   return null;
+}
+
+function ReviewChip({ state }: { state: ReviewState }) {
+  if (state === "left")
+    return <span className="chip chip-rev-left">★ Reviewed</span>;
+  if (state === "requested")
+    return <span className="chip chip-rev-req">Requested</span>;
+  return <span className="chip chip-rev-none">No review</span>;
 }
 
 export default async function BookingsPage({
@@ -94,8 +97,6 @@ export default async function BookingsPage({
 }) {
   const params = await searchParams;
   const status = (params.status as Status | undefined) ?? "active";
-  // Default to "upcoming" so the admin lands on a focused list without
-  // needing to choose a preset.
   const range = ((params.range as Range | undefined) ?? "upcoming") as Range;
   const bounds = rangeBounds(range);
 
@@ -114,22 +115,15 @@ export default async function BookingsPage({
   let query = supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_last_name, customer_email, customer_phone, treatment_id, treatment_name, treatment_price, booking_date, booking_time, status"
+      "id, customer_first_name, customer_last_name, customer_email, customer_id, treatment_name, booking_date, booking_time, status, review_email_sent_at"
     )
     .order("booking_date", { ascending: false })
     .order("booking_time", { ascending: false });
 
-  // Status filter. Default ('active') hides cancelled.
-  if (status === "active") {
-    query = query.in("status", ["pending", "confirmed"]);
-  } else if (status === "pending") {
-    query = query.eq("status", "pending");
-  } else if (status === "confirmed") {
-    query = query.eq("status", "confirmed");
-  } else if (status === "cancelled") {
-    query = query.eq("status", "cancelled");
-  }
-  // 'all' applies no status filter.
+  if (status === "active") query = query.in("status", ["pending", "confirmed"]);
+  else if (status === "pending") query = query.eq("status", "pending");
+  else if (status === "confirmed") query = query.eq("status", "confirmed");
+  else if (status === "cancelled") query = query.eq("status", "cancelled");
 
   if (bounds) {
     if (bounds.from) query = query.gte("booking_date", bounds.from);
@@ -148,14 +142,36 @@ export default async function BookingsPage({
       .filter((id): id is string => !!id)
   );
 
+  // Review chips (bulk, one reviews read) + outstanding-reviews banner count.
+  const reviewedIndex = await getReviewedIndex(supabaseAdmin);
+  const outstanding = await listOutstandingReviewClients(
+    supabaseAdmin,
+    ukTodayIso()
+  );
+  const outstandingCount = outstanding.length;
+
   return (
     <>
       <AdminHeader active="bookings" />
       <main className="admin-main">
         <h1>Bookings</h1>
-        <p className="lede">
-          Click any row to manage. Cancelled bookings are hidden by default.
-        </p>
+        <p className="lede">Tap a booking to manage.</p>
+
+        {outstandingCount > 0 && (
+          <Link href="/admin/reviews/outstanding" className="review-banner">
+            <span className="review-banner-star" aria-hidden="true">
+              ★
+            </span>
+            <span className="review-banner-text">
+              <strong>Outstanding reviews</strong>
+              <span>
+                {outstandingCount}{" "}
+                {outstandingCount === 1 ? "client" : "clients"} not yet reviewed
+              </span>
+            </span>
+            <span className="review-banner-cta">Review →</span>
+          </Link>
+        )}
 
         <AdminBookingFilters />
 
@@ -166,75 +182,41 @@ export default async function BookingsPage({
         )}
 
         {rows.length === 0 ? (
-          <div className="admin-card">No bookings match these filters.</div>
+          <div className="admin-card">No bookings match this filter.</div>
         ) : (
-          <table className="admin-table admin-table-clickable">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Customer</th>
-                <th>Treatment</th>
-                <th>Status</th>
-                <th>Consultation</th>
-                <th aria-hidden="true"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((b) => {
-                const completed = consultedSet.has(b.id);
-                return (
-                  <AdminBookingRow
-                    key={b.id}
-                    bookingId={b.id}
-                    status={b.status}
-                  >
-                    <td data-label="Date">{formatDate(b.booking_date)}</td>
-                    <td data-label="Time">{formatTime(b.booking_time)}</td>
-                    <td data-label="Customer">
-                      {b.customer_first_name} {b.customer_last_name}
-                      <br />
-                      <small style={{ opacity: 0.65 }}>{b.customer_email}</small>
-                    </td>
-                    <td data-label="Treatment">{b.treatment_name}</td>
-                    <td data-label="Status">
-                      <span className={`badge badge-${b.status}`}>
-                        {b.status}
-                      </span>
-                    </td>
-                    <td data-label="Consultation">
-                      {completed ? (
-                        <span
-                          className="badge badge-confirmed"
-                          style={{ textDecoration: "none" }}
-                        >
-                          ✓ Completed
-                        </span>
-                      ) : (
-                        <span
-                          className="badge"
-                          style={{
-                            background: "#f4e3c4",
-                            color: "#7a5b1a",
-                          }}
-                        >
-                          ⏳ Pending
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="" className="row-link-arrow">
-                      <Link
-                        href={`/admin/bookings/${b.id}`}
-                        aria-label={`Manage booking for ${b.customer_first_name} ${b.customer_last_name}`}
-                      >
-                        Manage →
-                      </Link>
-                    </td>
-                  </AdminBookingRow>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="bk-list">
+            {rows.map((b) => {
+              const completed = consultedSet.has(b.id);
+              const rs: ReviewState =
+                b.status === "cancelled" ? "none" : reviewStateFor(reviewedIndex, b);
+              return (
+                <Link
+                  key={b.id}
+                  href={`/admin/bookings/${b.id}`}
+                  className={`bk-card row-${b.status}`}
+                  aria-label={`Manage booking for ${b.customer_first_name} ${b.customer_last_name}`}
+                >
+                  <div className="bk-card-top">
+                    <span className="bk-when">
+                      {fmtWhen(b.booking_date, b.booking_time)}
+                    </span>
+                    <span className={`badge badge-${b.status}`}>{b.status}</span>
+                  </div>
+                  <div className="bk-name">
+                    {b.customer_first_name} {b.customer_last_name}
+                  </div>
+                  <div className="bk-treat">{b.treatment_name}</div>
+                  <div className="bk-chips">
+                    <span className={`chip ${completed ? "chip-ok" : "chip-warn"}`}>
+                      {completed ? "✓ Consult" : "⏳ Consult"}
+                    </span>
+                    {b.status !== "cancelled" && <ReviewChip state={rs} />}
+                    <span className="bk-manage">Manage →</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         )}
       </main>
     </>

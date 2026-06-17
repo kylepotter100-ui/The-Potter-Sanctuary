@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { services } from "@/lib/services";
 import { ukNow } from "@/lib/uk-time";
 
@@ -48,6 +48,49 @@ const GRID_MINUTES = 15;
 export type ExistingBooking = { time: string; duration_minutes: number };
 
 export type SlotValidation = { ok: true } | { ok: false; reason: string };
+
+/** A single slot_overrides row, as read for the management/calendar window. */
+export type SlotOverrideRow = {
+  override_date: string;
+  slot_time: string;
+  is_active: boolean;
+};
+
+/**
+ * Read EVERY slot_overrides row in [fromIso, toIso] inclusive, paging past
+ * PostgREST's 1000-row response cap.
+ *
+ * A plain `.select().gte().lte()` silently truncates at 1000 rows. Opening a
+ * template-less day seeds ~38 override rows, so within the HORIZON_DAYS window
+ * the table can exceed 1000 — and the dropped rows are the LATER in-window
+ * dates (the read used no order, so the cut was arbitrary). Those dates then
+ * fell back to the weekly template in the grid; toggling a slot wrote a row
+ * that was still beyond the cap on the next read, so it "reverted". Paging in
+ * deterministic (date, time) order returns the whole window every time.
+ */
+export async function fetchSlotOverridesInWindow(
+  admin: SupabaseClient,
+  fromIso: string,
+  toIso: string
+): Promise<{ data: SlotOverrideRow[]; error: PostgrestError | null }> {
+  const PAGE = 1000;
+  const all: SlotOverrideRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await admin
+      .from("slot_overrides")
+      .select("override_date, slot_time, is_active")
+      .gte("override_date", fromIso)
+      .lte("override_date", toIso)
+      .order("override_date", { ascending: true })
+      .order("slot_time", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) return { data: all, error };
+    const rows = (data ?? []) as SlotOverrideRow[];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return { data: all, error: null };
+}
 
 function toHHMM(t: string): string {
   return String(t).slice(0, 5);
