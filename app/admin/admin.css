@@ -1049,3 +1049,317 @@
   font-size: 12px;
   color: var(--admin-error, #b04a3f);
 }
+
+/* =====================================================================
+   Dashboard redesign — compact, year-default, KPI-rich (mobile-first).
+   Overrides earlier rules (later in file wins at equal specificity).
+   ===================================================================== */
+
+/* Revenue headline — smaller, tighter than the old 56px hero. */
+.stat-hero { padding: 14px 18px; margin-bottom: 14px; gap: 4px; }
+.stat-hero .value { font-size: 34px; }
+.stat-hero .caption { margin-top: 4px; }
+.stat-hero .hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.stat-hero .hero-delta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+.stat-hero .hero-delta-sub {
+  font-size: 9.5px;
+  color: var(--admin-ink-soft);
+}
+
+/* Trend chip — arrow and number are separate spans with a gap so the glyph
+   never collides with the digits. */
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.delta .delta-arrow { font-size: 9px; line-height: 1; }
+.delta.is-good { color: var(--admin-sage-deep); }
+.delta.is-adverse { color: var(--admin-amber); }
+.delta.is-flat,
+.delta.is-new { color: var(--admin-ink-soft); }
+
+/* Booking-status strip — one card, three columns (replaces 4 big cards). */
+.status-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.status-strip .status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+}
+.status-strip .status-cell + .status-cell { border-left: 1px solid var(--admin-line); }
+.status-strip .label {
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+.status-strip .value {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--admin-ink);
+}
+.status-strip .status-cell.is-confirmed .value { color: var(--admin-sage-deep); }
+
+/* KPI tiles — 2-up on mobile, 4-up on wider screens. */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.kpi-tile {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kpi-tile .label {
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+.kpi-val-row { display: flex; align-items: baseline; gap: 6px; }
+.kpi-val-row .value {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--admin-ink);
+}
+.kpi-val-row .value.is-empty { color: var(--admin-ink-soft); }
+.kpi-val-row .kpi-sub { margin-left: auto; }
+.kpi-val-row .delta { margin-left: auto; }
+.kpi-sub { font-size: 10px; color: var(--admin-ink-soft); white-space: nowrap; }
+.kpi-star {
+  width: 13px;
+  height: 13px;
+  color: var(--admin-amber);
+  position: relative;
+  top: 1px;
+}
+
+/* Dashboard section headings — smaller than the global 28px h2. */
+.admin-shell h2.dash-h2 { font-size: 17px; }
+.dash-section { margin-bottom: 28px; }
+.dash-h2 { margin-bottom: 10px; }
+
+/* Compact vertical revenue-by-month chart (year view). */
+.month-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 14px 12px 10px;
+}
+.month-chart .mc-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.month-chart .mc-bar-wrap {
+  height: 84px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.month-chart .mc-bar {
+  width: 58%;
+  min-height: 2px;
+  background: var(--admin-sage);
+  border-radius: 3px 3px 0 0;
+}
+.month-chart .mc-bar.is-peak { background: var(--admin-sage-deep); }
+.month-chart .mc-label {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+.month-empty {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 22px;
+  text-align: center;
+  color: var(--admin-ink-soft);
+  font-size: 13px;
+}
+
+/* Most-booked rows gain a proportion bar beneath the name/count. */
+.rank-list li { flex-direction: column; align-items: stretch; gap: 8px; }
+.rank-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.rank-track {
+  background: var(--admin-cream-soft);
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  height: 5px;
+  overflow: hidden;
+}
+.rank-fill {
+  height: 100%;
+  background: var(--admin-sage);
+  border-radius: 999px;
+  min-width: 2px;
+}
+
+@media (min-width: 720px) {
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ----- Compact dashboard filter bar (chevron stepper + Year/Month) ----- */
+.dash-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.dash-filter.is-pending { opacity: 0.6; }
+.dash-filter-period { display: flex; align-items: center; gap: 6px; }
+.dash-filter-label {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 20px;
+  color: var(--admin-ink);
+  min-width: 64px;
+  text-align: center;
+}
+.dash-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-line);
+  background: #ffffff;
+  color: var(--admin-ink-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dash-step:hover { border-color: var(--admin-sage); color: var(--admin-ink); }
+.dash-step svg { width: 16px; height: 16px; }
+.dash-today {
+  margin-left: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--admin-sage-deep);
+}
+.dash-today:hover { color: var(--admin-ink); }
+
+/* ----- Clickable Avg-rating tile ----- */
+.kpi-tile-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.kpi-tile-link:hover {
+  border-color: var(--admin-sage);
+  box-shadow: 0 1px 8px rgba(28, 28, 28, 0.06);
+}
+.kpi-tile-link .label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kpi-link-cue {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--admin-sage-deep);
+}
+
+/* ----- Reviews page ----- */
+.review-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--admin-ink);
+}
+.review-summary-count { color: var(--admin-ink-soft); font-size: 13px; }
+.review-stars { display: inline-flex; align-items: center; gap: 2px; color: var(--admin-amber); }
+.review-stars svg { width: 15px; height: 15px; }
+.review-stars svg:not(.is-filled) { color: var(--admin-line); }
+
+.review-list { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.review-card {
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.review-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.review-name {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 19px;
+  color: var(--admin-ink);
+}
+.review-comment {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--admin-ink);
+}
+.review-meta {
+  margin: 0;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}

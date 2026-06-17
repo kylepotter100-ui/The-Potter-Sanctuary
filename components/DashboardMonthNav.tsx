@@ -64,40 +64,61 @@ export default function DashboardMonthNav({ year, month, view }: Props) {
 
   const label = view === "year" ? String(year) : `${MONTHS[month - 1]} ${year}`;
 
+  // "Today" reset only shows when the viewed period isn't the current one, so
+  // the bar stays clean by default. Compared against the local clock (the same
+  // basis thisPeriod() resets to).
+  const now = new Date();
+  const isCurrent =
+    view === "year"
+      ? year === now.getFullYear()
+      : year === now.getFullYear() && month === now.getMonth() + 1;
+
   return (
-    <div className={`avail-week-bar${pending ? " is-pending" : ""}`}>
-      <div className="avail-week-label">{label}</div>
-      <div className="avail-week-nav">
-        <div className="dashboard-view-toggle" role="group" aria-label="Period">
-          <button
-            type="button"
-            className={`btn btn-ghost btn-sm${view === "month" ? " is-selected" : ""}`}
-            aria-pressed={view === "month"}
-            onClick={() => go({ v: "month" })}
-          >
-            Month
+    <div className={`dash-filter${pending ? " is-pending" : ""}`}>
+      <div className="dash-filter-period">
+        <button
+          type="button"
+          className="dash-step"
+          aria-label={view === "year" ? "Previous year" : "Previous month"}
+          onClick={prev}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        </button>
+        <span className="dash-filter-label">{label}</span>
+        <button
+          type="button"
+          className="dash-step"
+          aria-label={view === "year" ? "Next year" : "Next month"}
+          onClick={next}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+        {!isCurrent && (
+          <button type="button" className="dash-today" onClick={thisPeriod}>
+            Today
           </button>
-          <button
-            type="button"
-            className={`btn btn-ghost btn-sm${view === "year" ? " is-selected" : ""}`}
-            aria-pressed={view === "year"}
-            onClick={() => go({ v: "year" })}
-          >
-            Year
-          </button>
-        </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={prev}>
-          ← Previous
+        )}
+      </div>
+      <div className="dashboard-view-toggle" role="group" aria-label="Period">
+        <button
+          type="button"
+          className={`btn btn-ghost btn-sm${view === "year" ? " is-selected" : ""}`}
+          aria-pressed={view === "year"}
+          onClick={() => go({ v: "year" })}
+        >
+          Year
         </button>
         <button
           type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={thisPeriod}
+          className={`btn btn-ghost btn-sm${view === "month" ? " is-selected" : ""}`}
+          aria-pressed={view === "month"}
+          onClick={() => go({ v: "month" })}
         >
-          {view === "year" ? "This year" : "This month"}
-        </button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={next}>
-          Next →
+          Month
         </button>
       </div>
     </div>
