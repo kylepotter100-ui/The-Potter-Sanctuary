@@ -151,6 +151,12 @@ export default function AvailabilityPanel({
   // Set to a "D Mon" label when the admin taps a beyond-horizon ("Soon") day,
   // so the dead tap is explained rather than reading as a bug.
   const [beyondHint, setBeyondHint] = useState<string | null>(null);
+  // Days the owner has tapped to open but which have no active slots yet. A day
+  // with ≥1 active slot is already "open"; this tracks the transient
+  // revealed-but-empty state so its (empty) slot grid renders for ticking. It is
+  // local-only: a full reload collapses empties (nothing was saved), while days
+  // with ticked slots stay open via their overrides.
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
 
@@ -259,16 +265,29 @@ export default function AvailabilityPanel({
     return base;
   }
 
-  function isDayOpen(iso: string, dow: number): boolean {
+  // ONE source of truth for "this day is open": blocked wins; otherwise a day is
+  // open if it has active picks OR the owner has revealed it to pick times. Both
+  // the sage day-button (is-selected) and the slot grid derive from this, so
+  // "selected" and "grid visible" can never disagree.
+  function dayOpen(iso: string, dow: number): boolean {
     if (blockedSet.has(iso)) return false;
-    return activeSlotsFor(iso, dow).size > 0;
+    return activeSlotsFor(iso, dow).size > 0 || expandedDays.has(iso);
   }
 
-  // Toggle whole day on/off. The "off" state is stored in blocked_dates;
-  // the "on" state is "not blocked AND there are slots". For Mon/Sun (no
-  // day_of_week template by default) toggling on also seeds the full
-  // 09:30–19:00 slot list as active overrides for that specific date so
-  // the day actually has slots to show.
+  function reveal(iso: string, on: boolean) {
+    setExpandedDays((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(iso);
+      else next.delete(iso);
+      return next;
+    });
+  }
+
+  // Toggle whole day on/off. Opening a closed day reveals an EMPTY slot grid to
+  // pick from — nothing is written until the owner ticks a slot (toggleSlot
+  // writes one override). Closing a revealed-but-empty day just collapses it;
+  // closing a day that has picks blocks the date (the picks stay as dormant
+  // overrides and return on reopen). The "off" state is stored in blocked_dates.
   // fetch() only rejects on a network error, not on an HTTP 4xx/5xx — so a
   // failed save must be detected via res.ok, otherwise the optimistic green
   // state survives until router.refresh() silently reverts it.
@@ -289,73 +308,63 @@ export default function AvailabilityPanel({
     const iso = isoDate(date);
     if (iso < todayIso || iso > horizonIso) return; // past / beyond-horizon are inert
     const dow = date.getDay();
-    const currentlyOpen = isDayOpen(iso, dow);
     setToggleError(null);
     setBeyondHint(null);
 
-    if (currentlyOpen) {
-      // Close the day — block this specific date.
+    const hasSlots = activeSlotsFor(iso, dow).size > 0;
+
+    if (dayOpen(iso, dow)) {
+      // CLOSING. A day open only because it was revealed-empty just collapses —
+      // nothing is written. A day open because it has active picks is closed by
+      // blocking the date; the picks stay as dormant overrides and return on
+      // reopen.
+      reveal(iso, false);
+      if (!hasSlots) {
+        setRefreshTick((n) => n + 1);
+        return;
+      }
       blockedSet.add(iso);
       setRefreshTick((n) => n + 1);
       const ok = await postOk("/api/admin/availability/block", { date: iso });
       if (!ok) {
         blockedSet.delete(iso); // roll back
+        reveal(iso, true);
         setRefreshTick((n) => n + 1);
         setToggleError("Couldn't close that day — please try again.");
         return;
       }
-    } else {
-      // Open the day. First unblock if blocked.
-      if (blockedSet.has(iso)) {
-        blockedSet.delete(iso);
-        setRefreshTick((n) => n + 1);
-        const blockedRow = blocked.find((b) => b.blocked_date === iso);
-        if (blockedRow) {
-          const ok = await postOk("/api/admin/availability/unblock", {
-            id: blockedRow.id,
-          });
-          if (!ok) {
-            blockedSet.add(iso); // roll back
-            setRefreshTick((n) => n + 1);
-            setToggleError("Couldn't open that day — please try again.");
-            return;
-          }
-        }
-      }
+      startTransition(() => router.refresh());
+      return;
+    }
 
-      // If the day has no template and no resolved slots, seed all default
-      // slots as active overrides so the day actually shows slots to
-      // customers and to the slot grid below.
-      const baseSlots = dayPattern[dow] ?? new Set<string>();
-      const existingOv = overrideMap[iso] ?? {};
-      const resolved = new Set(baseSlots);
-      for (const [time, active] of Object.entries(existingOv)) {
-        if (active) resolved.add(time);
-        else resolved.delete(time);
-      }
-      if (resolved.size === 0) {
-        const seedRows = SLOTS.map((s) => ({ slot_time: s, is_active: true }));
-        // Reflect optimistically in the local map.
-        const hadEntry = !!overrideMap[iso];
-        if (!overrideMap[iso]) overrideMap[iso] = {};
-        for (const s of SLOTS) overrideMap[iso][s] = true;
-        setRefreshTick((n) => n + 1);
-        const ok = await postOk("/api/admin/availability/slot-override-bulk", {
-          override_date: iso,
-          slots: seedRows,
+    // OPENING. Reveal an empty grid and turn the day sage immediately (dayOpen is
+    // now true via expandedDays). If it was blocked, lift the block first — any
+    // dormant active overrides come back and keep it green.
+    if (blockedSet.has(iso)) {
+      blockedSet.delete(iso);
+      reveal(iso, true);
+      setRefreshTick((n) => n + 1);
+      const blockedRow = blocked.find((b) => b.blocked_date === iso);
+      if (blockedRow) {
+        const ok = await postOk("/api/admin/availability/unblock", {
+          id: blockedRow.id,
         });
         if (!ok) {
-          // Roll back the optimistic seed (any prior unblock has persisted, so
-          // the day simply returns to closed — its real state).
-          if (hadEntry) for (const s of SLOTS) delete overrideMap[iso][s];
-          else delete overrideMap[iso];
+          blockedSet.add(iso); // roll back
+          reveal(iso, false);
           setRefreshTick((n) => n + 1);
           setToggleError("Couldn't open that day — please try again.");
           return;
         }
       }
+      startTransition(() => router.refresh());
+      return;
     }
-    startTransition(() => router.refresh());
+
+    // Closed, not blocked: reveal the grid to pick from. No write — the day
+    // persists only once a slot is turned on (toggleSlot writes the override).
+    reveal(iso, true);
+    setRefreshTick((n) => n + 1);
   }
 
   // Toggle a specific slot on a specific date via slot_overrides.
@@ -439,7 +448,7 @@ export default function AvailabilityPanel({
   // show an editable grid (their data isn't fetched, so they can't reconcile).
   const openDays = weekDays.filter((d) => {
     const iso = isoDate(d);
-    return iso >= todayIso && iso <= horizonIso && isDayOpen(iso, d.getDay());
+    return iso >= todayIso && iso <= horizonIso && dayOpen(iso, d.getDay());
   });
 
   return (
@@ -478,8 +487,8 @@ export default function AvailabilityPanel({
 
       {/* Day toggles */}
       <p className="lede" style={{ marginBottom: 10 }}>
-        Tick the days the studio is open this week. Each open day reveals its
-        slots below for fine-tuning.
+        Tap a day to open it — its slot grid appears below, empty, so you can
+        tick the exact times you want.
       </p>
       {toggleError && (
         <div className="error-text" style={{ marginBottom: 10 }}>
@@ -490,7 +499,7 @@ export default function AvailabilityPanel({
         {weekDays.map((d) => {
           const iso = isoDate(d);
           const dow = d.getDay();
-          const open = isDayOpen(iso, dow);
+          const open = dayOpen(iso, dow);
           // Two distinct inert reasons, styled differently so the rolling
           // end-of-window day never reads as a broken button:
           //   - past days: flat-dimmed and truly disabled;
@@ -541,7 +550,7 @@ export default function AvailabilityPanel({
       {/* One slot grid per active day */}
       {openDays.length === 0 ? (
         <div className="admin-card" style={{ marginBottom: 18 }}>
-          No open days this week. Tap a day above to mark the studio open.
+          No open days this week. Tap a day above to choose its available times.
         </div>
       ) : (
         openDays.map((d) => {
@@ -563,6 +572,11 @@ export default function AvailabilityPanel({
                   <span className="avail-legend-sw sw-booked" /> Booked
                 </span>
               </div>
+              {activeSet.size === 0 && (
+                <p className="avail-empty-hint">
+                  No times selected yet — tap the times you want.
+                </p>
+              )}
               <div className="avail-slot-grid">
                 {SLOTS.map((slot) => {
                   const seg = dayBookings[slot];
