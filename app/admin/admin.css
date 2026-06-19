@@ -593,7 +593,16 @@
   color: #ffffff;
   border-color: var(--admin-sage);
 }
-.avail-day-btn.is-past { opacity: 0.55; }
+/* Past days are inert and must read neutral/grey, never the sage "selected"
+   look — so override .is-selected (later in source + higher specificity wins),
+   mirroring the .is-beyond pattern below. */
+.avail-day-btn.is-past,
+.avail-day-btn.is-past.is-selected {
+  background: #ffffff;
+  border-color: var(--admin-line);
+  color: var(--admin-ink);
+  opacity: 0.55;
+}
 /* Beyond the ~8-week horizon: a distinct "Soon" lock state — clearly different
    from both an open day (sage) and a past day (flat-dimmed) — so the rolling
    end-of-window day never reads as a broken button. Declared after .is-selected
@@ -645,6 +654,11 @@
   font-weight: 400;
   font-size: 22px;
   margin: 0;
+}
+.avail-empty-hint {
+  color: var(--admin-ink-soft);
+  font-size: 13px;
+  margin: 0 0 10px;
 }
 .avail-slot-grid {
   display: grid;
