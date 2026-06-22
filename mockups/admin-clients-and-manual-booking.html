@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin mock-ups — Clients & Manual Booking</title>
+<style>
+/* ===== Tokens copied from app/admin/admin.css ===== */
+:root{
+  --admin-sage:#8a9e85; --admin-sage-deep:#6e8068; --admin-cream:#f5f0e8;
+  --admin-cream-soft:#fbf7ec; --admin-ink:#1c1c1c; --admin-ink-soft:#4a4a4a;
+  --admin-line:rgba(28,28,28,.12); --admin-amber:#c98a2c; --admin-amber-soft:#f5e7c8;
+  --admin-amber-tint:rgba(201,138,44,.06); --admin-grey:#8a8a8a; --admin-grey-soft:#e0ddd5;
+  --admin-error:#b04a3a; --admin-info-soft:#e8efe5;
+  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --sans:'Lora',Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#e7e0d2;color:var(--admin-ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.005em;color:var(--admin-ink);line-height:1.15;margin:0}
+h1{font-size:36px}h2{font-size:28px}h3{font-size:22px}
+a{color:var(--admin-sage-deep);text-decoration:none}
+
+/* viewport switcher chrome (not part of product) */
+.demo-bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  padding:10px 16px;background:#23291f;color:#e7e0d2}
+.demo-bar strong{font-family:var(--serif);font-size:16px;margin-right:8px}
+.demo-bar button{font-family:var(--sans);font-size:12px;letter-spacing:.04em;cursor:pointer;
+  border:1px solid #4c5544;background:transparent;color:#dfe6da;border-radius:999px;padding:6px 14px}
+.demo-bar button.on{background:var(--admin-sage);border-color:var(--admin-sage);color:#fff}
+.demo-note{margin-left:auto;font-size:11px;color:#a9b3a0}
+
+/* device frame */
+.stage{display:flex;justify-content:center;padding:26px 16px 80px}
+.device{background:var(--admin-cream);border:1px solid rgba(0,0,0,.15);border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 70px -40px rgba(0,0,0,.5);width:100%;max-width:1180px;transition:max-width .2s}
+.device.phone{max-width:402px}
+
+/* ===== admin shell ===== */
+.admin-header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;
+  background:var(--admin-cream-soft);border-bottom:1px solid var(--admin-line)}
+.admin-header .brand{font-family:var(--serif);font-size:20px;color:var(--admin-ink)}
+.admin-header .brand em{font-style:italic;font-weight:300;opacity:.65;margin-left:8px;font-size:16px}
+.nav-links{display:flex;gap:22px;align-items:center}
+.nav-links a{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.nav-links a.active{color:var(--admin-sage-deep)}
+.logout{background:transparent;border:1px solid var(--admin-line);color:var(--admin-ink);padding:8px 16px;
+  border-radius:999px;font-family:inherit;font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer}
+.admin-main{max-width:1180px;margin:0 auto;padding:36px 28px 60px}
+.admin-main>h1{margin-bottom:4px}
+.lede{color:var(--admin-ink-soft);margin:0 0 28px;font-size:14px}
+.admin-back-link{display:inline-flex;gap:4px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--admin-sage-deep);margin-bottom:14px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--admin-sage);color:#fff;border:1px solid var(--admin-sage);
+  padding:10px 18px;border-radius:999px;font-family:inherit;font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer}
+.btn:hover{background:var(--admin-sage-deep);border-color:var(--admin-sage-deep)}
+.btn-ghost{background:transparent;color:var(--admin-ink);border-color:var(--admin-line)}
+.btn-sm{padding:7px 12px;font-size:10px;letter-spacing:.18em}
+
+/* table */
+.admin-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--admin-line);border-radius:10px;overflow:hidden}
+.admin-table th,.admin-table td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--admin-line);font-size:14px;vertical-align:middle}
+.admin-table th{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft);background:var(--admin-cream-soft);font-weight:500}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tbody tr{cursor:pointer}
+.admin-table tbody tr:hover td{background:rgba(138,158,133,.07)}
+.row-arrow{text-align:right;color:var(--admin-sage-deep);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+.t-name{font-family:var(--serif);font-size:18px}
+.muted{color:var(--admin-ink-soft)}
+.count-note{font-size:12px;color:var(--admin-ink-soft);margin-top:12px}
+
+/* chips / badges */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:999px}
+.chip-ok{background:var(--admin-info-soft);color:var(--admin-sage-deep)}
+.chip-warn{background:var(--admin-amber-soft);color:#7a5b1a;border:1px solid #d9b87a}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.badge-confirmed{background:var(--admin-sage);color:#fff}
+.badge-pending{background:var(--admin-amber-soft);color:#6b3d0e}
+.badge-cancelled{background:var(--admin-grey-soft);color:var(--admin-ink-soft);text-decoration:line-through}
+
+/* search row */
+.search-row{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.search-box{flex:1;min-width:240px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--admin-line);
+  border-radius:10px;padding:12px 16px}
+.search-box:focus-within{border-color:var(--admin-sage)}
+.search-box input{border:none;outline:none;font-family:inherit;font-size:15px;width:100%;background:transparent;color:var(--admin-ink)}
+.search-box svg{width:18px;height:18px;color:var(--admin-ink-soft);flex:none}
+
+/* cards / sections */
+.card{background:#fff;border:1px solid var(--admin-line);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+.section-h{font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft);margin:0 0 12px}
+.profile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.profile-sub{color:var(--admin-ink-soft);font-size:14px;margin:2px 0 2px}
+.profile-stats{font-size:13px;color:var(--admin-ink-soft);margin-bottom:22px}
+.profile-stats b{color:var(--admin-sage-deep)}
+
+/* history rows (bk-card style) */
+.bk-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--admin-line);border-radius:12px;
+  padding:14px 18px;margin-bottom:10px;cursor:pointer}
+.bk-card:hover{border-color:var(--admin-sage);box-shadow:0 2px 10px rgba(28,28,28,.05)}
+.bk-card.row-cancelled{opacity:.7}
+.bk-when{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--admin-ink-soft);width:140px;flex:none}
+.bk-treat{flex:1;font-size:15px}
+.bk-price{font-variant-numeric:tabular-nums;color:var(--admin-ink-soft);width:54px}
+.bk-arrow{color:var(--admin-sage-deep)}
+
+/* questionnaire readonly */
+.q-row{display:grid;grid-template-columns:minmax(160px,1fr) 2fr;gap:6px 18px}
+.q-row dt{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--admin-ink-soft);padding-top:3px}
+.q-row dd{margin:0;font-size:15px}
+.pill{display:inline-block;padding:3px 12px;border-radius:999px;background:var(--admin-sage);color:#fff;font-size:12px}
+
+/* reviews */
+.stars{color:var(--admin-amber);letter-spacing:2px}
+.review-name{font-family:var(--serif);font-size:18px}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.field input,.field textarea{border:1px solid var(--admin-line);border-radius:8px;padding:12px 14px;font-family:inherit;font-size:15px;background:#fff;outline:none;color:var(--admin-ink)}
+.field input:focus,.field textarea:focus{border-color:var(--admin-sage)}
+.field input:disabled{background:var(--admin-cream-soft);color:var(--admin-ink)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pillrow{display:flex;flex-wrap:wrap;gap:8px}
+.gpill{border:1px solid var(--admin-line);background:#fff;border-radius:999px;padding:9px 16px;font-family:inherit;font-size:13px;cursor:pointer;color:var(--admin-ink-soft)}
+.gpill.on{background:var(--admin-sage);color:#fff;border-color:var(--admin-sage)}
+
+/* stepper */
+.steps{display:flex;align-items:center;gap:8px;margin:6px 0 22px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:8px;color:var(--admin-ink-soft);font-size:12px;letter-spacing:.04em}
+.step .dot{width:24px;height:24px;border-radius:999px;border:1px solid var(--admin-line);display:flex;align-items:center;justify-content:center;font-size:12px}
+.step.active{color:var(--admin-ink)}
+.step.active .dot{background:var(--admin-sage);color:#fff;border-color:var(--admin-sage)}
+.step.done .dot{background:var(--admin-sage-deep);color:#fff;border-color:var(--admin-sage-deep)}
+.step-bar{flex:1;min-width:18px;height:1px;background:var(--admin-line)}
+
+/* client search results within manual booking */
+.results{border:1px solid var(--admin-line);border-radius:10px;overflow:hidden;margin:4px 0 8px}
+.result{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--admin-line);cursor:pointer}
+.result:last-child{border-bottom:none}
+.result:hover{background:rgba(138,158,133,.07)}
+.result .r-main{flex:1}
+.result .r-name{font-family:var(--serif);font-size:17px}
+.result .r-meta{font-size:12px;color:var(--admin-ink-soft)}
+.or-sep{text-align:center;font-size:12px;color:var(--admin-ink-soft);margin:10px 0}
+
+/* status banners */
+.banner{border-radius:10px;padding:14px 16px;margin:6px 0 16px;border:1px solid}
+.banner-returning{background:var(--admin-info-soft);border-color:var(--admin-sage)}
+.banner-new{background:var(--admin-amber-tint);border-color:#d9b87a}
+.banner-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:.04em}
+.banner-returning .banner-head{color:var(--admin-sage-deep)}
+.banner-new .banner-head{color:#7a5b1a}
+.banner-sub{font-size:13px;color:var(--admin-ink-soft);margin-top:6px}
+.banner-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.linklike{background:none;border:none;color:var(--admin-sage-deep);font-family:inherit;font-size:12px;letter-spacing:.04em;cursor:pointer;padding:0;text-transform:uppercase}
+
+.actions{display:flex;justify-content:space-between;gap:10px;margin-top:8px}
+.hidden{display:none!important}
+
+/* calendar mini (date & time step) */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:360px}
+.cal .dow{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-ink-soft);text-align:center;padding:4px 0}
+.cal .day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid transparent;font-size:14px;cursor:pointer}
+.cal .day:hover{border-color:var(--admin-sage)}
+.cal .day.off{color:var(--admin-grey);opacity:.45}
+.cal .day.sel{background:var(--admin-sage);color:#fff}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:14px}
+.slot{border:1px solid var(--admin-line);border-radius:8px;padding:10px 6px;text-align:center;font-size:14px;cursor:pointer}
+.slot:hover{border-color:var(--admin-sage)}
+.slot.sel{background:var(--admin-sage);color:#fff;border-color:var(--admin-sage)}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.callout{background:var(--admin-cream-soft);border:1px solid var(--admin-line);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--admin-ink-soft);margin-bottom:14px}
+
+/* mobile tab bar */
+.tabbar{display:none;border-top:1px solid var(--admin-line);background:var(--admin-cream-soft)}
+.tabbar a{flex:1;text-align:center;padding:10px 4px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.tabbar a .ti{display:block;font-size:18px;margin-bottom:2px}
+.tabbar a.on{color:var(--admin-sage-deep)}
+
+/* phone view tweaks */
+.device.phone .nav-links{display:none}
+.device.phone .tabbar{display:flex}
+.device.phone .admin-main{padding:22px 16px 26px}
+.device.phone .twocol{grid-template-columns:1fr;gap:16px}
+.device.phone .frow{grid-template-columns:1fr}
+.device.phone .admin-table thead{display:none}
+.device.phone .admin-table,.device.phone .admin-table tbody,.device.phone .admin-table tr,.device.phone .admin-table td{display:block;width:100%}
+.device.phone .admin-table{background:transparent;border:none}
+.device.phone .admin-table tr{background:#fff;border:1px solid var(--admin-line);border-radius:12px;margin-bottom:12px;padding:14px 16px}
+.device.phone .admin-table td{border:none;padding:5px 0}
+.device.phone .admin-table td::before{content:attr(data-label);display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--admin-ink-soft);margin-bottom:2px}
+.device.phone .admin-table td[data-label=""]::before{display:none}
+.device.phone .bk-when{width:auto}
+.device.phone h1{font-size:30px}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <strong>Admin mock-ups</strong>
+  <button data-view="clients" class="on" onclick="showView('clients',this)">1 · Clients</button>
+  <button data-view="profile" onclick="showView('profile',this)">2 · Client profile</button>
+  <button data-view="booking" onclick="showView('booking',this)">3 · New booking</button>
+  <span class="demo-note">Toggle device:&nbsp;</span>
+  <button id="deviceBtn" onclick="toggleDevice(this)">📱 Phone view</button>
+</div>
+
+<div class="stage">
+  <div class="device" id="device">
+
+    <!-- header -->
+    <header class="admin-header">
+      <span class="brand">The Potter Sanctuary <em>— Admin</em></span>
+      <nav class="nav-links">
+        <a>Dashboard</a><a>Bookings</a>
+        <a class="active" id="navClients">Clients</a>
+        <a>Availability</a>
+      </nav>
+      <button class="logout">Log out</button>
+    </header>
+
+    <!-- ============ VIEW 1: CLIENTS LIST ============ -->
+    <main class="admin-main view" id="view-clients">
+      <h1>Clients</h1>
+      <p class="lede">Search and view client history.</p>
+
+      <div class="search-row">
+        <label class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="clientSearch" placeholder="Search name, email or phone…" oninput="filterClients(this.value)" />
+        </label>
+        <button class="btn" onclick="showView('booking')">+ New booking</button>
+      </div>
+
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Contact</th><th>Visits</th><th>Last visit</th><th>Questionnaire</th><th></th></tr></thead>
+        <tbody id="clientRows"></tbody>
+      </table>
+      <p class="count-note" id="clientCount"></p>
+    </main>
+
+    <!-- ============ VIEW 2: CLIENT PROFILE ============ -->
+    <main class="admin-main view hidden" id="view-profile">
+      <a class="admin-back-link" onclick="showView('clients')">← Clients</a>
+      <div class="profile-head">
+        <div>
+          <h1>Jane Cooper</h1>
+          <p class="profile-sub">jane@example.com · 07700 900123 · Female</p>
+        </div>
+        <button class="btn" onclick="bookFor('Jane','Cooper','jane@example.com','07700 900123')">+ Book for Jane</button>
+      </div>
+      <p class="profile-stats">Client since Mar 2026 · <b>4 visits</b> · <b>£185</b> lifetime (confirmed)</p>
+
+      <div class="card">
+        <p class="section-h">Booking history</p>
+        <div class="bk-card"><span class="bk-when">Wed 12 Jun · 14:00</span><span class="bk-treat">Hot Stones Full Body</span><span class="bk-price">£60</span><span class="badge badge-confirmed">confirmed</span><span class="bk-arrow">→</span></div>
+        <div class="bk-card"><span class="bk-when">Tue 14 May · 10:30</span><span class="bk-treat">Back, Neck &amp; Scalp</span><span class="bk-price">£25</span><span class="badge badge-confirmed">confirmed</span><span class="bk-arrow">→</span></div>
+        <div class="bk-card"><span class="bk-when">Sat 12 Apr · 11:00</span><span class="bk-treat">Full Body Aromatherapy</span><span class="bk-price">£50</span><span class="badge badge-confirmed">confirmed</span><span class="bk-arrow">→</span></div>
+        <div class="bk-card row-cancelled"><span class="bk-when">Sat 06 Apr · 16:00</span><span class="bk-treat">Full Body Aromatherapy</span><span class="bk-price">£50</span><span class="badge badge-cancelled">cancelled</span><span class="bk-arrow">→</span></div>
+        <p class="count-note">Rows open the existing booking detail page.</p>
+      </div>
+
+      <div class="card">
+        <p class="section-h">Consultation on file <span class="chip chip-ok" style="margin-left:6px">✓ Completed</span></p>
+        <dl class="q-row">
+          <dt>Completed</dt><dd>14 May 2026</dd>
+          <dt>Pressure</dt><dd><span class="pill">Firm</span></dd>
+          <dt>Focus areas</dt><dd>Back, Neck, Shoulders</dd>
+          <dt>Conditions</dt><dd>Chronic pain ✓ · Headaches/migraines ✓</dd>
+          <dt>Under medical care</dt><dd>No</dd>
+        </dl>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px">View full questionnaire</button>
+      </div>
+
+      <div class="card" style="margin-bottom:0">
+        <p class="section-h">Reviews</p>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+          <span class="review-name">Jane Cooper</span><span class="muted" style="font-size:12px">12 Jun 2026 · Hot Stones Full Body</span>
+        </div>
+        <p class="stars">★★★★★</p>
+        <p style="margin:4px 0 0">“Wonderful, so relaxing — already booked my next one.”</p>
+      </div>
+    </main>
+
+    <!-- ============ VIEW 3: NEW MANUAL BOOKING ============ -->
+    <main class="admin-main view hidden" id="view-booking">
+      <a class="admin-back-link" onclick="showView('clients')">← Bookings</a>
+      <h1>New booking</h1>
+      <p class="lede">Take a booking for a client who can’t use the website. It’s confirmed straight away and the client gets the usual confirmation email.</p>
+
+      <div class="steps">
+        <span class="step done"><span class="dot">✓</span>Treatment</span><span class="step-bar"></span>
+        <span class="step done"><span class="dot">✓</span>Date &amp; time</span><span class="step-bar"></span>
+        <span class="step active"><span class="dot">3</span>Client</span><span class="step-bar"></span>
+        <span class="step"><span class="dot">4</span>Confirm</span>
+      </div>
+
+      <div class="callout">Selected: <b>Hot Stones Full Body</b> · <b>Fri 26 Jun · 13:00</b> · 60 min · £60 &nbsp; <button class="linklike">change</button></div>
+
+      <div class="card">
+        <p class="section-h">Client</p>
+
+        <label class="search-box" style="margin-bottom:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="mbSearch" placeholder="Search existing client (name, email, phone)…" oninput="mbSearch(this.value)" />
+        </label>
+        <div id="mbResults" class="results hidden"></div>
+        <p class="or-sep">— or enter details below for a new client —</p>
+
+        <!-- returning banner -->
+        <div id="bannerReturning" class="banner banner-returning hidden">
+          <div class="banner-head">✓ Returning client — <span id="brName">Jane Cooper</span></div>
+          <div class="banner-sub" id="brSub">4 previous visits · questionnaire ✓ on file</div>
+          <div class="field" id="brToggle" style="margin:12px 0 0">
+            <label>Have their consultation details changed?</label>
+            <div class="pillrow">
+              <button class="gpill on" onclick="pick(this)">No, nothing changed</button>
+              <button class="gpill" onclick="pick(this)">Yes, send the questionnaire</button>
+            </div>
+          </div>
+          <div class="banner-actions">
+            <button class="linklike" onclick="showView('profile')">View client history →</button>
+            <button class="linklike" onclick="clearClient()">Clear / new client</button>
+          </div>
+        </div>
+
+        <!-- new banner -->
+        <div id="bannerNew" class="banner banner-new hidden">
+          <div class="banner-head">＋ New client — a record will be created on booking</div>
+          <div class="banner-sub">No match for these details. The confirmation email will include the consultation questionnaire link.</div>
+        </div>
+
+        <div class="field" style="margin-top:4px">
+          <label>Gender</label>
+          <div class="pillrow">
+            <button class="gpill on" onclick="pick(this)">Female</button>
+            <button class="gpill" onclick="pick(this)">Male</button>
+            <button class="gpill" onclick="pick(this)">Non-binary</button>
+            <button class="gpill" onclick="pick(this)">Prefer not to say</button>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>First name</label><input id="fName" placeholder="First name" oninput="detect()"></div>
+          <div class="field"><label>Last name</label><input id="lName" placeholder="Last name" oninput="detect()"></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label>Phone</label><input id="fPhone" placeholder="07000 000 000" oninput="detect()"></div>
+          <div class="field"><label>Email</label><input id="fEmail" placeholder="you@example.com" oninput="detect()"></div>
+        </div>
+        <div class="field"><label>Message <span class="muted" style="text-transform:none;letter-spacing:0">(optional)</span></label><textarea rows="2" placeholder="Anything to note — areas to avoid, scent preferences…"></textarea></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-ghost">← Back</button>
+        <button class="btn">Confirm &amp; send email →</button>
+      </div>
+      <p class="count-note">“Book any time” — you can choose closed days / off-hours; a real clash with another appointment is blocked. A confirmed booking is removed from website availability automatically.</p>
+    </main>
+
+    <!-- mobile tab bar -->
+    <nav class="tabbar">
+      <a><span class="ti">▦</span>Dash</a>
+      <a><span class="ti">≣</span>Bookings</a>
+      <a class="on"><span class="ti">☺</span>Clients</a>
+      <a><span class="ti">▤</span>Avail</a>
+    </nav>
+
+  </div>
+</div>
+
+<script>
+/* ---- sample data ---- */
+const CLIENTS=[
+  {f:'Jane',l:'Cooper',email:'jane@example.com',phone:'07700 900123',visits:4,last:'12 Jun 26',q:true},
+  {f:'Mark',l:'Bell',email:'mark.bell@gmail.com',phone:'07811 222333',visits:1,last:'02 Jun 26',q:false},
+  {f:'Priya',l:'Shah',email:'priya.shah@outlook.com',phone:'07900 111222',visits:7,last:'28 May 26',q:true},
+  {f:'Tom',l:'Reeves',email:'t.reeves@me.com',phone:'07444 556677',visits:2,last:'19 May 26',q:true},
+  {f:'Aisha',l:'Khan',email:'aisha.k@yahoo.com',phone:'07555 998877',visits:3,last:'11 May 26',q:false},
+];
+function norm(p){return (p||'').replace(/\D/g,'').replace(/^0044/,'0').replace(/^44(\d{10})$/,'0$1');}
+
+/* ---- clients list ---- */
+function rowHtml(c){
+  const q = c.q?'<span class="chip chip-ok">✓ Yes</span>':'<span class="chip chip-warn">— Not yet</span>';
+  return `<tr onclick="showView('profile')">
+    <td data-label="Name"><span class="t-name">${c.f} ${c.l}</span></td>
+    <td data-label="Contact"><span class="muted">${c.email}<br>${c.phone}</span></td>
+    <td data-label="Visits">${c.visits}</td>
+    <td data-label="Last visit">${c.last}</td>
+    <td data-label="Questionnaire">${q}</td>
+    <td data-label="" class="row-arrow">Open →</td></tr>`;
+}
+function filterClients(q){
+  q=(q||'').trim().toLowerCase(); const nq=norm(q);
+  const list=CLIENTS.filter(c=>{
+    if(!q) return true;
+    const name=(c.f+' '+c.l).toLowerCase();
+    const phoneMatch=nq && norm(c.phone).includes(nq);
+    return name.includes(q)||c.email.toLowerCase().includes(q)||phoneMatch;
+  });
+  document.getElementById('clientRows').innerHTML=list.map(rowHtml).join('')||
+    `<tr><td colspan="6" class="muted" style="padding:22px">No clients match “${q}”.</td></tr>`;
+  document.getElementById('clientCount').textContent=`Showing ${list.length} of ${CLIENTS.length}`;
+}
+
+/* ---- manual booking: search + returning detection ---- */
+function mbSearch(q){
+  q=(q||'').trim().toLowerCase(); const nq=norm(q);
+  const box=document.getElementById('mbResults');
+  if(!q){box.classList.add('hidden');box.innerHTML='';return;}
+  const list=CLIENTS.filter(c=>{
+    const name=(c.f+' '+c.l).toLowerCase();
+    return name.includes(q)||c.email.toLowerCase().includes(q)||(nq&&norm(c.phone).includes(nq));
+  });
+  box.classList.remove('hidden');
+  box.innerHTML=list.length?list.map((c,i)=>`<div class="result" onclick='selectClient(${JSON.stringify(c)})'>
+      <div class="r-main"><div class="r-name">${c.f} ${c.l}</div><div class="r-meta">${c.email} · ${c.phone}</div></div>
+      <button class="btn btn-sm">Select</button></div>`).join('')
+    :`<div class="result"><div class="r-main muted">No match — fill in the details to create a new client.</div></div>`;
+}
+function selectClient(c){
+  document.getElementById('fName').value=c.f;
+  document.getElementById('lName').value=c.l;
+  document.getElementById('fPhone').value=c.phone;
+  document.getElementById('fEmail').value=c.email;
+  document.getElementById('mbResults').classList.add('hidden');
+  document.getElementById('mbSearch').value=c.f+' '+c.l;
+  showReturning(c);
+}
+function showReturning(c){
+  document.getElementById('brName').textContent=c.f+' '+c.l;
+  document.getElementById('brSub').textContent=`${c.visits} previous visit${c.visits===1?'':'s'} · questionnaire ${c.q?'✓ on file':'— not completed'}`;
+  document.getElementById('brToggle').style.display=c.q?'flex':'none';
+  document.getElementById('bannerReturning').classList.remove('hidden');
+  document.getElementById('bannerNew').classList.add('hidden');
+}
+function clearClient(){
+  ['fName','lName','fPhone','fEmail','mbSearch'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bannerReturning').classList.add('hidden');
+  document.getElementById('bannerNew').classList.add('hidden');
+}
+function detect(){
+  const email=document.getElementById('fEmail').value.trim().toLowerCase();
+  const phone=norm(document.getElementById('fPhone').value);
+  let match=null;
+  if(/\S+@\S+\.\S+/.test(email)) match=CLIENTS.find(c=>c.email.toLowerCase()===email);
+  if(!match && phone.length>=10) match=CLIENTS.find(c=>norm(c.phone)===phone);
+  if(match){showReturning(match);}
+  else{
+    const enough=document.getElementById('fName').value && (/\S+@\S+\.\S+/.test(email)||phone.length>=10);
+    document.getElementById('bannerReturning').classList.add('hidden');
+    document.getElementById('bannerNew').classList.toggle('hidden',!enough);
+  }
+}
+function bookFor(f,l,email,phone){showView('booking');selectClient({f,l,email,phone,visits:4,q:true});}
+function pick(btn){[...btn.parentElement.children].forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+
+/* ---- view + device switching ---- */
+function showView(v,btn){
+  document.querySelectorAll('.view').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('view-'+v).classList.remove('hidden');
+  document.querySelectorAll('.demo-bar [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleDevice(btn){
+  const d=document.getElementById('device');d.classList.toggle('phone');
+  btn.textContent=d.classList.contains('phone')?'🖥 Desktop view':'📱 Phone view';
+}
+filterClients('');
+</script>
+</body>
+</html>
