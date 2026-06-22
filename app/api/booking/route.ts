@@ -8,6 +8,7 @@ import { siteConfig } from "@/lib/site";
 import { validateSlotAvailable } from "@/lib/availability";
 import { services } from "@/lib/services";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
+import { normalizePhone } from "@/lib/phone";
 
 type Payload = {
   date: string;
@@ -101,33 +102,65 @@ export async function POST(req: Request) {
   }
 
   // Look up or create the customer record so every booking is linked to one.
-  // Atomic upsert on the unique email: two concurrent first-time bookings from
-  // the same address both resolve to the SAME row (the racy select→insert used
-  // here previously left the loser's booking with customer_id = NULL when its
-  // insert hit the unique constraint). Existing customers get their basic
-  // fields refreshed, same as before.
   let customerId: string | null = null;
-  const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
+
+  // Phone reconciliation — a SECOND exact-match key. It only matters when this
+  // email is brand new: a typo'd email won't match an existing row, but the
+  // (correct) phone can, so we reuse that customer instead of creating a
+  // phantom. Matching is on the deterministically-normalized phone (see
+  // lib/phone.ts + the phone_normalized generated column).
+  const phoneNorm = normalizePhone(payload.phone);
+  const { data: emailMatch } = await supabaseAdmin
     .from("customers")
-    .upsert(
-      {
-        email: emailLower,
-        full_name: fullName,
-        first_name: payload.fname,
-        last_name: payload.lname,
-        phone_number: payload.phone,
-        gender: payload.gender ?? null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "email" }
-    )
     .select("id")
-    .single();
-  if (customerError) {
-    // Booking still proceeds (unlinked) — the linkage is repairable later.
-    console.error("[booking] customer upsert failed", customerError);
-  } else {
-    customerId = upsertedCustomer.id;
+    .eq("email", emailLower)
+    .maybeSingle();
+
+  if (!emailMatch && phoneNorm) {
+    const { data: phoneMatches } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("phone_normalized", phoneNorm)
+      .limit(2);
+    // Exactly one match → confident reuse. Two+ rows share this phone (e.g. a
+    // couple/family on one number) → ambiguous; do NOT guess which person it
+    // is, fall through and create/refresh by email instead.
+    if (phoneMatches && phoneMatches.length === 1) {
+      customerId = phoneMatches[0].id;
+      // Deliberately DO NOT update this row: keep customers.email + name
+      // canonical. The typo'd email/phone/name live only on the booking row.
+    }
+  }
+
+  if (!customerId) {
+    // Common path (genuinely new customer, or an existing email): atomic upsert
+    // on the unique email. Two concurrent first-time bookings from the same
+    // address both resolve to the SAME row (the racy select→insert used here
+    // previously left the loser's booking with customer_id = NULL when its
+    // insert hit the unique constraint). Existing customers get their basic
+    // fields refreshed, same as before.
+    const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
+      .from("customers")
+      .upsert(
+        {
+          email: emailLower,
+          full_name: fullName,
+          first_name: payload.fname,
+          last_name: payload.lname,
+          phone_number: payload.phone,
+          gender: payload.gender ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "email" }
+      )
+      .select("id")
+      .single();
+    if (customerError) {
+      // Booking still proceeds (unlinked) — the linkage is repairable later.
+      console.error("[booking] customer upsert failed", customerError);
+    } else {
+      customerId = upsertedCustomer.id;
+    }
   }
 
   const { data: inserted, error: insertError } = await supabaseAdmin

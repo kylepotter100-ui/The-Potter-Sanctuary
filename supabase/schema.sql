@@ -43,6 +43,28 @@ CREATE TABLE IF NOT EXISTS public.customers (
 CREATE INDEX IF NOT EXISTS customers_email_idx   ON public.customers (email);
 CREATE INDEX IF NOT EXISTS customers_user_id_idx ON public.customers (user_id);
 
+-- Normalized phone — a SECOND exact-match key for customer identity so a typo'd
+-- email still matches a returning customer via their (correct) phone. STORED
+-- generated column: auto-populates for every existing row on ALTER and stays
+-- correct for future writes with zero app bookkeeping. The expression mirrors
+-- lib/phone.ts `normalizePhone` (digits-only, then collapse +44/0044 to the
+-- trunk "0"); the two MUST stay in lockstep or lookups silently miss.
+ALTER TABLE public.customers
+  ADD COLUMN IF NOT EXISTS phone_normalized text GENERATED ALWAYS AS (
+    CASE
+      WHEN regexp_replace(phone_number, '[^0-9]', '', 'g') LIKE '0044%'
+        THEN '0' || substring(regexp_replace(phone_number, '[^0-9]', '', 'g') from 5)
+      WHEN regexp_replace(phone_number, '[^0-9]', '', 'g') LIKE '44%'
+        AND length(regexp_replace(phone_number, '[^0-9]', '', 'g')) = 12
+        THEN '0' || substring(regexp_replace(phone_number, '[^0-9]', '', 'g') from 3)
+      ELSE regexp_replace(phone_number, '[^0-9]', '', 'g')
+    END
+  ) STORED;
+
+CREATE INDEX IF NOT EXISTS customers_phone_normalized_idx
+  ON public.customers (phone_normalized)
+  WHERE phone_normalized <> '';
+
 -- ===== bookings =====
 CREATE TABLE IF NOT EXISTS public.bookings (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
