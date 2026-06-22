@@ -59,8 +59,29 @@ const TABS: Tab[] = [
     ),
   },
   {
+    href: "/admin/clients",
+    label: "Clients",
+    isActive: (p) => p.startsWith("/admin/clients"),
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" />
+      </svg>
+    ),
+  },
+  {
     href: "/admin/availability",
-    label: "Availability",
+    // Shortened so four tabs sit comfortably on a phone (the bottom bar is
+    // mobile/PWA only).
+    label: "Avail.",
     isActive: (p) => p.startsWith("/admin/availability"),
     icon: (
       <svg

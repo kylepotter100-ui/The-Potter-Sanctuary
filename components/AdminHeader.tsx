@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 type Props = {
-  active?: "dashboard" | "bookings" | "availability";
+  active?: "dashboard" | "bookings" | "clients" | "availability";
 };
 
 export default function AdminHeader({ active }: Props) {
@@ -22,6 +22,12 @@ export default function AdminHeader({ active }: Props) {
           className={active === "bookings" ? "active" : undefined}
         >
           Bookings
+        </Link>
+        <Link
+          href="/admin/clients"
+          className={active === "clients" ? "active" : undefined}
+        >
+          Clients
         </Link>
         <Link
           href="/admin/availability"

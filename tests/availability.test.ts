@@ -154,3 +154,72 @@ describe("isCandidateValid", () => {
     ).toBe(true);
   });
 });
+
+describe("candidateRejection — admin 'book anytime' mode", () => {
+  // Admin mode = manual booking by the owner: open-set, closing-time and
+  // opening-time rules are skipped (any day, any time of day), but the overlap
+  // guard MUST still hold.
+
+  it("allows an out-of-hours start (before opening) that is normally 'closing'", () => {
+    expect(
+      candidateRejection({
+        openSet: new Set(),
+        existing: [],
+        start: "08:00",
+        duration: 60,
+        adminMode: true,
+      })
+    ).toBeNull();
+  });
+
+  it("allows a late session that would finish past close", () => {
+    expect(
+      candidateRejection({
+        openSet: new Set(),
+        existing: [],
+        start: "20:00",
+        duration: 60,
+        adminMode: true,
+      })
+    ).toBeNull();
+  });
+
+  it("allows a start not in the open set (closed day) — empty open set is fine", () => {
+    expect(
+      candidateRejection({
+        openSet: new Set(),
+        existing: [],
+        start: "13:00",
+        duration: 30,
+        adminMode: true,
+      })
+    ).toBeNull();
+  });
+
+  it("STILL rejects a real clash with an existing booking", () => {
+    // Existing 60-min at 14:00 reserves [14:00, 15:15). A 30-min at 14:30
+    // intersects it and must be rejected even in admin mode.
+    expect(
+      candidateRejection({
+        openSet: new Set(),
+        existing: [{ time: "14:00", duration_minutes: 60 }],
+        start: "14:30",
+        duration: 30,
+        adminMode: true,
+      })
+    ).toBe("overlap");
+  });
+
+  it("allows a back-to-back start once the buffer has cleared (no overlap)", () => {
+    // [14:00,15:15) reserved → 15:15 is the first clear start.
+    expect(
+      candidateRejection({
+        openSet: new Set(),
+        existing: [{ time: "14:00", duration_minutes: 60 }],
+        start: "15:15",
+        duration: 30,
+        adminMode: true,
+      })
+    ).toBeNull();
+  });
+});
