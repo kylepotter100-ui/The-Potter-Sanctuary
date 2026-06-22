@@ -5,6 +5,7 @@ import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
 import RequestReviewButton from "@/components/RequestReviewButton";
 import { supabaseAdmin } from "@/lib/supabase";
 import { customerHasReviewed } from "@/lib/reviews";
+import { resolveBack } from "@/lib/admin-back";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -80,13 +81,18 @@ function fmtShortDate(d: string | null): string {
 }
 
 type Params = Promise<{ id: string }>;
+type SearchParams = Promise<{ from?: string }>;
 
 export default async function AdminBookingDetailPage({
   params,
+  searchParams,
 }: {
   params: Params;
+  searchParams: SearchParams;
 }) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const back = resolveBack(from);
 
   if (!supabaseAdmin) {
     return (
@@ -123,8 +129,8 @@ export default async function AdminBookingDetailPage({
         <AdminHeader active="bookings" />
         <main className="admin-main">
           <p style={{ marginBottom: 8 }}>
-            <Link href="/admin/bookings" className="account-link">
-              ← Back to bookings
+            <Link href={back.href} className="admin-back-link">
+              ← Back to {back.label}
             </Link>
           </p>
           <h1>Booking not found</h1>
@@ -180,8 +186,8 @@ export default async function AdminBookingDetailPage({
       <AdminHeader active="bookings" />
       <main className="admin-main">
         <p style={{ marginBottom: 8 }}>
-          <Link href="/admin/bookings" className="admin-back-link">
-            ← Back to bookings
+          <Link href={back.href} className="admin-back-link">
+            ← Back to {back.label}
           </Link>
         </p>
         <h1>

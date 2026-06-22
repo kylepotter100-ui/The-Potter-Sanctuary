@@ -160,8 +160,15 @@ export default async function BookingsPage({
     <>
       <AdminHeader active="bookings" />
       <main className="admin-main">
-        <h1>Bookings</h1>
-        <p className="lede">Tap a booking to manage.</p>
+        <div className="admin-title-row">
+          <div>
+            <h1>Bookings</h1>
+            <p className="lede">Tap a booking to manage.</p>
+          </div>
+          <Link href="/admin/bookings/new" className="btn">
+            + New booking
+          </Link>
+        </div>
 
         {outstandingCount > 0 && (
           <Link href="/admin/reviews/outstanding" className="review-banner">

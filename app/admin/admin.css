@@ -1675,3 +1675,193 @@
 }
 .sk-stack { display: flex; flex-direction: column; gap: 10px; }
 .sk-card { margin-bottom: 12px; }
+
+/* =====================================================================
+   Clients screens + manual booking (admin). Reuses the existing tokens.
+   ===================================================================== */
+
+/* Title row with a trailing action button (Bookings, Clients, profile). */
+.admin-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.admin-title-row .lede { margin-bottom: 18px; }
+
+/* Search row + box (Clients list, manual booking). */
+.admin-search-row { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.admin-search {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 11px 15px;
+}
+.admin-search:focus-within { border-color: var(--admin-sage); }
+.admin-search svg { width: 18px; height: 18px; color: var(--admin-ink-soft); flex: none; }
+.admin-search input { border: none; outline: none; background: transparent; font-family: inherit; font-size: 15px; width: 100%; color: var(--admin-ink); }
+
+.t-name { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 18px; }
+.profile-sub { color: var(--admin-ink-soft); font-size: 14px; margin: 2px 0; }
+.profile-stats { font-size: 13px; color: var(--admin-ink-soft); margin: 6px 0 24px; }
+.profile-stats b { color: var(--admin-sage-deep); }
+.count-note { font-size: 12px; color: var(--admin-ink-soft); margin-top: 12px; }
+.stars { color: var(--admin-amber); letter-spacing: 2px; }
+
+/* Gender pills + generic pill row (admin-scoped). */
+.pillrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.gender-pill {
+  border: 1px solid var(--admin-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--admin-ink-soft);
+}
+.gender-pill:hover { border-color: var(--admin-sage); }
+.gender-pill.active { background: var(--admin-sage); color: #fff; border-color: var(--admin-sage); }
+
+/* ----- Manual booking flow ----- */
+.mb-flow .contents { display: contents; }
+.mb-steps { display: flex; align-items: center; gap: 8px; margin: 4px 0 20px; flex-wrap: wrap; }
+.mb-step { display: flex; align-items: center; gap: 8px; color: var(--admin-ink-soft); font-size: 12px; }
+.mb-step .mb-dot {
+  width: 24px; height: 24px; border-radius: 999px;
+  border: 1px solid var(--admin-line);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.mb-step.active { color: var(--admin-ink); }
+.mb-step.active .mb-dot { background: var(--admin-sage); color: #fff; border-color: var(--admin-sage); }
+.mb-step.done .mb-dot { background: var(--admin-sage-deep); color: #fff; border-color: var(--admin-sage-deep); }
+.mb-step-bar { flex: 1; min-width: 12px; height: 1px; background: var(--admin-line); }
+.mb-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; }
+
+/* Treatment picker */
+.svc-pick-list { display: flex; flex-direction: column; gap: 10px; }
+.svc-pick {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  border: 1px solid var(--admin-line); background: #fff; border-radius: 10px;
+  padding: 14px 16px; cursor: pointer; font-family: inherit;
+}
+.svc-pick:hover { border-color: var(--admin-sage); }
+.svc-pick.is-on { border-color: var(--admin-sage); background: var(--admin-info-soft); }
+.svc-pick-num { font-family: var(--font-serif), 'Cormorant Garamond', serif; color: var(--admin-sage-deep); font-size: 18px; width: 26px; flex: none; }
+.svc-pick-name { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 18px; line-height: 1.1; display: block; }
+.svc-pick-dur { font-size: 12px; color: var(--admin-ink-soft); margin-top: 2px; display: block; }
+.svc-pick-price { margin-left: auto; font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 21px; }
+
+/* Date & time */
+.mb-twocol { display: grid; grid-template-columns: minmax(0, 340px) 1fr; gap: 28px; }
+.mb-cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.mb-cal-month { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 20px; }
+.mb-cal-nav button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--admin-line); background: #fff; color: var(--admin-sage-deep); cursor: pointer; font-size: 16px; }
+.mb-cal-nav button:hover { border-color: var(--admin-sage); }
+.mb-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.mb-dow { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--admin-ink-soft); text-align: center; padding: 4px 0; }
+.mb-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid transparent; font-size: 14px; }
+.mb-day.in { cursor: pointer; }
+.mb-day.in:hover { border-color: var(--admin-sage); }
+.mb-day.off { color: var(--admin-grey); opacity: 0.4; cursor: not-allowed; }
+.mb-day.blank { cursor: default; }
+.mb-day.sel { background: var(--admin-sage); color: #fff; }
+.mb-anytime { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--admin-ink-soft); margin-top: 14px; cursor: pointer; }
+.mb-slots-h { font-size: 13px; color: var(--admin-ink-soft); margin: 0 0 10px; }
+.mb-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.mb-slot { border: 1px solid var(--admin-line); border-radius: 8px; padding: 10px 6px; text-align: center; font-size: 14px; cursor: pointer; background: #fff; font-family: inherit; color: var(--admin-ink); }
+.mb-slot:hover { border-color: var(--admin-sage); }
+.mb-slot.sel { background: var(--admin-sage); color: #fff; border-color: var(--admin-sage); }
+.mb-slot.off-hours { border-style: dashed; color: #7a5b1a; }
+
+/* Client search results */
+.mb-results { border: 1px solid var(--admin-line); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+.mb-result { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; border: none; border-bottom: 1px solid var(--admin-line); background: #fff; cursor: pointer; font-family: inherit; color: var(--admin-ink); }
+.mb-result:last-child { border-bottom: none; }
+.mb-result:hover { background: rgba(138, 158, 133, 0.07); }
+.mb-result.muted { color: var(--admin-ink-soft); cursor: default; }
+.mb-result-main { flex: 1; display: flex; flex-direction: column; }
+.mb-result-name { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 17px; }
+.mb-result-meta { font-size: 12px; color: var(--admin-ink-soft); }
+.mb-or { text-align: center; font-size: 12px; color: var(--admin-ink-soft); margin: 10px 0; }
+
+/* Returning / new banners */
+.mb-banner { border-radius: 10px; padding: 14px 16px; margin: 6px 0 16px; border: 1px solid; }
+.mb-banner-returning { background: var(--admin-info-soft); border-color: var(--admin-sage); }
+.mb-banner-new { background: var(--admin-amber-tint); border-color: #d9b87a; }
+.mb-banner-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+.mb-banner-returning .mb-banner-head { color: var(--admin-sage-deep); }
+.mb-banner-new .mb-banner-head { color: #7a5b1a; }
+.mb-banner-sub { font-size: 13px; color: var(--admin-ink-soft); margin-top: 6px; }
+.mb-banner-actions { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+.linklike { background: none; border: none; color: var(--admin-sage-deep); font-family: inherit; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; padding: 0; }
+.linklike:hover { color: var(--admin-ink); }
+
+.mb-frow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Confirm summary + success */
+.mb-sum { border: 1px solid var(--admin-line); border-radius: 10px; overflow: hidden; margin: 8px 0 16px; }
+.mb-sum .row { display: flex; justify-content: space-between; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--admin-line); font-size: 15px; }
+.mb-sum .row:last-child { border-bottom: none; }
+.mb-sum .l { color: var(--admin-ink-soft); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; align-self: center; }
+.mb-sum .r { text-align: right; }
+.mb-success { text-align: center; }
+.mb-check {
+  width: 64px; height: 64px; margin: 4px auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--admin-info-soft); color: var(--admin-sage-deep); font-size: 34px;
+}
+
+@media (max-width: 720px) {
+  .mb-twocol { grid-template-columns: 1fr; gap: 18px; }
+  .mb-frow { grid-template-columns: 1fr; }
+  .mb-step-lbl { display: none; }
+  .mb-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* =====================================================================
+   Round 2 testing fixes
+   ===================================================================== */
+
+/* Anchor buttons: .admin-shell a (sage-deep) out-specifies .btn (#fff), so
+   <Link className="btn"> rendered dark text on sage. Restore the intended
+   colours per variant (mirrors the .review-banner override above). */
+.admin-shell a.btn,
+.admin-shell a.btn:hover { color: #fff; }
+.admin-shell a.btn-ghost { color: var(--admin-ink); }
+.admin-shell a.btn-ghost:hover { color: var(--admin-cream); }
+.admin-shell a.btn-danger { color: var(--admin-error); }
+.admin-shell a.btn-danger:hover { color: #fff; }
+
+/* PWA bottom nav: make all four tabs strictly equal width. Without min-width:0
+   a flex item won't shrink below its content, so the longest label ("Bookings")
+   made its cell wider than the rest. Trim the pill padding for four cells and
+   keep labels from forcing width. */
+.admin-tab { flex: 1 1 0; min-width: 0; }
+.admin-tab-inner { padding: 6px 10px; max-width: 100%; }
+.admin-tab-label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On phones the title-row action button stacks full-width BELOW the heading +
+   lede (so "+ New booking" sits between the lede and the search box, not on top
+   of it). Desktop keeps the button top-right. */
+@media (max-width: 720px) {
+  .admin-title-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .admin-title-row .lede { margin-bottom: 0; }
+  .admin-title-row .btn { width: 100%; justify-content: center; }
+}

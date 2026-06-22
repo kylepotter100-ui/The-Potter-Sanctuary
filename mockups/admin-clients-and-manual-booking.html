@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin mock-ups — Clients & Manual Booking (full)</title>
+<style>
+/* ===== Tokens copied from app/admin/admin.css ===== */
+:root{
+  --admin-sage:#8a9e85; --admin-sage-deep:#6e8068; --admin-cream:#f5f0e8;
+  --admin-cream-soft:#fbf7ec; --admin-ink:#1c1c1c; --admin-ink-soft:#4a4a4a;
+  --admin-line:rgba(28,28,28,.12); --admin-amber:#c98a2c; --admin-amber-soft:#f5e7c8;
+  --admin-amber-tint:rgba(201,138,44,.06); --admin-grey:#8a8a8a; --admin-grey-soft:#e0ddd5;
+  --admin-error:#b04a3a; --admin-info-soft:#e8efe5;
+  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --sans:'Lora',Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#e7e0d2;color:var(--admin-ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.005em;color:var(--admin-ink);line-height:1.15;margin:0}
+h1{font-size:36px}h2{font-size:28px}h3{font-size:22px}
+a{color:var(--admin-sage-deep);text-decoration:none;cursor:pointer}
+
+/* demo chrome (not product) */
+.demo-bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#23291f;color:#e7e0d2}
+.demo-bar strong{font-family:var(--serif);font-size:16px;margin-right:8px}
+.demo-bar button{font-family:var(--sans);font-size:12px;letter-spacing:.04em;cursor:pointer;border:1px solid #4c5544;background:transparent;color:#dfe6da;border-radius:999px;padding:6px 14px}
+.demo-bar button.on{background:var(--admin-sage);border-color:var(--admin-sage);color:#fff}
+.demo-note{margin-left:auto;font-size:11px;color:#a9b3a0}
+
+.stage{display:flex;justify-content:center;padding:26px 16px 90px}
+.device{position:relative;background:var(--admin-cream);border:1px solid rgba(0,0,0,.15);border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -40px rgba(0,0,0,.5);width:100%;max-width:1180px;transition:max-width .2s}
+.device.phone{max-width:402px;border-radius:38px;border:10px solid #15140f;padding-bottom:0}
+
+/* iOS status bar + notch (phone only) */
+.device-top{display:none}
+.device.phone .device-top{display:flex;justify-content:space-between;align-items:center;padding:10px 26px 6px;background:var(--admin-cream-soft);font-size:13px;font-weight:700;position:relative}
+.device.phone .device-top::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:130px;height:20px;background:#15140f;border-radius:0 0 16px 16px}
+.dt-batt{display:inline-flex;gap:5px;align-items:center}
+
+/* header */
+.admin-header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;background:var(--admin-cream-soft);border-bottom:1px solid var(--admin-line)}
+.admin-header .brand{font-family:var(--serif);font-size:20px;color:var(--admin-ink)}
+.admin-header .brand em{font-style:italic;font-weight:300;opacity:.65;margin-left:8px;font-size:16px}
+.nav-links{display:flex;gap:22px;align-items:center}
+.nav-links a{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.nav-links a.active{color:var(--admin-sage-deep)}
+.logout{background:transparent;border:1px solid var(--admin-line);color:var(--admin-ink);padding:8px 16px;border-radius:999px;font-family:inherit;font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer}
+.admin-main{max-width:1180px;margin:0 auto;padding:36px 28px 60px}
+.admin-main>h1{margin-bottom:4px}
+.lede{color:var(--admin-ink-soft);margin:0 0 28px;font-size:14px}
+.admin-back-link{display:inline-flex;gap:4px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--admin-sage-deep);margin-bottom:14px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--admin-sage);color:#fff;border:1px solid var(--admin-sage);padding:10px 18px;border-radius:999px;font-family:inherit;font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer}
+.btn:hover{background:var(--admin-sage-deep);border-color:var(--admin-sage-deep)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--admin-ink);border-color:var(--admin-line)}
+.btn-ghost:hover{background:var(--admin-ink);color:var(--admin-cream)}
+.btn-sm{padding:7px 12px;font-size:10px;letter-spacing:.18em}
+
+/* table */
+.admin-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--admin-line);border-radius:10px;overflow:hidden}
+.admin-table th,.admin-table td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--admin-line);font-size:14px;vertical-align:middle}
+.admin-table th{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft);background:var(--admin-cream-soft);font-weight:500}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tbody tr{cursor:pointer}
+.admin-table tbody tr:hover td{background:rgba(138,158,133,.07)}
+.row-arrow{text-align:right;color:var(--admin-sage-deep);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+.t-name{font-family:var(--serif);font-size:18px}
+.muted{color:var(--admin-ink-soft)}
+.count-note{font-size:12px;color:var(--admin-ink-soft);margin-top:12px}
+
+/* chips / badges */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:999px}
+.chip-ok{background:var(--admin-info-soft);color:var(--admin-sage-deep)}
+.chip-warn{background:var(--admin-amber-soft);color:#7a5b1a;border:1px solid #d9b87a}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.badge-confirmed{background:var(--admin-sage);color:#fff}
+.badge-pending{background:var(--admin-amber-soft);color:#6b3d0e}
+.badge-cancelled{background:var(--admin-grey-soft);color:var(--admin-ink-soft);text-decoration:line-through}
+
+/* search */
+.search-row{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.search-box{flex:1;min-width:220px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--admin-line);border-radius:10px;padding:12px 16px}
+.search-box:focus-within{border-color:var(--admin-sage)}
+.search-box input{border:none;outline:none;font-family:inherit;font-size:15px;width:100%;background:transparent;color:var(--admin-ink)}
+.search-box svg{width:18px;height:18px;color:var(--admin-ink-soft);flex:none}
+
+/* cards */
+.card{background:#fff;border:1px solid var(--admin-line);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+.section-h{font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft);margin:0 0 12px}
+.profile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.profile-sub{color:var(--admin-ink-soft);font-size:14px;margin:2px 0}
+.profile-stats{font-size:13px;color:var(--admin-ink-soft);margin-bottom:22px}
+.profile-stats b{color:var(--admin-sage-deep)}
+
+/* history rows */
+.bk-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--admin-line);border-radius:12px;padding:14px 18px;margin-bottom:10px;cursor:pointer}
+.bk-card:hover{border-color:var(--admin-sage);box-shadow:0 2px 10px rgba(28,28,28,.05)}
+.bk-card.row-cancelled{opacity:.7}
+.bk-when{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--admin-ink-soft);width:140px;flex:none}
+.bk-treat{flex:1;font-size:15px}
+.bk-price{font-variant-numeric:tabular-nums;color:var(--admin-ink-soft);width:54px}
+.bk-arrow{color:var(--admin-sage-deep)}
+
+/* questionnaire readonly */
+.q-row{display:grid;grid-template-columns:minmax(150px,1fr) 2fr;gap:6px 18px}
+.q-row dt{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--admin-ink-soft);padding-top:3px}
+.q-row dd{margin:0;font-size:15px}
+.pill{display:inline-block;padding:3px 12px;border-radius:999px;background:var(--admin-sage);color:#fff;font-size:12px}
+.stars{color:var(--admin-amber);letter-spacing:2px}
+.review-name{font-family:var(--serif);font-size:18px}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.field input,.field textarea{border:1px solid var(--admin-line);border-radius:8px;padding:12px 14px;font-family:inherit;font-size:15px;background:#fff;outline:none;color:var(--admin-ink)}
+.field input:focus,.field textarea:focus{border-color:var(--admin-sage)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pillrow{display:flex;flex-wrap:wrap;gap:8px}
+.gpill{border:1px solid var(--admin-line);background:#fff;border-radius:999px;padding:9px 16px;font-family:inherit;font-size:13px;cursor:pointer;color:var(--admin-ink-soft)}
+.gpill.on{background:var(--admin-sage);color:#fff;border-color:var(--admin-sage)}
+
+/* treatment options */
+.svc-option{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid var(--admin-line);background:#fff;border-radius:10px;padding:14px 16px;cursor:pointer;margin-bottom:10px;font-family:inherit}
+.svc-option:hover{border-color:var(--admin-sage)}
+.svc-option.on{border-color:var(--admin-sage);background:var(--admin-info-soft)}
+.svc-option .num{font-family:var(--serif);color:var(--admin-sage-deep);font-size:18px;width:26px;flex:none}
+.so-name{font-family:var(--serif);font-size:18px;line-height:1.1}
+.so-dur{font-size:12px;color:var(--admin-ink-soft);margin-top:2px}
+.so-price{margin-left:auto;font-family:var(--serif);font-size:21px}
+
+/* stepper */
+.steps{display:flex;align-items:center;gap:8px;margin:6px 0 22px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:8px;color:var(--admin-ink-soft);font-size:12px;letter-spacing:.04em}
+.step .dot{width:24px;height:24px;border-radius:999px;border:1px solid var(--admin-line);display:flex;align-items:center;justify-content:center;font-size:12px}
+.step.active{color:var(--admin-ink)}
+.step.active .dot{background:var(--admin-sage);color:#fff;border-color:var(--admin-sage)}
+.step.done .dot{background:var(--admin-sage-deep);color:#fff;border-color:var(--admin-sage-deep)}
+.step-bar{flex:1;min-width:14px;height:1px;background:var(--admin-line)}
+
+/* client search results */
+.results{border:1px solid var(--admin-line);border-radius:10px;overflow:hidden;margin:4px 0 8px}
+.result{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--admin-line);cursor:pointer}
+.result:last-child{border-bottom:none}
+.result:hover{background:rgba(138,158,133,.07)}
+.result .r-main{flex:1}
+.result .r-name{font-family:var(--serif);font-size:17px}
+.result .r-meta{font-size:12px;color:var(--admin-ink-soft)}
+.or-sep{text-align:center;font-size:12px;color:var(--admin-ink-soft);margin:10px 0}
+
+/* banners */
+.banner{border-radius:10px;padding:14px 16px;margin:6px 0 16px;border:1px solid}
+.banner-returning{background:var(--admin-info-soft);border-color:var(--admin-sage)}
+.banner-new{background:var(--admin-amber-tint);border-color:#d9b87a}
+.banner-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:.04em}
+.banner-returning .banner-head{color:var(--admin-sage-deep)}
+.banner-new .banner-head{color:#7a5b1a}
+.banner-sub{font-size:13px;color:var(--admin-ink-soft);margin-top:6px}
+.banner-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+.linklike{background:none;border:none;color:var(--admin-sage-deep);font-family:inherit;font-size:12px;letter-spacing:.04em;cursor:pointer;padding:0;text-transform:uppercase}
+
+.actions{display:flex;justify-content:space-between;gap:10px;margin-top:8px}
+.hidden{display:none!important}
+
+/* calendar + slots */
+.twocol{display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:28px}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cal-month{font-family:var(--serif);font-size:20px}
+.cal-nav button{width:30px;height:30px;border-radius:50%;border:1px solid var(--admin-line);background:#fff;color:var(--admin-sage-deep);cursor:pointer;font-size:16px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .dow{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-ink-soft);text-align:center;padding:4px 0}
+.cal .day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid transparent;font-size:14px;cursor:pointer}
+.cal .day.in:hover{border-color:var(--admin-sage)}
+.cal .day.off{color:var(--admin-grey);opacity:.4;cursor:not-allowed}
+.cal .day.blank{cursor:default}
+.cal .day.sel{background:var(--admin-sage);color:#fff}
+.slots-h{font-size:13px;color:var(--admin-ink-soft);margin:0 0 10px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.slot{border:1px solid var(--admin-line);border-radius:8px;padding:10px 6px;text-align:center;font-size:14px;cursor:pointer;background:#fff}
+.slot:hover{border-color:var(--admin-sage)}
+.slot.sel{background:var(--admin-sage);color:#fff;border-color:var(--admin-sage)}
+.slot.off-hours{border-style:dashed;color:#7a5b1a}
+.callout{background:var(--admin-cream-soft);border:1px solid var(--admin-line);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--admin-ink-soft);margin-bottom:14px}
+.offhours-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--admin-ink-soft);margin:14px 0 0;cursor:pointer}
+
+/* confirm summary + success */
+.sum{border:1px solid var(--admin-line);border-radius:10px;overflow:hidden;margin:8px 0 18px}
+.sum .row{display:flex;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--admin-line);font-size:15px}
+.sum .row:last-child{border-bottom:none}
+.sum .l{color:var(--admin-ink-soft);font-size:11px;letter-spacing:.16em;text-transform:uppercase;align-self:center}
+.sum .r{text-align:right}
+.success{text-align:center;padding:30px 18px}
+.success .check{width:64px;height:64px;border-radius:50%;background:var(--admin-info-soft);color:var(--admin-sage-deep);display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 14px}
+
+/* mobile tab bar (mirrors admin.css) */
+.admin-tabbar{display:none}
+.device.phone .admin-tabbar{display:flex;align-items:stretch;border-top:1px solid var(--admin-line);background:var(--admin-cream-soft);box-shadow:0 -1px 8px rgba(28,28,28,.06);padding-bottom:8px}
+.admin-tab{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 2px;color:var(--admin-ink-soft);text-decoration:none;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.admin-tab-inner{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 12px;border-radius:16px}
+.admin-tab.is-active{color:var(--admin-sage-deep)}
+.admin-tab.is-active .admin-tab-inner{background:rgba(138,158,133,.18)}
+.admin-tab svg{width:24px;height:24px}
+
+/* FAB (phone, list screens only) */
+.fab{display:none}
+.device.phone[data-view="clients"] .fab,
+.device.phone[data-view="profile"] .fab{display:flex}
+.fab{position:absolute;right:18px;bottom:86px;width:56px;height:56px;border-radius:50%;background:var(--admin-sage);color:#fff;align-items:center;justify-content:center;font-size:30px;line-height:1;box-shadow:0 8px 20px rgba(0,0,0,.28);border:none;cursor:pointer;z-index:30}
+
+/* phone view adjustments */
+.device.phone .nav-links{display:none}
+.device.phone .admin-header{padding:12px 18px}
+.device.phone .admin-header .logout{display:none}
+.device.phone .admin-main{padding:20px 16px 26px}
+.device.phone .twocol{grid-template-columns:1fr;gap:16px}
+.device.phone .frow{grid-template-columns:1fr}
+.device.phone h1{font-size:28px}
+.device.phone .bk-when{width:auto}
+.device.phone .bk-card{flex-wrap:wrap}
+.device.phone .admin-table thead{display:none}
+.device.phone .admin-table,.device.phone .admin-table tbody,.device.phone .admin-table tr,.device.phone .admin-table td{display:block;width:100%}
+.device.phone .admin-table{background:transparent;border:none}
+.device.phone .admin-table tr{background:#fff;border:1px solid var(--admin-line);border-radius:12px;margin-bottom:12px;padding:14px 16px}
+.device.phone .admin-table td{border:none;padding:5px 0}
+.device.phone .admin-table td::before{content:attr(data-label);display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--admin-ink-soft);margin-bottom:2px}
+.device.phone .admin-table td[data-label=""]::before{display:none}
+.device.phone .admin-table .row-arrow{text-align:left}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <strong>Admin mock-ups</strong>
+  <button data-view="clients" class="on" onclick="showView('clients',event)">1 · Clients</button>
+  <button data-view="profile" onclick="showView('profile',event)">2 · Client profile</button>
+  <button data-view="booking" onclick="showView('booking',event)">3 · New booking</button>
+  <span class="demo-note">Device:</span>
+  <button id="deviceBtn" onclick="toggleDevice(this)">📱 PWA phone view</button>
+</div>
+
+<div class="stage">
+  <div class="device" id="device" data-view="clients">
+
+    <!-- phone status bar / notch -->
+    <div class="device-top">
+      <span>9:41</span>
+      <span class="dt-batt">● ▮▮▮ 100%</span>
+    </div>
+
+    <!-- header -->
+    <header class="admin-header">
+      <span class="brand">The Potter Sanctuary <em>— Admin</em></span>
+      <nav class="nav-links">
+        <a>Dashboard</a><a onclick="showView('booking')">Bookings</a>
+        <a class="active" onclick="showView('clients')">Clients</a>
+        <a>Availability</a>
+      </nav>
+      <button class="logout">Log out</button>
+    </header>
+
+    <!-- ============ VIEW 1: CLIENTS LIST ============ -->
+    <main class="admin-main view" id="view-clients">
+      <h1>Clients</h1>
+      <p class="lede">Search and view client history.</p>
+      <div class="search-row">
+        <label class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="clientSearch" placeholder="Search name, email or phone…" oninput="filterClients(this.value)" />
+        </label>
+        <button class="btn" onclick="startBooking()">+ New booking</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Contact</th><th>Visits</th><th>Last visit</th><th>Questionnaire</th><th></th></tr></thead>
+        <tbody id="clientRows"></tbody>
+      </table>
+      <p class="count-note" id="clientCount"></p>
+    </main>
+
+    <!-- ============ VIEW 2: CLIENT PROFILE ============ -->
+    <main class="admin-main view hidden" id="view-profile">
+      <a class="admin-back-link" onclick="showView('clients')">← Clients</a>
+      <div class="profile-head">
+        <div>
+          <h1>Jane Cooper</h1>
+          <p class="profile-sub">jane@example.com · 07700 900123 · Female</p>
+        </div>
+        <button class="btn" onclick="bookFor()">+ Book for Jane</button>
+      </div>
+      <p class="profile-stats">Client since Mar 2026 · <b>4 visits</b> · <b>£185</b> lifetime spend (confirmed)</p>
+
+      <div class="card">
+        <p class="section-h">Booking history</p>
+        <div class="bk-card"><span class="bk-when">Wed 12 Jun · 14:00</span><span class="bk-treat">Hot Stones Full Body</span><span class="bk-price">£60</span><span class="badge badge-confirmed">confirmed</span><span class="bk-arrow">→</span></div>
+        <div class="bk-card"><span class="bk-when">Tue 14 May · 10:30</span><span class="bk-treat">Back, Neck &amp; Scalp</span><span class="bk-price">£25</span><span class="badge badge-confirmed">confirmed</span><span class="bk-arrow">→</span></div>
+        <div class="bk-card"><span class="bk-when">Sat 12 Apr · 11:00</span><span class="bk-treat">Full Body Aromatherapy</span><span class="bk-price">£50</span><span class="badge badge-confirmed">confirmed</span><span class="bk-arrow">→</span></div>
+        <div class="bk-card row-cancelled"><span class="bk-when">Sat 06 Apr · 16:00</span><span class="bk-treat">Full Body Aromatherapy</span><span class="bk-price">£50</span><span class="badge badge-cancelled">cancelled</span><span class="bk-arrow">→</span></div>
+        <p class="count-note">Rows open the existing booking-detail page. Cancelled kept for the full lifecycle.</p>
+      </div>
+
+      <div class="card">
+        <p class="section-h">Consultation on file <span class="chip chip-ok" style="margin-left:6px">✓ Completed</span></p>
+        <dl class="q-row">
+          <dt>Completed</dt><dd>14 May 2026</dd>
+          <dt>Pressure</dt><dd><span class="pill">Firm</span></dd>
+          <dt>Focus areas</dt><dd>Back, Neck, Shoulders</dd>
+          <dt>Conditions</dt><dd>Chronic pain ✓ · Headaches / migraines ✓</dd>
+          <dt>Under medical care</dt><dd>No</dd>
+        </dl>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px">View full questionnaire</button>
+      </div>
+
+      <div class="card" style="margin-bottom:0">
+        <p class="section-h">Reviews</p>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+          <span class="review-name">Jane Cooper</span><span class="muted" style="font-size:12px">12 Jun 2026 · Hot Stones Full Body</span>
+        </div>
+        <p class="stars">★★★★★</p>
+        <p style="margin:4px 0 0">“Wonderful, so relaxing — already booked my next one.”</p>
+      </div>
+    </main>
+
+    <!-- ============ VIEW 3: NEW MANUAL BOOKING ============ -->
+    <main class="admin-main view hidden" id="view-booking">
+      <a class="admin-back-link" onclick="showView('clients')">← Bookings</a>
+      <h1>New booking</h1>
+      <p class="lede">Take a booking for a client who can’t use the website. It’s confirmed straight away and the client gets the usual confirmation email.</p>
+
+      <div class="steps" id="stepper">
+        <span class="step" data-s="1"><span class="dot">1</span>Treatment</span><span class="step-bar"></span>
+        <span class="step" data-s="2"><span class="dot">2</span>Date &amp; time</span><span class="step-bar"></span>
+        <span class="step" data-s="3"><span class="dot">3</span>Client</span><span class="step-bar"></span>
+        <span class="step" data-s="4"><span class="dot">4</span>Confirm</span>
+      </div>
+
+      <!-- STEP 1 — TREATMENT -->
+      <section class="bstep" id="bstep-1">
+        <div class="card">
+          <p class="section-h">Choose a treatment</p>
+          <div id="svcList"></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="showView('clients')">Cancel</button>
+          <button class="btn" id="next1" disabled onclick="goStep(2)">Continue →</button>
+        </div>
+      </section>
+
+      <!-- STEP 2 — DATE & TIME -->
+      <section class="bstep hidden" id="bstep-2">
+        <div class="card">
+          <div class="twocol">
+            <div>
+              <div class="cal-head">
+                <span class="cal-month">June 2026</span>
+                <span class="cal-nav"><button title="prev">‹</button><button title="next">›</button></span>
+              </div>
+              <div class="cal" id="cal"></div>
+              <label class="offhours-toggle"><input type="checkbox" id="offHours" onchange="renderCal();renderSlots()"> Show off-hours / closed days (book any time)</label>
+            </div>
+            <div>
+              <p class="slots-h" id="slotsH">Select a date to see times</p>
+              <div class="slots" id="slots"></div>
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+          <button class="btn" id="next2" disabled onclick="goStep(3)">Continue →</button>
+        </div>
+      </section>
+
+      <!-- STEP 3 — CLIENT -->
+      <section class="bstep hidden" id="bstep-3">
+        <div class="card">
+          <p class="section-h">Client</p>
+          <label class="search-box" style="margin-bottom:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="mbSearch" placeholder="Search existing client (name, email, phone)…" oninput="mbSearch(this.value)" />
+          </label>
+          <div id="mbResults" class="results hidden"></div>
+          <p class="or-sep">— or enter details below for a new client —</p>
+
+          <div id="bannerReturning" class="banner banner-returning hidden">
+            <div class="banner-head">✓ Returning client — <span id="brName">Jane Cooper</span></div>
+            <div class="banner-sub" id="brSub">4 previous visits · questionnaire ✓ on file</div>
+            <div class="field" id="brToggle" style="margin:12px 0 0">
+              <label>Have their consultation details changed?</label>
+              <div class="pillrow">
+                <button class="gpill on" onclick="pick(this)">No, nothing changed</button>
+                <button class="gpill" onclick="pick(this)">Yes, send the questionnaire</button>
+              </div>
+            </div>
+            <div class="banner-actions">
+              <button class="linklike" onclick="showView('profile')">View client history →</button>
+              <button class="linklike" onclick="clearClient()">Clear / new client</button>
+            </div>
+          </div>
+
+          <div id="bannerNew" class="banner banner-new hidden">
+            <div class="banner-head">＋ New client — a record will be created on booking</div>
+            <div class="banner-sub">No match for these details. The confirmation email will include the consultation questionnaire link.</div>
+          </div>
+
+          <div class="field">
+            <label>Gender</label>
+            <div class="pillrow">
+              <button class="gpill" onclick="pick(this)">Female</button>
+              <button class="gpill" onclick="pick(this)">Male</button>
+              <button class="gpill" onclick="pick(this)">Non-binary</button>
+              <button class="gpill" onclick="pick(this)">Prefer not to say</button>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="field"><label>First name</label><input id="fName" placeholder="First name" oninput="detect()"></div>
+            <div class="field"><label>Last name</label><input id="lName" placeholder="Last name" oninput="detect()"></div>
+          </div>
+          <div class="frow">
+            <div class="field"><label>Phone</label><input id="fPhone" placeholder="07000 000 000" oninput="detect()"></div>
+            <div class="field"><label>Email</label><input id="fEmail" placeholder="you@example.com" oninput="detect()"></div>
+          </div>
+          <div class="field"><label>Message <span class="muted" style="text-transform:none;letter-spacing:0">(optional)</span></label><textarea rows="2" placeholder="Anything to note — areas to avoid, scent preferences…"></textarea></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          <button class="btn" id="next3" onclick="goStep(4)">Review →</button>
+        </div>
+      </section>
+
+      <!-- STEP 4 — CONFIRM / SUCCESS -->
+      <section class="bstep hidden" id="bstep-4">
+        <div class="card" id="confirmCard">
+          <p class="section-h">Confirm booking</p>
+          <div class="sum" id="confirmSum"></div>
+          <div class="callout">On confirm: the booking is saved as <b>confirmed</b> and the client is emailed the standard <b>booking confirmation</b> (with the questionnaire link for new clients). No owner email — you made this.</div>
+        </div>
+        <div class="actions" id="confirmActions">
+          <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+          <button class="btn" onclick="confirmBooking()">Confirm &amp; send email →</button>
+        </div>
+        <div class="card hidden" id="successCard" style="margin-top:0">
+          <div class="success">
+            <div class="check">✓</div>
+            <h2 style="margin-bottom:6px">Booking confirmed</h2>
+            <p class="muted" id="successLine">Confirmation email sent to the client.</p>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="startBooking()">Take another booking</button>
+              <button class="btn" onclick="showView('clients')">Done</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FAB (phone list screens) -->
+    <button class="fab" title="New booking" onclick="startBooking()">+</button>
+
+    <!-- mobile tab bar (4 tabs) -->
+    <nav class="admin-tabbar" id="tabbar">
+      <a class="admin-tab" data-tab="dashboard"><span class="admin-tab-inner"><span class="admin-tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span>Dash</span></span></a>
+      <a class="admin-tab" data-tab="bookings" onclick="showView('booking')"><span class="admin-tab-inner"><span class="admin-tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg></span><span>Bookings</span></span></a>
+      <a class="admin-tab" data-tab="clients" onclick="showView('clients')"><span class="admin-tab-inner"><span class="admin-tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg></span><span>Clients</span></span></a>
+      <a class="admin-tab" data-tab="avail"><span class="admin-tab-inner"><span class="admin-tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.2 2"/></svg></span><span>Avail.</span></span></a>
+    </nav>
+
+  </div>
+</div>
+
+<script>
+/* ---------- sample data ---------- */
+const CLIENTS=[
+  {f:'Jane',l:'Cooper',email:'jane@example.com',phone:'07700 900123',gender:'Female',visits:4,last:'12 Jun 26',q:true},
+  {f:'Mark',l:'Bell',email:'mark.bell@gmail.com',phone:'07811 222333',gender:'Male',visits:1,last:'02 Jun 26',q:false},
+  {f:'Priya',l:'Shah',email:'priya.shah@outlook.com',phone:'07900 111222',gender:'Female',visits:7,last:'28 May 26',q:true},
+  {f:'Tom',l:'Reeves',email:'t.reeves@me.com',phone:'07444 556677',gender:'Male',visits:2,last:'19 May 26',q:true},
+  {f:'Aisha',l:'Khan',email:'aisha.k@yahoo.com',phone:'07555 998877',gender:'Female',visits:3,last:'11 May 26',q:false},
+];
+const TREATMENTS=[
+  {id:'full-body-aromatherapy',name:'Full Body Aromatherapy',dur:'60 min · Light · Medium',mins:60,price:50},
+  {id:'back-neck-scalp',name:'Back, Neck & Scalp',dur:'30 min · Medium · Firm',mins:30,price:25},
+  {id:'hot-stones-full',name:'Hot Stones Full Body',dur:'60 min · Medium',mins:60,price:60},
+  {id:'hot-stones-back',name:'Hot Stones Back',dur:'30 min · Medium · Firm',mins:35,price:35},
+];
+function norm(p){return (p||'').replace(/\D/g,'').replace(/^0044/,'0').replace(/^44(\d{10})$/,'0$1');}
+
+/* ---------- booking state ---------- */
+const S={treatment:null,date:null,time:null,gender:null,client:null,isNew:false};
+
+/* ---------- clients list ---------- */
+function rowHtml(c){
+  const q=c.q?'<span class="chip chip-ok">✓ Yes</span>':'<span class="chip chip-warn">— Not yet</span>';
+  return `<tr onclick="showView('profile')">
+    <td data-label="Name"><span class="t-name">${c.f} ${c.l}</span></td>
+    <td data-label="Contact"><span class="muted">${c.email}<br>${c.phone}</span></td>
+    <td data-label="Visits">${c.visits}</td>
+    <td data-label="Last visit">${c.last}</td>
+    <td data-label="Questionnaire">${q}</td>
+    <td data-label="" class="row-arrow">Open →</td></tr>`;
+}
+function filterClients(q){
+  q=(q||'').trim().toLowerCase();const nq=norm(q);
+  const list=CLIENTS.filter(c=>{
+    if(!q)return true;const name=(c.f+' '+c.l).toLowerCase();
+    return name.includes(q)||c.email.toLowerCase().includes(q)||(nq&&norm(c.phone).includes(nq));
+  });
+  document.getElementById('clientRows').innerHTML=list.map(rowHtml).join('')||
+    `<tr><td colspan="6" class="muted" style="padding:22px">No clients match “${q}”.</td></tr>`;
+  document.getElementById('clientCount').textContent=`Showing ${list.length} of ${CLIENTS.length}`;
+}
+
+/* ---------- treatment step ---------- */
+function renderSvc(){
+  document.getElementById('svcList').innerHTML=TREATMENTS.map((t,i)=>`
+    <button class="svc-option${S.treatment&&S.treatment.id===t.id?' on':''}" onclick="selTreat('${t.id}')">
+      <span class="num">0${i+1}</span>
+      <span><span class="so-name">${t.name}</span><span class="so-dur">${t.dur}</span></span>
+      <span class="so-price">£${t.price}</span>
+    </button>`).join('');
+}
+function selTreat(id){S.treatment=TREATMENTS.find(t=>t.id===id);renderSvc();document.getElementById('next1').disabled=false;}
+
+/* ---------- date & time step ---------- */
+let calMonth=5,calYear=2026; // June 2026
+function renderCal(){
+  const off=document.getElementById('offHours').checked;
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const dows=['S','M','T','W','T','F','S'];
+  let html=dows.map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++)html+=`<div class="day blank"></div>`;
+  for(let d=1;d<=days;d++){
+    const dow=new Date(calYear,calMonth,d).getDay();
+    const isPast=d<22;                       // "today" = 22 Jun 2026
+    const openDay=dow>=2&&dow<=6;            // Tue–Sat template
+    const selectable=off?(!isPast):(openDay&&!isPast);
+    const cls=selectable?'in':'off';
+    const sel=S.date===d?' sel':'';
+    html+=`<div class="day ${cls}${sel}" ${selectable?`onclick="selDate(${d})"`:''}>${d}</div>`;
+  }
+  document.getElementById('cal').innerHTML=html;
+}
+function selDate(d){S.date=d;S.time=null;renderCal();renderSlots();updateNext2();}
+function renderSlots(){
+  const h=document.getElementById('slotsH'),box=document.getElementById('slots');
+  if(!S.date){h.textContent='Select a date to see times';box.innerHTML='';return;}
+  const off=document.getElementById('offHours').checked;
+  h.innerHTML=`Times for <b>${S.date} June 2026</b>`;
+  let times=['09:30','10:00','10:30','11:00','11:30','13:00','13:30','14:00','14:30','15:00','16:00','16:30','17:00','17:30','18:00'];
+  let extra=['08:00','08:30','19:00','19:30','20:00'];
+  let html=times.map(t=>`<div class="slot${S.time===t?' sel':''}" onclick="selTime('${t}')">${t}</div>`).join('');
+  if(off)html+=extra.map(t=>`<div class="slot off-hours${S.time===t?' sel':''}" onclick="selTime('${t}')">${t}</div>`).join('');
+  box.innerHTML=html;
+}
+function selTime(t){S.time=t;renderSlots();updateNext2();}
+function updateNext2(){document.getElementById('next2').disabled=!(S.date&&S.time);}
+
+/* ---------- client step ---------- */
+function mbSearch(q){
+  q=(q||'').trim().toLowerCase();const nq=norm(q);const box=document.getElementById('mbResults');
+  if(!q){box.classList.add('hidden');box.innerHTML='';return;}
+  const list=CLIENTS.filter(c=>{const name=(c.f+' '+c.l).toLowerCase();return name.includes(q)||c.email.toLowerCase().includes(q)||(nq&&norm(c.phone).includes(nq));});
+  box.classList.remove('hidden');
+  box.innerHTML=list.length?list.map(c=>`<div class="result" onclick='selectClient(${JSON.stringify(c)})'>
+      <div class="r-main"><div class="r-name">${c.f} ${c.l}</div><div class="r-meta">${c.email} · ${c.phone}</div></div>
+      <button class="btn btn-sm">Select</button></div>`).join('')
+    :`<div class="result"><div class="r-main muted">No match — fill in the details below to create a new client.</div></div>`;
+}
+function selectClient(c){
+  S.client=c;S.isNew=false;S.gender=c.gender||null;
+  document.getElementById('fName').value=c.f;document.getElementById('lName').value=c.l;
+  document.getElementById('fPhone').value=c.phone;document.getElementById('fEmail').value=c.email;
+  document.getElementById('mbResults').classList.add('hidden');
+  document.getElementById('mbSearch').value=c.f+' '+c.l;
+  setGender(c.gender);
+  showReturning(c);
+}
+function setGender(g){document.querySelectorAll('#bstep-3 .gpill').forEach(b=>b.classList.toggle('on',b.textContent===g));}
+function showReturning(c){
+  document.getElementById('brName').textContent=c.f+' '+c.l;
+  document.getElementById('brSub').textContent=`${c.visits} previous visit${c.visits===1?'':'s'} · questionnaire ${c.q?'✓ on file':'— not completed'}`;
+  document.getElementById('brToggle').style.display=c.q?'flex':'none';
+  document.getElementById('bannerReturning').classList.remove('hidden');
+  document.getElementById('bannerNew').classList.add('hidden');
+}
+function clearClient(){
+  S.client=null;S.isNew=false;
+  ['fName','lName','fPhone','fEmail','mbSearch'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bannerReturning').classList.add('hidden');
+  document.getElementById('bannerNew').classList.add('hidden');
+}
+function detect(){
+  const email=document.getElementById('fEmail').value.trim().toLowerCase();
+  const phone=norm(document.getElementById('fPhone').value);
+  let match=null;
+  if(/\S+@\S+\.\S+/.test(email))match=CLIENTS.find(c=>c.email.toLowerCase()===email);
+  if(!match&&phone.length>=10)match=CLIENTS.find(c=>norm(c.phone)===phone);
+  if(match){S.client=match;S.isNew=false;showReturning(match);}
+  else{
+    const enough=document.getElementById('fName').value&&(/\S+@\S+\.\S+/.test(email)||phone.length>=10);
+    S.client=null;S.isNew=enough;
+    document.getElementById('bannerReturning').classList.add('hidden');
+    document.getElementById('bannerNew').classList.toggle('hidden',!enough);
+  }
+}
+function pick(btn){[...btn.parentElement.children].forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  if(btn.closest('#bstep-3 .field')&&btn.parentElement.previousElementSibling&&btn.parentElement.previousElementSibling.textContent==='Gender')S.gender=btn.textContent;}
+
+/* ---------- confirm ---------- */
+function confirmSummary(){
+  const c=S.client;const name=c?`${c.f} ${c.l}`:((document.getElementById('fName').value||'New')+' '+(document.getElementById('lName').value||'client'));
+  const email=c?c.email:(document.getElementById('fEmail').value||'—');
+  const phone=c?c.phone:(document.getElementById('fPhone').value||'—');
+  const kind=c?'Returning client':'New client (record will be created)';
+  return `
+    <div class="row"><span class="l">Treatment</span><span class="r">${S.treatment?S.treatment.name:'—'}</span></div>
+    <div class="row"><span class="l">When</span><span class="r">${S.date?S.date+' June 2026':'—'} · ${S.time||'—'}</span></div>
+    <div class="row"><span class="l">Duration</span><span class="r">${S.treatment?S.treatment.mins+' min':'—'}</span></div>
+    <div class="row"><span class="l">Price</span><span class="r">£${S.treatment?S.treatment.price:'—'} · cash on the day</span></div>
+    <div class="row"><span class="l">Client</span><span class="r">${name}<br><span class="muted" style="font-size:13px">${email} · ${phone}</span></span></div>
+    <div class="row"><span class="l">Status</span><span class="r">${kind}</span></div>`;
+}
+function goStep(n){
+  if(n===4)document.getElementById('confirmSum').innerHTML=confirmSummary();
+  document.querySelectorAll('.bstep').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('bstep-'+n).classList.remove('hidden');
+  document.querySelectorAll('#stepper .step').forEach(st=>{const s=+st.dataset.s;st.classList.toggle('active',s===n);st.classList.toggle('done',s<n);});
+  // reset success if returning to confirm
+  document.getElementById('confirmCard').classList.remove('hidden');
+  document.getElementById('confirmActions').classList.remove('hidden');
+  document.getElementById('successCard').classList.add('hidden');
+  document.querySelector('#view-booking').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function confirmBooking(){
+  const c=S.client;const email=c?c.email:(document.getElementById('fEmail').value||'the client');
+  const cta=(!c||(c&&!c.q))?' (with the questionnaire link)':'';
+  document.getElementById('successLine').innerHTML=`Standard booking confirmation${cta} sent to <b>${email}</b>. It’s now in the diary and removed from website availability.`;
+  document.getElementById('confirmCard').classList.add('hidden');
+  document.getElementById('confirmActions').classList.add('hidden');
+  document.getElementById('successCard').classList.remove('hidden');
+  document.querySelectorAll('#stepper .step').forEach(st=>st.classList.add('done'));
+}
+function startBooking(){ // fresh
+  S.treatment=null;S.date=null;S.time=null;S.gender=null;S.client=null;S.isNew=false;
+  document.getElementById('next1').disabled=true;document.getElementById('offHours').checked=false;
+  renderSvc();renderCal();renderSlots();updateNext2();clearClient();
+  document.querySelectorAll('#bstep-3 .gpill').forEach(b=>b.classList.remove('on'));
+  showView('booking');goStep(1);
+}
+function bookFor(){ // from profile, prefilled with Jane
+  startBooking();
+  selectClient(CLIENTS[0]);
+  goStep(1);
+}
+
+/* ---------- view + device ---------- */
+function showView(v,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  document.querySelectorAll('.view').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('view-'+v).classList.remove('hidden');
+  document.getElementById('device').dataset.view=v;
+  document.querySelectorAll('.demo-bar [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  const tabFor=v==='booking'?'bookings':(v==='profile'?'clients':v);
+  document.querySelectorAll('#tabbar .admin-tab').forEach(t=>t.classList.toggle('is-active',t.dataset.tab===tabFor));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleDevice(btn){const d=document.getElementById('device');d.classList.toggle('phone');btn.textContent=d.classList.contains('phone')?'🖥 Desktop view':'📱 PWA phone view';}
+
+/* init */
+filterClients('');renderSvc();renderCal();renderSlots();showView('clients');
+</script>
+</body>
+</html>

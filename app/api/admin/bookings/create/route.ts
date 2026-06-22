@@ -1,24 +1,39 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createBooking } from "@/lib/booking-create";
+import {
+  ADMIN_SESSION_COOKIE,
+  ADMIN_SESSION_VALUE,
+} from "@/lib/admin-session";
+
+export const dynamic = "force-dynamic";
+
+async function isAdmin(): Promise<boolean> {
+  const store = await cookies();
+  return store.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
+}
 
 type Payload = {
   date: string;
-  dateLabel: string;
   time: string;
-  service: { svc: string; name: string; price: number; duration: string };
+  serviceId: string;
   gender: string | null;
   fname: string;
   lname: string;
   phone: string;
   email: string;
   message?: string;
-  // Returning customers tell us whether their consultation details are still
-  // current. true = no change (skip questionnaire CTA), false = needs new
-  // questionnaire, null/undefined = first-time booking (always send CTA).
   detailsUnchanged?: boolean | null;
+  // "Book anytime" — bypass website availability rules (any day/time), clashes
+  // still blocked.
+  bookAnytime?: boolean;
 };
 
 export async function POST(req: Request) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 403 });
+  }
+
   let payload: Payload;
   try {
     payload = (await req.json()) as Payload;
@@ -29,8 +44,7 @@ export async function POST(req: Request) {
   const required = [
     payload?.date,
     payload?.time,
-    payload?.service?.name,
-    payload?.service?.svc,
+    payload?.serviceId,
     payload?.fname,
     payload?.lname,
     payload?.phone,
@@ -48,14 +62,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // Public booking: stays "pending" (the owner confirms it), uses the website's
-  // availability rules, and notifies the owner. All creation logic lives in the
-  // shared helper so the public and admin manual paths can't drift.
+  // Manual booking: confirmed immediately, client gets the standard
+  // BookingConfirmation email, NO owner notification (the owner made it).
   const result = await createBooking(
     {
       date: payload.date,
       time: payload.time,
-      serviceId: payload.service.svc,
+      serviceId: payload.serviceId,
       gender: payload.gender ?? null,
       fname: payload.fname,
       lname: payload.lname,
@@ -64,13 +77,16 @@ export async function POST(req: Request) {
       message: payload.message,
       detailsUnchanged: payload.detailsUnchanged ?? null,
     },
-    { status: "pending", adminMode: false, sendOwnerNotification: true }
+    {
+      status: "confirmed",
+      adminMode: payload.bookAnytime === true,
+      sendOwnerNotification: false,
+    }
   );
 
   if (result.ok) {
     return NextResponse.json({ ok: true, id: result.id });
   }
-  // slot_unavailable / slot_taken carry a friendly message the calendar surfaces.
   return NextResponse.json(
     result.message ? { error: result.error, message: result.message } : { error: result.error },
     { status: result.status }

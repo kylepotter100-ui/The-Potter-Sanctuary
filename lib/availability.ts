@@ -129,18 +129,26 @@ export function candidateRejection(args: {
   existing: ExistingBooking[];
   start: string;
   duration: number;
+  // Admin "book anytime" mode: the studio owner is fitting in a manual booking,
+  // so the open-set (published-slot) and closing-time rules are intentionally
+  // skipped — any day, any time of day is allowed. The overlap check (b) STILL
+  // runs and the DB bookings_no_overlap constraint remains the hard backstop, so
+  // a real clash with an existing appointment can never be created.
+  adminMode?: boolean;
 }): "closing" | "overlap" | "closed-segment" | null {
   const startMin = timeToMinutes(args.start);
   const sessionEnd = startMin + args.duration;
 
-  // (a) Session must finish by close.
-  if (sessionEnd > CLOSE_MIN || startMin < OPEN_MIN) return "closing";
+  if (!args.adminMode) {
+    // (a) Session must finish by close.
+    if (sessionEnd > CLOSE_MIN || startMin < OPEN_MIN) return "closing";
 
-  // (c) Every 15-min segment the session spans must be open. The session
-  //     [startMin, sessionEnd) occupies blocks startMin, startMin+15, … up to
-  //     but not including sessionEnd.
-  for (let m = startMin; m < sessionEnd; m += GRID_MINUTES) {
-    if (!args.openSet.has(minutesToTime(m))) return "closed-segment";
+    // (c) Every 15-min segment the session spans must be open. The session
+    //     [startMin, sessionEnd) occupies blocks startMin, startMin+15, … up to
+    //     but not including sessionEnd.
+    for (let m = startMin; m < sessionEnd; m += GRID_MINUTES) {
+      if (!args.openSet.has(minutesToTime(m))) return "closed-segment";
+    }
   }
 
   // (b) Candidate interval [start, start+duration+buffer) must not intersect any
@@ -225,8 +233,13 @@ export async function validateSlotAvailable(
   admin: SupabaseClient,
   dateIso: string,
   time: string,
-  durationMinutes: number
+  durationMinutes: number,
+  // Admin "book anytime" mode (manual booking by the owner): skip the
+  // blocked-date, same-day lead-time, open-set and closing checks; keep the
+  // past-date guard and the overlap check. See candidateRejection.
+  opts: { adminMode?: boolean } = {}
 ): Promise<SlotValidation> {
+  const adminMode = opts.adminMode === true;
   const slot = toHHMM(time);
   // UK business date/time, not the server's UTC clock — during BST the two
   // diverge for an hour around midnight (and a UK wall time read as UTC is an
@@ -240,8 +253,9 @@ export async function validateSlotAvailable(
 
   // 1b. Same-day lead time: mirror the calendar's rule (a slot must start at
   // least 15 minutes from now) so a direct API call can't book a slot the UI
-  // would never offer — including ones that have already started.
-  if (dateIso === todayIso && timeToMinutes(slot) < nowMinutes + 15) {
+  // would never offer — including ones that have already started. Skipped in
+  // admin mode so the owner can log an earlier-today walk-in.
+  if (!adminMode && dateIso === todayIso && timeToMinutes(slot) < nowMinutes + 15) {
     return { ok: false, reason: "That time has already passed — please pick a later slot." };
   }
 
@@ -283,8 +297,8 @@ export async function validateSlotAvailable(
     );
   }
 
-  // 2. Whole day blocked.
-  if (blocked) {
+  // 2. Whole day blocked. Ignored in admin mode (owner can book a blocked day).
+  if (blocked && !adminMode) {
     return { ok: false, reason: "This date is no longer available." };
   }
 
@@ -307,6 +321,7 @@ export async function validateSlotAvailable(
     existing: existingBookings,
     start: slot,
     duration: durationMinutes,
+    adminMode,
   });
 
   if (rejection === "overlap") {
