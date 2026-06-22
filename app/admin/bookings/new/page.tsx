@@ -5,18 +5,26 @@ import AdminNewBooking, {
 } from "@/components/AdminNewBooking";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getClientProfile } from "@/lib/clients";
+import { resolveBack } from "@/lib/admin-back";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type SearchParams = Promise<{ client?: string }>;
+type SearchParams = Promise<{ client?: string; from?: string }>;
 
 export default async function NewBookingPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { client } = await searchParams;
+  const { client, from } = await searchParams;
+  // Where "← Back" / Cancel / Done return to: explicit ?from= wins; otherwise,
+  // if launched from a client profile (?client=), go back there; else Bookings.
+  const back = from
+    ? resolveBack(from)
+    : client
+      ? { href: `/admin/clients/${client}`, label: "client" }
+      : resolveBack(null);
 
   let initialClient: InitialClient | null = null;
   if (client && supabaseAdmin) {
@@ -42,8 +50,8 @@ export default async function NewBookingPage({
     <>
       <AdminHeader active="bookings" />
       <main className="admin-main">
-        <Link href="/admin/bookings" className="admin-back-link">
-          ← Bookings
+        <Link href={back.href} className="admin-back-link">
+          ← Back to {back.label}
         </Link>
         <h1 style={{ marginTop: 10 }}>New booking</h1>
         <p className="lede">
@@ -51,7 +59,7 @@ export default async function NewBookingPage({
           confirmed straight away and the client gets the usual confirmation
           email.
         </p>
-        <AdminNewBooking initialClient={initialClient} />
+        <AdminNewBooking initialClient={initialClient} returnHref={back.href} />
       </main>
     </>
   );

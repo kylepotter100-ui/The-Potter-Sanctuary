@@ -67,6 +67,8 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
   const { customer, displayName, bookings, consultation, reviews, stats } =
     profile;
   const firstName = customer.first_name || displayName.split(" ")[0];
+  // So booking-detail / questionnaire "← Back" returns to THIS profile.
+  const fromParam = encodeURIComponent(`/admin/clients/${customer.id}`);
 
   const focusAreas = consultation
     ? ((consultation.focus_areas as string[] | null) ?? [])
@@ -122,7 +124,7 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
               {bookings.map((b) => (
                 <Link
                   key={b.id}
-                  href={`/admin/bookings/${b.id}`}
+                  href={`/admin/bookings/${b.id}?from=${fromParam}`}
                   className={`bk-card row-${b.status}`}
                 >
                   <div className="bk-card-top">
@@ -188,7 +190,7 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
               </dl>
               {consultBookingId && (
                 <Link
-                  href={`/admin/bookings/${consultBookingId}`}
+                  href={`/admin/bookings/${consultBookingId}?from=${fromParam}`}
                   className="btn btn-ghost btn-sm"
                   style={{ marginTop: 4 }}
                 >

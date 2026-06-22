@@ -48,7 +48,10 @@ export default async function ClientsPage({
             <h1>Clients</h1>
             <p className="lede">Search and view client history.</p>
           </div>
-          <Link href="/admin/bookings/new" className="btn">
+          <Link
+            href={`/admin/bookings/new?from=${encodeURIComponent("/admin/clients")}`}
+            className="btn"
+          >
             + New booking
           </Link>
         </div>

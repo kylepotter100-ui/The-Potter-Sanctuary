@@ -79,8 +79,10 @@ const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"];
 
 export default function AdminNewBooking({
   initialClient,
+  returnHref = "/admin/bookings",
 }: {
   initialClient: InitialClient | null;
+  returnHref?: string;
 }) {
   const router = useRouter();
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -414,7 +416,7 @@ export default function AdminNewBooking({
           <button
             type="button"
             className="btn"
-            onClick={() => router.push("/admin/bookings")}
+            onClick={() => router.push(returnHref)}
           >
             Done
           </button>
@@ -471,7 +473,7 @@ export default function AdminNewBooking({
             </div>
           </div>
           <div className="mb-actions">
-            <button type="button" className="btn btn-ghost" onClick={() => router.push("/admin/bookings")}>
+            <button type="button" className="btn btn-ghost" onClick={() => router.push(returnHref)}>
               Cancel
             </button>
             <button type="button" className="btn" disabled={!canStep1} onClick={() => goStep(2)}>

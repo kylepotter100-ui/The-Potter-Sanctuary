@@ -1824,3 +1824,44 @@
   .mb-step-lbl { display: none; }
   .mb-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* =====================================================================
+   Round 2 testing fixes
+   ===================================================================== */
+
+/* Anchor buttons: .admin-shell a (sage-deep) out-specifies .btn (#fff), so
+   <Link className="btn"> rendered dark text on sage. Restore the intended
+   colours per variant (mirrors the .review-banner override above). */
+.admin-shell a.btn,
+.admin-shell a.btn:hover { color: #fff; }
+.admin-shell a.btn-ghost { color: var(--admin-ink); }
+.admin-shell a.btn-ghost:hover { color: var(--admin-cream); }
+.admin-shell a.btn-danger { color: var(--admin-error); }
+.admin-shell a.btn-danger:hover { color: #fff; }
+
+/* PWA bottom nav: make all four tabs strictly equal width. Without min-width:0
+   a flex item won't shrink below its content, so the longest label ("Bookings")
+   made its cell wider than the rest. Trim the pill padding for four cells and
+   keep labels from forcing width. */
+.admin-tab { flex: 1 1 0; min-width: 0; }
+.admin-tab-inner { padding: 6px 10px; max-width: 100%; }
+.admin-tab-label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On phones the title-row action button stacks full-width BELOW the heading +
+   lede (so "+ New booking" sits between the lede and the search box, not on top
+   of it). Desktop keeps the button top-right. */
+@media (max-width: 720px) {
+  .admin-title-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .admin-title-row .lede { margin-bottom: 0; }
+  .admin-title-row .btn { width: 100%; justify-content: center; }
+}
