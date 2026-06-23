@@ -127,8 +127,10 @@ export default async function BookingsPage({
     .select(
       "id, customer_first_name, customer_last_name, customer_email, customer_id, treatment_name, booking_date, booking_time, status, review_email_sent_at"
     )
-    .order("booking_date", { ascending: false })
-    .order("booking_time", { ascending: false });
+    // Chronological: soonest booking first, working downwards. With the default
+    // "upcoming" range this puts the next appointment at the top.
+    .order("booking_date", { ascending: true })
+    .order("booking_time", { ascending: true });
 
   if (status === "active") query = query.in("status", ["pending", "confirmed"]);
   else if (status === "pending") query = query.eq("status", "pending");
