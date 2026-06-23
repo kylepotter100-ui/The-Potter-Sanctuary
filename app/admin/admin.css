@@ -1713,6 +1713,10 @@
 .profile-stats b { color: var(--admin-sage-deep); }
 .count-note { font-size: 12px; color: var(--admin-ink-soft); margin-top: 12px; }
 .stars { color: var(--admin-amber); letter-spacing: 2px; }
+/* "On file (carried over)" consultation chip — neutral grey so it reads as
+   "noted, but not freshly confirmed this visit", distinct from the green
+   ✓ Consult (own) and amber ⏳ Consult (none). */
+.chip-carried { background: var(--admin-grey-soft); color: var(--admin-ink-soft); }
 
 /* Gender pills + generic pill row (admin-scoped). */
 .pillrow { display: flex; flex-wrap: wrap; gap: 8px; }

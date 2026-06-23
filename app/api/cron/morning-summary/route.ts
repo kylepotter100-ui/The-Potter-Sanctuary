@@ -108,7 +108,7 @@ export async function GET(req: Request) {
   const { data: bookings, error } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_last_name, treatment_name, booking_date, booking_time, status, cancelled_at"
+      "id, customer_id, customer_first_name, customer_last_name, treatment_name, booking_date, booking_time, status, cancelled_at"
     )
     .eq("booking_date", dateIso)
     .in("status", ["pending", "confirmed"])
@@ -121,15 +121,39 @@ export async function GET(req: Request) {
   }
 
   const ids = (bookings ?? []).map((b) => b.id);
+  const customerIds = Array.from(
+    new Set(
+      (bookings ?? [])
+        .map((b) => b.customer_id as string | null)
+        .filter((x): x is string => !!x)
+    )
+  );
+  // Own consultation (this booking) and customer-level consultation (any prior
+  // visit) — a returning client with one on file is NOT a safety risk even if
+  // they didn't fill it for this specific booking.
   let consultedSet = new Set<string>();
+  let customerConsultedSet = new Set<string>();
   if (ids.length > 0) {
-    const { data: consults } = await supabaseAdmin
-      .from("consultation_responses")
-      .select("booking_id")
-      .in("booking_id", ids);
+    const [ownRes, custRes] = await Promise.all([
+      supabaseAdmin
+        .from("consultation_responses")
+        .select("booking_id")
+        .in("booking_id", ids),
+      customerIds.length
+        ? supabaseAdmin
+            .from("consultation_responses")
+            .select("customer_id")
+            .in("customer_id", customerIds)
+        : Promise.resolve({ data: [] as Array<{ customer_id: string | null }> }),
+    ]);
     consultedSet = new Set(
-      ((consults ?? []) as Array<{ booking_id: string | null }>)
+      ((ownRes.data ?? []) as Array<{ booking_id: string | null }>)
         .map((c) => c.booking_id)
+        .filter((x): x is string => !!x)
+    );
+    customerConsultedSet = new Set(
+      ((custRes.data ?? []) as Array<{ customer_id: string | null }>)
+        .map((c) => c.customer_id)
         .filter((x): x is string => !!x)
     );
   }
@@ -137,6 +161,8 @@ export async function GET(req: Request) {
   const now = new Date();
   const decorated: SummaryBooking[] = (bookings ?? []).map((b) => {
     const completed = consultedSet.has(b.id);
+    const onFile =
+      !completed && !!b.customer_id && customerConsultedSet.has(b.customer_id);
     const apptTime = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const within12h = apptTime.getTime() - now.getTime() <= 12 * 60 * 60 * 1000;
     return {
@@ -148,9 +174,11 @@ export async function GET(req: Request) {
       status: b.status as "pending" | "confirmed",
       consultation: completed
         ? "completed"
-        : within12h
-          ? "risk"
-          : "pending",
+        : onFile
+          ? "onfile"
+          : within12h
+            ? "risk"
+            : "pending",
     };
   });
 

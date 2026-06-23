@@ -18,7 +18,7 @@ export type SummaryBooking = {
   treatment_name: string;
   booking_time: string;
   status: "pending" | "confirmed";
-  consultation: "completed" | "pending" | "risk";
+  consultation: "completed" | "pending" | "risk" | "onfile";
 };
 
 type Props = {
@@ -32,6 +32,7 @@ type Props = {
 
 function consultBadge(state: SummaryBooking["consultation"]): string {
   if (state === "completed") return "✓ Completed";
+  if (state === "onfile") return "● On file (previous visit)";
   if (state === "risk") return "⚠️ Risk — within 12 hours";
   return "⏳ Pending";
 }

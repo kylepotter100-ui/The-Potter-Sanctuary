@@ -8,6 +8,10 @@ import {
   listOutstandingReviewClients,
   type ReviewState,
 } from "@/lib/reviews";
+import {
+  getConsultationStateIndex,
+  type ConsultationState,
+} from "@/lib/consultation";
 import { ukTodayIso } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +30,6 @@ type Booking = {
   review_email_sent_at: string | null;
 };
 
-type ConsultationLink = { booking_id: string | null };
 type Status = "active" | "pending" | "confirmed" | "cancelled" | "all";
 type Range = "today" | "week" | "month" | "next30" | "upcoming" | "";
 
@@ -90,6 +93,13 @@ function ReviewChip({ state }: { state: ReviewState }) {
   return <span className="chip chip-rev-none">No review</span>;
 }
 
+function ConsultChip({ state }: { state: ConsultationState }) {
+  if (state === "own") return <span className="chip chip-ok">✓ Consult</span>;
+  if (state === "carried")
+    return <span className="chip chip-carried">● On file</span>;
+  return <span className="chip chip-warn">⏳ Consult</span>;
+}
+
 export default async function BookingsPage({
   searchParams,
 }: {
@@ -132,28 +142,19 @@ export default async function BookingsPage({
 
   const { data, error } = await query;
   const rows = (data ?? []) as Booking[];
-  const rowIds = rows.map((b) => b.id);
 
   // Everything below is independent of each other — run concurrently instead of
-  // a serial chain. The consultation read is bounded to the bookings actually on
-  // screen; getReviewedIndex is memoised (React cache) so the index it shares
-  // with listOutstandingReviewClients is scanned once, not twice.
-  const [consultsRes, reviewedIndex, outstanding] = await Promise.all([
-    rowIds.length
-      ? supabaseAdmin
-          .from("consultation_responses")
-          .select("booking_id")
-          .in("booking_id", rowIds)
-      : Promise.resolve({ data: [] as ConsultationLink[] }),
+  // a serial chain. getReviewedIndex is memoised (React cache) so the index it
+  // shares with listOutstandingReviewClients is scanned once, not twice.
+  const [consultState, reviewedIndex, outstanding] = await Promise.all([
+    getConsultationStateIndex(
+      supabaseAdmin,
+      rows.map((b) => ({ id: b.id, customer_id: b.customer_id }))
+    ),
     getReviewedIndex(supabaseAdmin),
     listOutstandingReviewClients(supabaseAdmin, ukTodayIso()),
   ]);
 
-  const consultedSet = new Set(
-    ((consultsRes.data ?? []) as ConsultationLink[])
-      .map((c) => c.booking_id)
-      .filter((id): id is string => !!id)
-  );
   const outstandingCount = outstanding.length;
 
   return (
@@ -199,7 +200,7 @@ export default async function BookingsPage({
         ) : (
           <div className="bk-list">
             {rows.map((b) => {
-              const completed = consultedSet.has(b.id);
+              const cstate: ConsultationState = consultState.get(b.id) ?? "none";
               const rs: ReviewState =
                 b.status === "cancelled" ? "none" : reviewStateFor(reviewedIndex, b);
               return (
@@ -220,9 +221,7 @@ export default async function BookingsPage({
                   </div>
                   <div className="bk-treat">{b.treatment_name}</div>
                   <div className="bk-chips">
-                    <span className={`chip ${completed ? "chip-ok" : "chip-warn"}`}>
-                      {completed ? "✓ Consult" : "⏳ Consult"}
-                    </span>
+                    <ConsultChip state={cstate} />
                     {b.status !== "cancelled" && <ReviewChip state={rs} />}
                     <span className="bk-manage">Manage →</span>
                   </div>
