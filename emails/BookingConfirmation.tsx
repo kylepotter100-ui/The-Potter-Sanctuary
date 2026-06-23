@@ -24,6 +24,9 @@ type Props = {
   bookingId: string;
   siteUrl: string;
   includeConsultationCTA?: boolean;
+  // Returning client (has a consultation on file): the form is pre-filled, so
+  // the CTA asks them to review & confirm rather than complete from scratch.
+  returningConsult?: boolean;
 };
 
 export default function BookingConfirmation({
@@ -35,6 +38,7 @@ export default function BookingConfirmation({
   bookingId,
   siteUrl,
   includeConsultationCTA = true,
+  returningConsult = false,
 }: Props) {
   const consultationUrl = `${siteUrl}/questionnaire?booking=${encodeURIComponent(
     bookingId
@@ -87,12 +91,17 @@ export default function BookingConfirmation({
             <Divider />
             <SectionHeading>Before your session</SectionHeading>
             <MutedParagraph>
-              To help us tailor your treatment, please complete your brief
-              consultation form. This takes just a few minutes.
+              {returningConsult
+                ? "We still have your consultation details from your last visit. Please take a moment to review and confirm they're still current — it only takes a minute."
+                : "To help us tailor your treatment, please complete your brief consultation form. This takes just a few minutes."}
             </MutedParagraph>
             <CtaButton
               href={consultationUrl}
-              label="Complete Your Consultation Questionnaire"
+              label={
+                returningConsult
+                  ? "Review & Confirm Your Details"
+                  : "Complete Your Consultation Questionnaire"
+              }
             />
             <p
               style={{
@@ -104,9 +113,9 @@ export default function BookingConfirmation({
                 margin: "0",
               }}
             >
-              Please complete this at least 12 hours before your appointment.
-              Without it, there is a risk your treatment may not be able to
-              commence.
+              {returningConsult
+                ? "Please confirm this at least 12 hours before your appointment so we can tailor your treatment safely."
+                : "Please complete this at least 12 hours before your appointment. Without it, there is a risk your treatment may not be able to commence."}
             </p>
           </>
         ) : (

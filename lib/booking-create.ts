@@ -7,6 +7,7 @@ import { siteConfig } from "@/lib/site";
 import { validateSlotAvailable } from "@/lib/availability";
 import { services } from "@/lib/services";
 import { normalizePhone } from "@/lib/phone";
+import { customerHasConsultation } from "@/lib/consultation";
 import { formatLongDate, formatTime12h, formatTimestamp } from "@/lib/format";
 
 // ============================================================================
@@ -243,6 +244,13 @@ export async function createBooking(
   const timeNice = formatTime12h(input.time);
   const siteUrl = siteConfig.url;
 
+  // When we're asking for the consultation, word it as "review & confirm" for a
+  // returning client who already has one on file (the form will be pre-filled).
+  let returningConsult = false;
+  if (includeConsultationCTA && customerId) {
+    returningConsult = await customerHasConsultation(supabaseAdmin, customerId);
+  }
+
   try {
     const customerHtml = await render(
       BookingConfirmation({
@@ -254,6 +262,7 @@ export async function createBooking(
         bookingId: inserted.id,
         siteUrl,
         includeConsultationCTA,
+        returningConsult,
       })
     );
 

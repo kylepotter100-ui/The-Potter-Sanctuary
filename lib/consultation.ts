@@ -68,6 +68,23 @@ export async function getConsultationStateIndex(
 }
 
 /**
+ * Whether a customer has ANY consultation on file (from any booking). Used to
+ * word the consultation emails for returning clients ("review & confirm")
+ * differently from new clients ("complete"). Cheap head/count query.
+ */
+export async function customerHasConsultation(
+  admin: SupabaseClient,
+  customerId: string | null
+): Promise<boolean> {
+  if (!customerId) return false;
+  const { count } = await admin
+    .from("consultation_responses")
+    .select("id", { count: "exact", head: true })
+    .eq("customer_id", customerId);
+  return (count ?? 0) > 0;
+}
+
+/**
  * The customer's most recent consultation snapshot — used to render a
  * carried-over consultation read-only on the booking detail page.
  */

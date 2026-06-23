@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
+import { customerHasConsultation } from "@/lib/consultation";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +138,12 @@ export async function GET(req: Request) {
         .eq("id", b.id);
 
     try {
+      // Returning client (has a consultation on file from a prior visit) → the
+      // form is pre-filled, so word it as "review & confirm" not "complete".
+      const returning = await customerHasConsultation(
+        supabaseAdmin,
+        b.customer_id as string | null
+      );
       const html = await render(
         ConsultationReminder({
           firstName: b.customer_first_name,
@@ -145,13 +152,16 @@ export async function GET(req: Request) {
           bookingTime: formatTime12h(b.booking_time),
           bookingId: b.id,
           siteUrl,
+          returning,
         })
       );
       const result = await resend.emails.send({
         from: FROM,
         to: b.customer_email,
         replyTo: REPLY_TO,
-        subject: "A friendly reminder — please complete your consultation",
+        subject: returning
+          ? "A friendly reminder — please review your consultation details"
+          : "A friendly reminder — please complete your consultation",
         html,
       });
       if (result.error) {
