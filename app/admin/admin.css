@@ -1713,6 +1713,10 @@
 .profile-stats b { color: var(--admin-sage-deep); }
 .count-note { font-size: 12px; color: var(--admin-ink-soft); margin-top: 12px; }
 .stars { color: var(--admin-amber); letter-spacing: 2px; }
+/* "On file (carried over)" consultation chip — green like ✓ Consult / Reviewed:
+   it signals we DO hold the client's info (important for the booking to go
+   ahead). Amber ⏳ Consult stays the only "missing info" warning. */
+.chip-carried { background: var(--admin-info-soft); color: var(--admin-sage-deep); }
 
 /* Gender pills + generic pill row (admin-scoped). */
 .pillrow { display: flex; flex-wrap: wrap; gap: 8px; }

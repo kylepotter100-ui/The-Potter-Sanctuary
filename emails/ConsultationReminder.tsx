@@ -19,6 +19,9 @@ type Props = {
   bookingTime: string;
   bookingId: string;
   siteUrl: string;
+  // Returning client (has a consultation on file): the form is pre-filled, so
+  // the ask is to review & confirm rather than complete from scratch.
+  returning?: boolean;
 };
 
 export default function ConsultationReminder({
@@ -28,6 +31,7 @@ export default function ConsultationReminder({
   bookingTime,
   bookingId,
   siteUrl,
+  returning = false,
 }: Props) {
   const consultationUrl = `${siteUrl}/questionnaire?booking=${encodeURIComponent(
     bookingId
@@ -36,14 +40,18 @@ export default function ConsultationReminder({
   return (
     <EmailLayout
       siteUrl={siteUrl}
-      preview={`Friendly reminder — please complete your consultation before ${bookingDate}`}
+      preview={
+        returning
+          ? `Friendly reminder — please review and confirm your details before ${bookingDate}`
+          : `Friendly reminder — please complete your consultation before ${bookingDate}`
+      }
     >
       <ContentSection>
         <SectionHeading>A friendly reminder</SectionHeading>
         <Paragraph>
-          Dear {firstName}, your appointment with The Potter Sanctuary is
-          approaching. To ensure your treatment can go ahead as planned, please
-          complete your consultation questionnaire as soon as possible.
+          {returning
+            ? `Dear ${firstName}, your appointment with The Potter Sanctuary is approaching. We still have your consultation details from your last visit — please take a moment to review and confirm they're still current (and update anything that has changed) before your session.`
+            : `Dear ${firstName}, your appointment with The Potter Sanctuary is approaching. To ensure your treatment can go ahead as planned, please complete your consultation questionnaire as soon as possible.`}
         </Paragraph>
 
         <Section
@@ -62,7 +70,7 @@ export default function ConsultationReminder({
 
         <CtaButton
           href={consultationUrl}
-          label="Complete Your Questionnaire"
+          label={returning ? "Review & Confirm Your Details" : "Complete Your Questionnaire"}
         />
 
         <Divider />
@@ -75,8 +83,9 @@ export default function ConsultationReminder({
             margin: 0,
           }}
         >
-          Without a completed questionnaire, your treatment may not be able to
-          commence.
+          {returning
+            ? "Confirming your details helps us tailor your treatment safely."
+            : "Without a completed questionnaire, your treatment may not be able to commence."}
         </p>
       </ContentSection>
     </EmailLayout>

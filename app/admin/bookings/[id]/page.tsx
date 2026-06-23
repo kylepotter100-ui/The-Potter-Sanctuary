@@ -5,6 +5,7 @@ import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
 import RequestReviewButton from "@/components/RequestReviewButton";
 import { supabaseAdmin } from "@/lib/supabase";
 import { customerHasReviewed } from "@/lib/reviews";
+import { getLatestConsultationForCustomer } from "@/lib/consultation";
 import { resolveBack } from "@/lib/admin-back";
 
 export const dynamic = "force-dynamic";
@@ -158,10 +159,27 @@ export default async function AdminBookingDetailPage({
     );
   }
 
-  const conditions = consult
-    ? ((consult.conditions as Record<string, boolean>) ?? {})
+  // If this booking has no consultation of its own, fall back to the customer's
+  // most recent one (carried over from an earlier visit) so a returning client
+  // who rebooked without signing in doesn't read as a blank "not completed".
+  // The owner re-confirms each visit, so it's rendered as "on file (carried
+  // over)" — distinct from one freshly completed for this booking.
+  let carried: Record<string, unknown> | null = null;
+  if (!consult && booking.customer_id) {
+    carried = await getLatestConsultationForCustomer(
+      supabaseAdmin,
+      booking.customer_id as string
+    );
+  }
+  const displayConsult = (consult ?? carried) as Record<string, unknown> | null;
+  const isCarried = !consult && !!carried;
+
+  const conditions = displayConsult
+    ? ((displayConsult.conditions as Record<string, boolean>) ?? {})
     : {};
-  const focusAreas = consult ? ((consult.focus_areas as string[]) ?? []) : [];
+  const focusAreas = displayConsult
+    ? ((displayConsult.focus_areas as string[]) ?? [])
+    : [];
   const focusTicked: Record<string, boolean> = {};
   for (const f of focusAreas) focusTicked[f] = true;
 
@@ -264,9 +282,9 @@ export default async function AdminBookingDetailPage({
         {/* Section 2 — Consultation response */}
         <section className="admin-card" style={{ marginBottom: 16 }}>
           <h2 style={{ fontFamily: "var(--font-serif)", marginTop: 0 }}>
-            Consultation Response{consult ? " ✓" : ""}
+            Consultation Response{consult ? " ✓" : isCarried ? " — on file" : ""}
           </h2>
-          {!consult ? (
+          {!displayConsult ? (
             <>
               <p className="lede" style={{ margin: 0 }}>
                 No consultation submitted yet.
@@ -277,6 +295,22 @@ export default async function AdminBookingDetailPage({
             </>
           ) : (
             <div className="q-readonly">
+              {isCarried && (
+                <div className="info-text" style={{ marginBottom: 16 }}>
+                  On file from a previous visit
+                  {displayConsult.consent_date
+                    ? ` (${fmtShortDate(displayConsult.consent_date as string | null)})`
+                    : ""}
+                  . This client rebooked without signing in, so it hasn&apos;t
+                  been re-confirmed for this booking — confirm details with the
+                  client, or nudge them to update it.
+                  {booking.status !== "cancelled" && (
+                    <div style={{ marginTop: 10 }}>
+                      <NudgeQuestionnaireButton bookingId={booking.id} />
+                    </div>
+                  )}
+                </div>
+              )}
               {/* SECTION 1 — Client Information */}
               <h3 className="q-readonly-section">Section 1 — Client Information</h3>
               <dl className="q-readonly-list">
@@ -297,21 +331,21 @@ export default async function AdminBookingDetailPage({
               {conditions.allergies ? (
                 <dl className="q-readonly-list">
                   <dt>Allergies — please specify</dt>
-                  <dd>{fmtText(consult.allergies_specify as string | null)}</dd>
+                  <dd>{fmtText(displayConsult.allergies_specify as string | null)}</dd>
                 </dl>
               ) : null}
               <dl className="q-readonly-list">
                 <dt>Other medical conditions</dt>
                 <dd className="q-readonly-multiline">
-                  {fmtText(consult.other_medical_conditions as string | null)}
+                  {fmtText(displayConsult.other_medical_conditions as string | null)}
                 </dd>
                 <dt>Currently under medical care?</dt>
-                <dd>{fmtBool(consult.under_medical_care as boolean | null)}</dd>
-                {consult.under_medical_care ? (
+                <dd>{fmtBool(displayConsult.under_medical_care as boolean | null)}</dd>
+                {displayConsult.under_medical_care ? (
                   <>
                     <dt>Explanation</dt>
                     <dd className="q-readonly-multiline">
-                      {fmtText(consult.medical_care_explanation as string | null)}
+                      {fmtText(displayConsult.medical_care_explanation as string | null)}
                     </dd>
                   </>
                 ) : null}
@@ -329,18 +363,18 @@ export default async function AdminBookingDetailPage({
               <dl className="q-readonly-list">
                 <dt>Areas to avoid</dt>
                 <dd className="q-readonly-multiline">
-                  {fmtText(consult.areas_to_avoid as string | null)}
+                  {fmtText(displayConsult.areas_to_avoid as string | null)}
                 </dd>
                 <dt>Pressure preference</dt>
                 <dd>
                   <span className="q-readonly-pill">
-                    {fmtText(consult.pressure_preference as string | null)}
+                    {fmtText(displayConsult.pressure_preference as string | null)}
                   </span>
                 </dd>
                 <dt>Had professional massage before?</dt>
                 <dd>
                   {fmtBool(
-                    consult.had_professional_massage_before as boolean | null
+                    displayConsult.had_professional_massage_before as boolean | null
                   )}
                 </dd>
               </dl>
@@ -352,15 +386,15 @@ export default async function AdminBookingDetailPage({
               <dl className="q-readonly-list">
                 <dt>Experiences stress regularly?</dt>
                 <dd>
-                  {fmtBool(consult.experiences_stress_regularly as boolean | null)}
+                  {fmtBool(displayConsult.experiences_stress_regularly as boolean | null)}
                 </dd>
                 <dt>Primary reason for visit</dt>
                 <dd className="q-readonly-multiline">
-                  {fmtText(consult.primary_reason as string | null)}
+                  {fmtText(displayConsult.primary_reason as string | null)}
                 </dd>
                 <dt>Additional information</dt>
                 <dd className="q-readonly-multiline">
-                  {fmtText(consult.additional_info as string | null)}
+                  {fmtText(displayConsult.additional_info as string | null)}
                 </dd>
               </dl>
 
@@ -370,15 +404,15 @@ export default async function AdminBookingDetailPage({
               </h3>
               <dl className="q-readonly-list">
                 <dt>Consent given</dt>
-                <dd>{fmtBool(consult.consent_given as boolean | null)}</dd>
+                <dd>{fmtBool(displayConsult.consent_given as boolean | null)}</dd>
                 <dt>Signed by</dt>
-                <dd>{fmtText(consult.signature_name as string | null)}</dd>
+                <dd>{fmtText(displayConsult.signature_name as string | null)}</dd>
                 <dt>Signed on</dt>
-                <dd>{fmtShortDate(consult.consent_date as string | null)}</dd>
+                <dd>{fmtShortDate(displayConsult.consent_date as string | null)}</dd>
               </dl>
               <p className="q-readonly-meta">
-                Submitted{" "}
-                {new Date(consult.created_at as string).toLocaleString("en-GB")}
+                {isCarried ? "Carried over — originally submitted " : "Submitted "}
+                {new Date(displayConsult.created_at as string).toLocaleString("en-GB")}
               </p>
             </div>
           )}
@@ -399,6 +433,11 @@ export default async function AdminBookingDetailPage({
             reviewState={reviewState}
             canRequest={booking.status !== "cancelled"}
             lastRequestedAt={(booking.review_email_sent_at as string | null) ?? null}
+            reviewHref={
+              booking.customer_id
+                ? `/admin/clients/${booking.customer_id}`
+                : "/admin/reviews"
+            }
           />
         </section>
 
