@@ -433,6 +433,11 @@ export default async function AdminBookingDetailPage({
             reviewState={reviewState}
             canRequest={booking.status !== "cancelled"}
             lastRequestedAt={(booking.review_email_sent_at as string | null) ?? null}
+            reviewHref={
+              booking.customer_id
+                ? `/admin/clients/${booking.customer_id}`
+                : "/admin/reviews"
+            }
           />
         </section>
 

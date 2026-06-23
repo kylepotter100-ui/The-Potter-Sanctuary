@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -12,6 +13,9 @@ type Props = {
   // When the last request went out (review_email_sent_at), shown on the
   // "requested" state so the admin can see how recently it was sent.
   lastRequestedAt?: string | null;
+  // Where the "left" state links to so the owner can read the review (the
+  // client's profile lists their reviews). Falls back to all reviews.
+  reviewHref?: string;
 };
 
 const MONTHS_SHORT = [
@@ -38,6 +42,7 @@ export default function RequestReviewButton({
   reviewState,
   canRequest,
   lastRequestedAt,
+  reviewHref = "/admin/reviews",
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -77,11 +82,12 @@ export default function RequestReviewButton({
   }
 
   if (reviewState === "left") {
+    // Already reviewed — no send path. Link to the review instead of a dead button.
     return (
       <div className="btn-row" style={{ marginTop: 14 }}>
-        <button type="button" className="btn" disabled>
-          Review left ✓
-        </button>
+        <Link href={reviewHref} className="btn btn-ghost">
+          View review →
+        </Link>
       </div>
     );
   }
