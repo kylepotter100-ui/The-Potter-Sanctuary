@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Customer mock-ups — Account, Emails, Booking success</title>
+<style>
+/* ===== Public-site tokens (from app/globals.css) ===== */
+:root{
+  --sage-deep:#6E8068; --sage:#8A9E85; --sage-mid:#A8B498; --sage-soft:#B8C2A8; --sage-pale:#D6DCC9;
+  --cream:#EFE8D6; --cream-soft:#F5EFE0; --cream-warm:#E8DEC5; --bone:#FBF7EC;
+  --ink:#3A3F31; --ink-soft:#5A6149; --line:rgba(58,63,49,.14);
+  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --sans:'Lora',Georgia,serif;
+  /* email tokens (emails/_shared.tsx) */
+  --e-sage:#8A9E85; --e-cream:#F5F0E8; --e-bone:#FBF7EC; --e-ink:#1C1C1C; --e-ink-soft:#4A4A4A; --e-line:rgba(28,28,28,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:#cdd3c2;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;color:var(--ink);line-height:1.15;margin:0}
+a{color:var(--sage-deep)}
+
+/* demo chrome */
+.demo-bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#2f352a;color:#e7ecd9}
+.demo-bar strong{font-family:var(--serif);font-size:18px;margin-right:8px}
+.demo-bar button{font-family:var(--sans);font-size:12px;letter-spacing:.04em;cursor:pointer;border:1px solid #51593f;background:transparent;color:#dfe6cf;border-radius:999px;padding:6px 14px}
+.demo-bar button.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.demo-note{margin-left:auto;font-size:11px;color:#aab39a}
+
+.stage{display:flex;justify-content:center;padding:26px 16px 90px}
+.device{position:relative;background:var(--cream);border:1px solid rgba(0,0,0,.14);border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -40px rgba(0,0,0,.5);width:100%;max-width:980px;transition:max-width .2s}
+.device.phone{max-width:402px;border-radius:38px;border:10px solid #20241a}
+
+/* ===== public site header (Nav) ===== */
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 26px;background:var(--sage);color:var(--cream)}
+.site-nav .brand{display:flex;align-items:center;gap:12px;color:var(--cream);text-decoration:none}
+.site-nav .brand .logo{width:30px;height:42px;background:var(--cream);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;opacity:.92}
+.site-nav .brand .name{font-family:var(--serif);font-size:21px;letter-spacing:.01em}
+.site-nav .links{display:flex;gap:22px;align-items:center}
+.site-nav .links a{color:var(--cream);text-decoration:none;font-size:14px;letter-spacing:.02em;opacity:.92}
+.site-nav .links a:hover{opacity:1}
+.site-nav .nav-right{display:flex;gap:14px;align-items:center}
+.nav-account{color:var(--cream);text-decoration:none;font-size:13px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;opacity:.95}
+.nav-account svg{width:16px;height:16px}
+.nav-account.is-new{outline:1px solid rgba(255,255,255,.5);border-radius:999px;padding:6px 12px}
+.site-nav .cta{background:var(--cream);color:var(--sage-deep);text-decoration:none;border-radius:999px;padding:9px 18px;font-size:13px;letter-spacing:.04em}
+.burger{display:none;background:none;border:none;color:var(--cream);cursor:pointer;font-size:22px}
+
+/* ===== Account page ===== */
+.acct{max-width:880px;margin:0 auto;padding:40px 28px 70px}
+.toast{background:var(--sage-pale);border:1px solid var(--sage);color:var(--ink);border-radius:10px;padding:12px 16px;margin-bottom:22px;font-size:15px;display:flex;align-items:center;gap:8px}
+.acct-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+.acct-head h1{font-size:40px;line-height:1.05}
+.acct-email{color:var(--ink-soft);font-size:14px;margin-top:4px}
+.acct-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:11px 20px;font-family:var(--sans);font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;border:1px solid transparent}
+.btn-primary{background:var(--sage-deep);color:var(--cream);border-color:var(--sage-deep)}
+.btn-primary:hover{background:var(--ink);color:var(--cream)}
+.btn-ghost{background:transparent;color:var(--sage-deep);border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--sage)}
+.btn-danger{background:transparent;color:#9a4a3a;border-color:rgba(154,74,58,.4)}
+.btn-danger:hover{background:#9a4a3a;color:#fff;border-color:#9a4a3a}
+.btn-sm{padding:8px 14px;font-size:11px}
+
+.acct-sub{color:var(--ink-soft);margin:0 0 30px;font-size:15px}
+.sec-title{font-family:var(--serif);font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft);margin:30px 0 14px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.bk{background:var(--bone);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap}
+.bk-when{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.bk-treat{font-family:var(--serif);font-size:26px;line-height:1.1;margin-top:3px}
+.bk-meta{font-size:13px;color:var(--ink-soft);margin-top:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bk-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.bk-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:4px 11px;border-radius:999px;font-family:var(--sans)}
+.pill-confirmed{background:var(--sage);color:#fff}
+.pill-pending{background:var(--cream-warm);color:#7a5b1a}
+.pill-consult-ok{background:var(--sage-pale);color:var(--sage-deep)}
+.pill-consult-no{background:#f1e3cf;color:#7a5b1a;border:1px solid #d9b87a}
+.bk.past{background:transparent;opacity:.78}
+.bk.past .bk-treat{font-size:21px}
+.empty{background:var(--bone);border:1px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--ink-soft)}
+
+/* ===== Email frame ===== */
+.email-wrap{padding:26px;background:var(--e-cream)}
+.email{max-width:600px;margin:0 auto;background:var(--e-cream);font-family:Georgia,'Times New Roman',serif;color:var(--e-ink)}
+.email-band{background:var(--e-sage);padding:22px 24px;display:flex;align-items:center;gap:14px;justify-content:center}
+.email-band .logo{width:46px;height:60px;background:#fff;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;opacity:.95}
+.email-band h1{color:#fff;font-size:24px;font-family:Georgia,serif;font-weight:400}
+.email-body{background:#fff;padding:36px 32px}
+.email-body h2{font-family:Georgia,serif;font-size:22px;color:var(--e-ink);margin:0 0 14px}
+.email-body p{font-size:16px;line-height:1.6;color:var(--e-ink);margin:0 0 14px}
+.email-body p.muted{color:var(--e-ink-soft);font-size:15px}
+.detail-box{background:var(--e-bone);border:1px solid var(--e-line);border-radius:10px;padding:18px 20px;margin:6px 0 4px}
+.detail-row{display:flex;gap:12px;padding:5px 0}
+.detail-row .l{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--e-ink-soft);width:120px;flex:none;padding-top:4px}
+.detail-row .v{font-size:17px}
+.e-divider{border-top:1px solid var(--e-sage);margin:24px 0}
+.e-cta{text-align:center;margin:30px 0 8px}
+.e-btn{display:inline-block;background:var(--e-sage);color:#fff;text-decoration:none;font-size:16px;padding:16px 30px;border-radius:6px;letter-spacing:.02em}
+.e-cta-note{font-size:13px;color:var(--e-ink-soft);font-style:italic;margin-top:10px}
+.email-foot{background:var(--e-sage);color:#fff;text-align:center;padding:20px 28px;font-size:13px;line-height:1.6}
+.email-foot a{color:#fff}
+.email-pick{display:flex;gap:8px;justify-content:center;margin:0 0 16px;flex-wrap:wrap}
+.email-pick button{font-family:var(--sans);font-size:12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}
+.email-pick button.on{background:var(--sage);color:#fff;border-color:var(--sage)}
+
+/* ===== Booking success (step 4) ===== */
+.bookflow{max-width:680px;margin:0 auto;padding:40px 26px 70px}
+.booking-card{background:var(--bone);border:1px solid var(--line);border-radius:18px;padding:32px 30px;text-align:center}
+.steps{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:24px;color:var(--ink-soft)}
+.steps .s{display:flex;align-items:center;gap:7px;font-size:12px}
+.steps .dot{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px}
+.steps .s.done .dot{background:var(--sage-deep);color:#fff;border-color:var(--sage-deep)}
+.steps .bar{width:22px;height:1px;background:var(--line)}
+.check{width:64px;height:64px;border-radius:50%;background:var(--sage);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 14px}
+.booking-card h3{font-size:32px;margin-bottom:8px}
+.booking-card p{color:var(--ink-soft);margin:0 auto 12px;max-width:460px}
+.csum{background:#fff;border:1px solid var(--line);border-radius:12px;margin:18px 0;text-align:left;overflow:hidden}
+.csum .row{display:flex;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);font-size:15px}
+.csum .row:last-child{border-bottom:none}
+.csum .l{color:var(--ink-soft);font-size:11px;letter-spacing:.14em;text-transform:uppercase;align-self:center}
+/* NEW account pointer */
+.acct-pointer{background:var(--sage-pale);border:1px solid var(--sage);border-radius:12px;padding:18px 20px;margin:18px 0;text-align:left}
+.acct-pointer .ap-h{font-family:var(--serif);font-size:20px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.acct-pointer p{margin:0 0 12px;color:var(--ink-soft);font-size:14px}
+
+/* modal */
+.backdrop{position:absolute;inset:0;background:rgba(40,45,33,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:40}
+.modal{background:var(--cream-soft);border-radius:16px;padding:26px;max-width:460px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.modal h3{font-size:26px;margin-bottom:10px}
+.modal p{color:var(--ink-soft);font-size:15px;margin:0 0 14px}
+.modal textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:14px;background:#fff;resize:vertical;min-height:64px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.hidden{display:none!important}
+
+/* phone tweaks */
+.device.phone .site-nav .links{display:none}
+.device.phone .site-nav .cta{display:none}
+.device.phone .burger{display:block}
+.device.phone .acct{padding:26px 16px 40px}
+.device.phone .acct-head h1{font-size:30px}
+.device.phone .bk{flex-direction:column;align-items:flex-start}
+.device.phone .bk-right{align-items:flex-start;width:100%}
+.device.phone .bk-actions{justify-content:flex-start}
+.device.phone .email-body{padding:26px 18px}
+.device.phone .detail-row{flex-direction:column;gap:2px}
+.device.phone .detail-row .l{width:auto}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <strong>Customer mock-ups</strong>
+  <button data-view="account" class="on" onclick="showView('account',event)">1 · Account page</button>
+  <button data-view="emails" onclick="showView('emails',event)">2 · Emails</button>
+  <button data-view="success" onclick="showView('success',event)">3 · Booking success</button>
+  <span class="demo-note">Device:</span>
+  <button id="deviceBtn" onclick="toggleDevice(this)">📱 Phone view</button>
+</div>
+
+<div class="stage">
+  <div class="device" id="device">
+
+    <!-- public header with NEW account link -->
+    <nav class="site-nav">
+      <a class="brand" href="#"><span class="logo"></span><span class="name">The Potter Sanctuary</span></a>
+      <div class="links">
+        <a href="#">Treatments</a><a href="#">Products</a><a href="#">Booking</a>
+      </div>
+      <div class="nav-right">
+        <a class="nav-account" id="navAccount" href="#" onclick="showView('account',event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+          <span id="navAccountText">My bookings</span>
+        </a>
+        <a class="cta" href="#">Book a Treatment</a>
+        <button class="burger">☰</button>
+      </div>
+    </nav>
+
+    <!-- ============ VIEW 1: ACCOUNT ============ -->
+    <main class="view" id="view-account">
+      <div class="acct">
+        <div class="toast" id="cancelToast" style="display:none">✓ Your booking has been cancelled.</div>
+        <div class="acct-head">
+          <div>
+            <h1>Welcome back, Jane.</h1>
+            <div class="acct-email">jane@example.com</div>
+          </div>
+          <div class="acct-actions">
+            <a class="btn btn-ghost" href="#">Edit profile</a>
+            <a class="btn btn-ghost" href="#">Sign out</a>
+          </div>
+        </div>
+        <p class="acct-sub">View, manage or cancel your bookings below. We ask for at least 12 hours’ notice to cancel.</p>
+
+        <div class="sec-title">Upcoming visits</div>
+        <div id="upcoming">
+          <div class="bk" data-id="1">
+            <div>
+              <div class="bk-when">Fri 26 Jun 2026 · 13:00</div>
+              <div class="bk-treat">Hot Stones Full Body</div>
+              <div class="bk-meta"><span class="pill pill-confirmed">Confirmed</span> 60 min · £60</div>
+            </div>
+            <div class="bk-right">
+              <span class="pill pill-consult-no">⏳ Consultation due</span>
+              <div class="bk-actions">
+                <a class="btn btn-ghost btn-sm" href="#">Complete consultation</a>
+                <button class="btn btn-danger btn-sm" onclick="openCancel('Hot Stones Full Body','Fri 26 Jun · 13:00','1')">Cancel booking</button>
+              </div>
+            </div>
+          </div>
+          <div class="bk" data-id="2">
+            <div>
+              <div class="bk-when">Tue 14 Jul 2026 · 10:30</div>
+              <div class="bk-treat">Back, Neck &amp; Scalp</div>
+              <div class="bk-meta"><span class="pill pill-pending">Pending</span> 30 min · £25</div>
+            </div>
+            <div class="bk-right">
+              <span class="pill pill-consult-ok">✓ Consultation on file</span>
+              <div class="bk-actions">
+                <button class="btn btn-danger btn-sm" onclick="openCancel('Back, Neck &amp; Scalp','Tue 14 Jul · 10:30','2')">Cancel booking</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty hidden" id="emptyUpcoming">No upcoming visits. <a href="#">Book a session →</a></div>
+
+        <div class="sec-title">Past visits</div>
+        <div class="bk past">
+          <div>
+            <div class="bk-when">Wed 12 Jun 2026 · 14:00</div>
+            <div class="bk-treat">Hot Stones Full Body</div>
+          </div>
+          <div class="bk-right"><span class="pill pill-consult-ok">✓ Attended</span></div>
+        </div>
+        <div class="bk past">
+          <div>
+            <div class="bk-when">Sat 06 Apr 2026 · 16:00</div>
+            <div class="bk-treat">Full Body Aromatherapy · cancelled</div>
+          </div>
+        </div>
+
+        <p style="margin-top:26px;font-size:13px;color:var(--ink-soft)">
+          Toggle the demo: <button class="btn btn-ghost btn-sm" onclick="toggleEmpty()">show empty state</button>
+        </p>
+      </div>
+      <!-- cancel modal -->
+      <div class="backdrop hidden" id="cancelModal">
+        <div class="modal">
+          <h3>Cancel your booking?</h3>
+          <p>Are you sure you want to cancel your <b id="cmTreat">treatment</b> on <b id="cmWhen">date</b>? We ask for at least 12 hours’ notice as a courtesy.</p>
+          <label style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)">Reason (optional)</label>
+          <textarea placeholder="Anything you'd like us to know…"></textarea>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeCancel()">Keep booking</button>
+            <button class="btn btn-danger" onclick="confirmCancel()">Yes, cancel</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============ VIEW 2: EMAILS ============ -->
+    <main class="view hidden" id="view-emails">
+      <div class="email-wrap">
+        <div class="email-pick">
+          <button id="ep-conf" class="on" onclick="showEmail('conf',this)">Booking confirmation</button>
+          <button id="ep-rem" onclick="showEmail('rem',this)">Appointment reminder</button>
+        </div>
+
+        <!-- Booking confirmation -->
+        <div class="email" id="email-conf">
+          <div class="email-band"><span class="logo"></span><h1>The Potter Sanctuary</h1></div>
+          <div class="email-body">
+            <h2>Dear Jane,</h2>
+            <p>Thank you for booking your time at The Potter Sanctuary. Your reservation is confirmed.</p>
+            <div class="detail-box">
+              <div class="detail-row"><span class="l">Treatment</span><span class="v">Hot Stones Full Body</span></div>
+              <div class="detail-row"><span class="l">Date</span><span class="v">Friday, 26 June 2026</span></div>
+              <div class="detail-row"><span class="l">Time</span><span class="v">1:00pm</span></div>
+              <div class="detail-row"><span class="l">Cost</span><span class="v">£60</span></div>
+              <div class="detail-row"><span class="l">Location</span><span class="v">22 Lockheed Close, Beck Row, IP28 3AB</span></div>
+            </div>
+            <div class="e-divider"></div>
+            <h2>Manage your booking</h2>
+            <p class="muted">Need to change or cancel? You can view and manage this booking any time in your account — just sign in with this email address.</p>
+            <div class="e-cta">
+              <a class="e-btn" href="#">Manage / Cancel Your Booking</a>
+              <div class="e-cta-note">We ask for at least 12 hours’ notice to cancel.</div>
+            </div>
+            <div class="e-divider"></div>
+            <h2>Before your session</h2>
+            <p class="muted">To help us tailor your treatment, please complete your brief consultation form.</p>
+            <div class="e-cta"><a class="e-btn" href="#">Complete Your Consultation Questionnaire</a></div>
+          </div>
+          <div class="email-foot">
+            The Potter Sanctuary, Beck Row, Suffolk<br>
+            Need help? Reply to this email or contact <a href="#">hello@thepottersanctuary.co.uk</a><br>
+            <a href="#">Privacy Policy</a> · <a href="#">Cancellation Policy</a>
+          </div>
+        </div>
+
+        <!-- Appointment reminder -->
+        <div class="email hidden" id="email-rem">
+          <div class="email-band"><span class="logo"></span><h1>The Potter Sanctuary</h1></div>
+          <div class="email-body">
+            <h2>See you tomorrow, Jane</h2>
+            <p>A friendly reminder of your appointment at The Potter Sanctuary.</p>
+            <div class="detail-box">
+              <div class="detail-row"><span class="l">Treatment</span><span class="v">Hot Stones Full Body</span></div>
+              <div class="detail-row"><span class="l">Date</span><span class="v">Friday, 26 June 2026</span></div>
+              <div class="detail-row"><span class="l">Time</span><span class="v">1:00pm</span></div>
+            </div>
+            <div class="e-cta">
+              <a class="e-btn" href="#">Manage / Cancel Your Booking</a>
+              <div class="e-cta-note">Need to cancel? Sign in to your account — we ask for at least 12 hours’ notice.</div>
+            </div>
+          </div>
+          <div class="email-foot">
+            The Potter Sanctuary, Beck Row, Suffolk<br>
+            Need help? Reply to this email or contact <a href="#">hello@thepottersanctuary.co.uk</a><br>
+            <a href="#">Privacy Policy</a> · <a href="#">Cancellation Policy</a>
+          </div>
+        </div>
+
+        <p style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:14px">
+          The <b>“Manage / Cancel Your Booking”</b> button links to the website sign-in (<code>/login?next=/account</code>) → lands on the account page after the 6-digit code.
+        </p>
+      </div>
+    </main>
+
+    <!-- ============ VIEW 3: BOOKING SUCCESS ============ -->
+    <main class="view hidden" id="view-success">
+      <div class="bookflow">
+        <div class="booking-card">
+          <div class="steps">
+            <span class="s done"><span class="dot">✓</span>Treatment</span><span class="bar"></span>
+            <span class="s done"><span class="dot">✓</span>Date</span><span class="bar"></span>
+            <span class="s done"><span class="dot">✓</span>Details</span><span class="bar"></span>
+            <span class="s done"><span class="dot">✓</span>Confirm</span>
+          </div>
+          <div class="check">✓</div>
+          <h3>Reservation received</h3>
+          <p>Thank you, Jane — we’ll be in touch within the day to confirm. Studio address and parking notes will follow by email.</p>
+
+          <div class="csum">
+            <div class="row"><span class="l">When</span><span>Fri 26 Jun 2026 · 1:00pm</span></div>
+            <div class="row"><span class="l">Treatment</span><span>Hot Stones Full Body</span></div>
+            <div class="row"><span class="l">Price</span><span>£60</span></div>
+            <div class="row"><span class="l">Contact</span><span>07700 900123 · jane@example.com</span></div>
+          </div>
+
+          <!-- NEW account pointer -->
+          <div class="acct-pointer">
+            <div class="ap-h">✦ Your account is ready</div>
+            <p>We’ve set up an account under <b>jane@example.com</b>. Sign in any time to view, manage or <b>cancel</b> this booking and complete your consultation.</p>
+            <a class="btn btn-primary btn-sm" href="#" onclick="showView('account',event)">View my bookings →</a>
+          </div>
+
+          <p style="font-size:13px">Don’t see the email? Please check your spam or junk folder.</p>
+          <div style="margin-top:8px"><a class="btn btn-ghost" href="#">Book another session</a></div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script>
+function showView(v,ev){if(ev&&ev.preventDefault)ev.preventDefault();
+  document.querySelectorAll('.view').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('view-'+v).classList.remove('hidden');
+  document.querySelectorAll('.demo-bar [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleDevice(btn){const d=document.getElementById('device');d.classList.toggle('phone');btn.textContent=d.classList.contains('phone')?'🖥 Desktop view':'📱 Phone view';}
+function showEmail(which,btn){
+  document.getElementById('email-conf').classList.toggle('hidden',which!=='conf');
+  document.getElementById('email-rem').classList.toggle('hidden',which!=='rem');
+  document.querySelectorAll('.email-pick button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+}
+/* account demo interactions */
+let cancelId=null;
+function openCancel(t,w,id){cancelId=id;document.getElementById('cmTreat').innerHTML=t;document.getElementById('cmWhen').textContent=w;document.getElementById('cancelModal').classList.remove('hidden');}
+function closeCancel(){document.getElementById('cancelModal').classList.add('hidden');}
+function confirmCancel(){closeCancel();const row=document.querySelector('.bk[data-id="'+cancelId+'"]');if(row)row.remove();document.getElementById('cancelToast').style.display='flex';
+  if(!document.querySelector('#upcoming .bk')){document.getElementById('emptyUpcoming').classList.remove('hidden');}}
+function toggleEmpty(){const u=document.getElementById('upcoming'),e=document.getElementById('emptyUpcoming');const show=e.classList.contains('hidden');u.style.display=show?'none':'';e.classList.toggle('hidden',!show);}
+</script>
+</body>
+</html>
