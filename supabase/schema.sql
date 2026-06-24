@@ -271,6 +271,16 @@ ALTER TABLE public.availability   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blocked_dates  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.slot_overrides ENABLE ROW LEVEL SECURITY;
 
+-- Drop the legacy permissive INSERT policy on bookings. Enabling RLS above does
+-- NOT remove pre-existing policies, so an earlier `"Anyone can insert bookings"
+-- WITH CHECK (true)` (from supabase/rls-policies.sql) survived and let anyone
+-- holding the public anon key insert rows directly via PostgREST, bypassing the
+-- server-side validation in lib/booking-create.ts. Real bookings insert via the
+-- service role (which bypasses RLS), so dropping it changes nothing for the app
+-- and restores the intended deny-by-default. (Supabase advisor:
+-- rls_policy_always_true.)
+DROP POLICY IF EXISTS "Anyone can insert bookings" ON public.bookings;
+
 -- One consultation snapshot per booking. Deliberately a FULL unique index,
 -- not a partial one: PostgREST's ON CONFLICT inference (used by the
 -- questionnaire/booking upserts via supabase-js `onConflict: "booking_id"`)
