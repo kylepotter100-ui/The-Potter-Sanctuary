@@ -73,10 +73,13 @@ USING (
   )
 );
 
--- Public bookings (allow inserts from booking form for non-authenticated users)
-CREATE POLICY "Anyone can insert bookings"
-ON public.bookings FOR INSERT
-WITH CHECK (true);
+-- NO anon INSERT policy on bookings. Bookings are created server-side by
+-- /api/booking via supabaseAdmin (service role), which bypasses RLS — so the
+-- public form needs no anon insert. The old `"Anyone can insert bookings" WITH
+-- CHECK (true)` let anyone with the public anon key write arbitrary rows
+-- straight to PostgREST, bypassing all server-side validation; it is dropped
+-- above (and in supabase/schema.sql) and deliberately not recreated.
+-- (Supabase advisor: rls_policy_always_true.)
 
 -- Availability table — public read only (no inserts/updates from client)
 ALTER TABLE public.availability ENABLE ROW LEVEL SECURITY;
