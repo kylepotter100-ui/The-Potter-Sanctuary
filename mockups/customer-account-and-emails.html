@@ -3,16 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Customer mock-ups — Account, Emails, Booking success</title>
+<title>Customer mock-ups — Account, Emails, Booking success (no-JS)</title>
 <style>
-/* ===== Public-site tokens (from app/globals.css) ===== */
+/* ===== Public-site tokens (app/globals.css) ===== */
 :root{
   --sage-deep:#6E8068; --sage:#8A9E85; --sage-mid:#A8B498; --sage-soft:#B8C2A8; --sage-pale:#D6DCC9;
   --cream:#EFE8D6; --cream-soft:#F5EFE0; --cream-warm:#E8DEC5; --bone:#FBF7EC;
   --ink:#3A3F31; --ink-soft:#5A6149; --line:rgba(58,63,49,.14);
   --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
   --sans:'Lora',Georgia,serif;
-  /* email tokens (emails/_shared.tsx) */
   --e-sage:#8A9E85; --e-cream:#F5F0E8; --e-bone:#FBF7EC; --e-ink:#1C1C1C; --e-ink-soft:#4A4A4A; --e-line:rgba(28,28,28,.12);
 }
 *{box-sizing:border-box}
@@ -20,46 +19,57 @@ body{margin:0;background:#cdd3c2;color:var(--ink);font-family:var(--sans);font-s
 h1,h2,h3,h4{font-family:var(--serif);font-weight:400;color:var(--ink);line-height:1.15;margin:0}
 a{color:var(--sage-deep)}
 
+/* hidden toggle inputs drive everything (CSS-only, no JS) */
+.toggle{position:absolute;width:0;height:0;opacity:0;pointer-events:none}
+
 /* demo chrome */
 .demo-bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#2f352a;color:#e7ecd9}
 .demo-bar strong{font-family:var(--serif);font-size:18px;margin-right:8px}
-.demo-bar button{font-family:var(--sans);font-size:12px;letter-spacing:.04em;cursor:pointer;border:1px solid #51593f;background:transparent;color:#dfe6cf;border-radius:999px;padding:6px 14px}
-.demo-bar button.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.tab{font-family:var(--sans);font-size:12px;letter-spacing:.04em;cursor:pointer;border:1px solid #51593f;background:transparent;color:#dfe6cf;border-radius:999px;padding:6px 14px;user-select:none}
 .demo-note{margin-left:auto;font-size:11px;color:#aab39a}
+
+/* active tab highlight */
+#scr-account:checked~.demo-bar .t-account,
+#scr-emails:checked~.demo-bar .t-emails,
+#scr-success:checked~.demo-bar .t-success,
+#dev-desktop:checked~.demo-bar .t-desktop,
+#dev-phone:checked~.demo-bar .t-phone{background:var(--sage);border-color:var(--sage);color:#fff}
 
 .stage{display:flex;justify-content:center;padding:26px 16px 90px}
 .device{position:relative;background:var(--cream);border:1px solid rgba(0,0,0,.14);border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -40px rgba(0,0,0,.5);width:100%;max-width:980px;transition:max-width .2s}
-.device.phone{max-width:402px;border-radius:38px;border:10px solid #20241a}
+/* phone frame */
+#dev-phone:checked~.stage .device{max-width:402px;border-radius:38px;border:10px solid #20241a}
 
-/* ===== public site header (Nav) ===== */
+/* view switching */
+.view{display:none}
+#scr-account:checked~.stage #view-account,
+#scr-emails:checked~.stage #view-emails,
+#scr-success:checked~.stage #view-success{display:block}
+
+/* ===== public header (Nav) ===== */
 .site-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 26px;background:var(--sage);color:var(--cream)}
 .site-nav .brand{display:flex;align-items:center;gap:12px;color:var(--cream);text-decoration:none}
 .site-nav .brand .logo{width:30px;height:42px;background:var(--cream);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;opacity:.92}
 .site-nav .brand .name{font-family:var(--serif);font-size:21px;letter-spacing:.01em}
 .site-nav .links{display:flex;gap:22px;align-items:center}
 .site-nav .links a{color:var(--cream);text-decoration:none;font-size:14px;letter-spacing:.02em;opacity:.92}
-.site-nav .links a:hover{opacity:1}
 .site-nav .nav-right{display:flex;gap:14px;align-items:center}
 .nav-account{color:var(--cream);text-decoration:none;font-size:13px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;opacity:.95}
 .nav-account svg{width:16px;height:16px}
-.nav-account.is-new{outline:1px solid rgba(255,255,255,.5);border-radius:999px;padding:6px 12px}
 .site-nav .cta{background:var(--cream);color:var(--sage-deep);text-decoration:none;border-radius:999px;padding:9px 18px;font-size:13px;letter-spacing:.04em}
 .burger{display:none;background:none;border:none;color:var(--cream);cursor:pointer;font-size:22px}
 
 /* ===== Account page ===== */
-.acct{max-width:880px;margin:0 auto;padding:40px 28px 70px}
+.acct{max-width:880px;margin:0 auto;padding:40px 28px 70px;position:relative}
 .toast{background:var(--sage-pale);border:1px solid var(--sage);color:var(--ink);border-radius:10px;padding:12px 16px;margin-bottom:22px;font-size:15px;display:flex;align-items:center;gap:8px}
 .acct-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:8px}
 .acct-head h1{font-size:40px;line-height:1.05}
 .acct-email{color:var(--ink-soft);font-size:14px;margin-top:4px}
 .acct-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:11px 20px;font-family:var(--sans);font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;border:1px solid transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:11px 20px;font-family:var(--sans);font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;border:1px solid transparent;user-select:none}
 .btn-primary{background:var(--sage-deep);color:var(--cream);border-color:var(--sage-deep)}
-.btn-primary:hover{background:var(--ink);color:var(--cream)}
 .btn-ghost{background:transparent;color:var(--sage-deep);border-color:var(--line)}
-.btn-ghost:hover{border-color:var(--sage)}
 .btn-danger{background:transparent;color:#9a4a3a;border-color:rgba(154,74,58,.4)}
-.btn-danger:hover{background:#9a4a3a;color:#fff;border-color:#9a4a3a}
 .btn-sm{padding:8px 14px;font-size:11px}
 
 .acct-sub{color:var(--ink-soft);margin:0 0 30px;font-size:15px}
@@ -81,9 +91,21 @@ a{color:var(--sage-deep)}
 .bk.past .bk-treat{font-size:21px}
 .empty{background:var(--bone);border:1px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--ink-soft)}
 
+/* empty-state demo toggle */
+#showEmpty:checked~.stage #upcoming{display:none}
+#emptyUpcoming{display:none}
+#showEmpty:checked~.stage #emptyUpcoming{display:block}
+
 /* ===== Email frame ===== */
 .email-wrap{padding:26px;background:var(--e-cream)}
+.email-pick{display:flex;gap:8px;justify-content:center;margin:0 0 16px;flex-wrap:wrap}
+.ep{font-family:var(--sans);font-size:12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer;user-select:none}
+#eml-conf:checked~.stage .ep-conf,
+#eml-rem:checked~.stage .ep-rem{background:var(--sage);color:#fff;border-color:var(--sage)}
 .email{max-width:600px;margin:0 auto;background:var(--e-cream);font-family:Georgia,'Times New Roman',serif;color:var(--e-ink)}
+#email-rem{display:none}
+#eml-rem:checked~.stage #email-conf{display:none}
+#eml-rem:checked~.stage #email-rem{display:block}
 .email-band{background:var(--e-sage);padding:22px 24px;display:flex;align-items:center;gap:14px;justify-content:center}
 .email-band .logo{width:46px;height:60px;background:#fff;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;opacity:.95}
 .email-band h1{color:#fff;font-size:24px;font-family:Georgia,serif;font-weight:400}
@@ -101,9 +123,6 @@ a{color:var(--sage-deep)}
 .e-cta-note{font-size:13px;color:var(--e-ink-soft);font-style:italic;margin-top:10px}
 .email-foot{background:var(--e-sage);color:#fff;text-align:center;padding:20px 28px;font-size:13px;line-height:1.6}
 .email-foot a{color:#fff}
-.email-pick{display:flex;gap:8px;justify-content:center;margin:0 0 16px;flex-wrap:wrap}
-.email-pick button{font-family:var(--sans);font-size:12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}
-.email-pick button.on{background:var(--sage);color:#fff;border-color:var(--sage)}
 
 /* ===== Booking success (step 4) ===== */
 .bookflow{max-width:680px;margin:0 auto;padding:40px 26px 70px}
@@ -120,58 +139,67 @@ a{color:var(--sage-deep)}
 .csum .row{display:flex;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);font-size:15px}
 .csum .row:last-child{border-bottom:none}
 .csum .l{color:var(--ink-soft);font-size:11px;letter-spacing:.14em;text-transform:uppercase;align-self:center}
-/* NEW account pointer */
 .acct-pointer{background:var(--sage-pale);border:1px solid var(--sage);border-radius:12px;padding:18px 20px;margin:18px 0;text-align:left}
 .acct-pointer .ap-h{font-family:var(--serif);font-size:20px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.acct-pointer p{margin:0 0 12px;color:var(--ink-soft);font-size:14px}
+.acct-pointer p{margin:0 0 12px;color:var(--ink-soft);font-size:14px;max-width:none}
 
-/* modal */
-.backdrop{position:absolute;inset:0;background:rgba(40,45,33,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:40}
+/* cancel modal (checkbox-driven) */
+.backdrop{position:absolute;inset:0;background:rgba(40,45,33,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+#showCancel:checked~.stage #cancelModal{display:flex}
 .modal{background:var(--cream-soft);border-radius:16px;padding:26px;max-width:460px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
 .modal h3{font-size:26px;margin-bottom:10px}
 .modal p{color:var(--ink-soft);font-size:15px;margin:0 0 14px}
 .modal textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:14px;background:#fff;resize:vertical;min-height:64px}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
-.hidden{display:none!important}
 
-/* phone tweaks */
-.device.phone .site-nav .links{display:none}
-.device.phone .site-nav .cta{display:none}
-.device.phone .burger{display:block}
-.device.phone .acct{padding:26px 16px 40px}
-.device.phone .acct-head h1{font-size:30px}
-.device.phone .bk{flex-direction:column;align-items:flex-start}
-.device.phone .bk-right{align-items:flex-start;width:100%}
-.device.phone .bk-actions{justify-content:flex-start}
-.device.phone .email-body{padding:26px 18px}
-.device.phone .detail-row{flex-direction:column;gap:2px}
-.device.phone .detail-row .l{width:auto}
+/* ===== phone overrides (scoped to #dev-phone) ===== */
+#dev-phone:checked~.stage .device .site-nav .links{display:none}
+#dev-phone:checked~.stage .device .site-nav .cta{display:none}
+#dev-phone:checked~.stage .device .burger{display:block}
+#dev-phone:checked~.stage .device .acct{padding:26px 16px 40px}
+#dev-phone:checked~.stage .device .acct-head h1{font-size:30px}
+#dev-phone:checked~.stage .device .bk{flex-direction:column;align-items:flex-start}
+#dev-phone:checked~.stage .device .bk-right{align-items:flex-start;width:100%}
+#dev-phone:checked~.stage .device .bk-actions{justify-content:flex-start}
+#dev-phone:checked~.stage .device .email-body{padding:26px 18px}
+#dev-phone:checked~.stage .device .detail-row{flex-direction:column;gap:2px}
+#dev-phone:checked~.stage .device .detail-row .l{width:auto}
 </style>
 </head>
 <body>
 
+<!-- toggle state (CSS-only) -->
+<input type="radio" name="scr" id="scr-account" class="toggle" checked>
+<input type="radio" name="scr" id="scr-emails" class="toggle">
+<input type="radio" name="scr" id="scr-success" class="toggle">
+<input type="radio" name="dev" id="dev-desktop" class="toggle" checked>
+<input type="radio" name="dev" id="dev-phone" class="toggle">
+<input type="radio" name="eml" id="eml-conf" class="toggle" checked>
+<input type="radio" name="eml" id="eml-rem" class="toggle">
+<input type="checkbox" id="showEmpty" class="toggle">
+<input type="checkbox" id="showCancel" class="toggle">
+
 <div class="demo-bar">
   <strong>Customer mock-ups</strong>
-  <button data-view="account" class="on" onclick="showView('account',event)">1 · Account page</button>
-  <button data-view="emails" onclick="showView('emails',event)">2 · Emails</button>
-  <button data-view="success" onclick="showView('success',event)">3 · Booking success</button>
+  <label class="tab t-account" for="scr-account">1 · Account page</label>
+  <label class="tab t-emails" for="scr-emails">2 · Emails</label>
+  <label class="tab t-success" for="scr-success">3 · Booking success</label>
   <span class="demo-note">Device:</span>
-  <button id="deviceBtn" onclick="toggleDevice(this)">📱 Phone view</button>
+  <label class="tab t-desktop" for="dev-desktop">🖥 Desktop</label>
+  <label class="tab t-phone" for="dev-phone">📱 Phone</label>
 </div>
 
 <div class="stage">
-  <div class="device" id="device">
+  <div class="device">
 
     <!-- public header with NEW account link -->
     <nav class="site-nav">
       <a class="brand" href="#"><span class="logo"></span><span class="name">The Potter Sanctuary</span></a>
-      <div class="links">
-        <a href="#">Treatments</a><a href="#">Products</a><a href="#">Booking</a>
-      </div>
+      <div class="links"><a href="#">Treatments</a><a href="#">Products</a><a href="#">Booking</a></div>
       <div class="nav-right">
-        <a class="nav-account" id="navAccount" href="#" onclick="showView('account',event)">
+        <a class="nav-account" href="#">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
-          <span id="navAccountText">My bookings</span>
+          <span>My bookings</span>
         </a>
         <a class="cta" href="#">Book a Treatment</a>
         <button class="burger">☰</button>
@@ -181,7 +209,7 @@ a{color:var(--sage-deep)}
     <!-- ============ VIEW 1: ACCOUNT ============ -->
     <main class="view" id="view-account">
       <div class="acct">
-        <div class="toast" id="cancelToast" style="display:none">✓ Your booking has been cancelled.</div>
+        <div class="toast">✓ Demo: your booking has been cancelled.</div>
         <div class="acct-head">
           <div>
             <h1>Welcome back, Jane.</h1>
@@ -196,7 +224,7 @@ a{color:var(--sage-deep)}
 
         <div class="sec-title">Upcoming visits</div>
         <div id="upcoming">
-          <div class="bk" data-id="1">
+          <div class="bk">
             <div>
               <div class="bk-when">Fri 26 Jun 2026 · 13:00</div>
               <div class="bk-treat">Hot Stones Full Body</div>
@@ -206,11 +234,11 @@ a{color:var(--sage-deep)}
               <span class="pill pill-consult-no">⏳ Consultation due</span>
               <div class="bk-actions">
                 <a class="btn btn-ghost btn-sm" href="#">Complete consultation</a>
-                <button class="btn btn-danger btn-sm" onclick="openCancel('Hot Stones Full Body','Fri 26 Jun · 13:00','1')">Cancel booking</button>
+                <label class="btn btn-danger btn-sm" for="showCancel">Cancel booking</label>
               </div>
             </div>
           </div>
-          <div class="bk" data-id="2">
+          <div class="bk">
             <div>
               <div class="bk-when">Tue 14 Jul 2026 · 10:30</div>
               <div class="bk-treat">Back, Neck &amp; Scalp</div>
@@ -219,12 +247,12 @@ a{color:var(--sage-deep)}
             <div class="bk-right">
               <span class="pill pill-consult-ok">✓ Consultation on file</span>
               <div class="bk-actions">
-                <button class="btn btn-danger btn-sm" onclick="openCancel('Back, Neck &amp; Scalp','Tue 14 Jul · 10:30','2')">Cancel booking</button>
+                <label class="btn btn-danger btn-sm" for="showCancel">Cancel booking</label>
               </div>
             </div>
           </div>
         </div>
-        <div class="empty hidden" id="emptyUpcoming">No upcoming visits. <a href="#">Book a session →</a></div>
+        <div class="empty" id="emptyUpcoming">No upcoming visits. <a href="#">Book a session →</a></div>
 
         <div class="sec-title">Past visits</div>
         <div class="bk past">
@@ -242,30 +270,32 @@ a{color:var(--sage-deep)}
         </div>
 
         <p style="margin-top:26px;font-size:13px;color:var(--ink-soft)">
-          Toggle the demo: <button class="btn btn-ghost btn-sm" onclick="toggleEmpty()">show empty state</button>
+          Demo toggles: <label class="btn btn-ghost btn-sm" for="showEmpty">show empty state</label>
+          <label class="btn btn-ghost btn-sm" for="showCancel">show cancel dialog</label>
         </p>
       </div>
+
       <!-- cancel modal -->
-      <div class="backdrop hidden" id="cancelModal">
+      <div class="backdrop" id="cancelModal">
         <div class="modal">
           <h3>Cancel your booking?</h3>
-          <p>Are you sure you want to cancel your <b id="cmTreat">treatment</b> on <b id="cmWhen">date</b>? We ask for at least 12 hours’ notice as a courtesy.</p>
+          <p>Are you sure you want to cancel your <b>Hot Stones Full Body</b> on <b>Fri 26 Jun · 13:00</b>? We ask for at least 12 hours’ notice as a courtesy.</p>
           <label style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)">Reason (optional)</label>
           <textarea placeholder="Anything you'd like us to know…"></textarea>
           <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeCancel()">Keep booking</button>
-            <button class="btn btn-danger" onclick="confirmCancel()">Yes, cancel</button>
+            <label class="btn btn-ghost" for="showCancel">Keep booking</label>
+            <label class="btn btn-danger" for="showCancel">Yes, cancel</label>
           </div>
         </div>
       </div>
     </main>
 
     <!-- ============ VIEW 2: EMAILS ============ -->
-    <main class="view hidden" id="view-emails">
+    <main class="view" id="view-emails">
       <div class="email-wrap">
         <div class="email-pick">
-          <button id="ep-conf" class="on" onclick="showEmail('conf',this)">Booking confirmation</button>
-          <button id="ep-rem" onclick="showEmail('rem',this)">Appointment reminder</button>
+          <label class="ep ep-conf" for="eml-conf">Booking confirmation</label>
+          <label class="ep ep-rem" for="eml-rem">Appointment reminder</label>
         </div>
 
         <!-- Booking confirmation -->
@@ -301,7 +331,7 @@ a{color:var(--sage-deep)}
         </div>
 
         <!-- Appointment reminder -->
-        <div class="email hidden" id="email-rem">
+        <div class="email" id="email-rem">
           <div class="email-band"><span class="logo"></span><h1>The Potter Sanctuary</h1></div>
           <div class="email-body">
             <h2>See you tomorrow, Jane</h2>
@@ -330,7 +360,7 @@ a{color:var(--sage-deep)}
     </main>
 
     <!-- ============ VIEW 3: BOOKING SUCCESS ============ -->
-    <main class="view hidden" id="view-success">
+    <main class="view" id="view-success">
       <div class="bookflow">
         <div class="booking-card">
           <div class="steps">
@@ -350,11 +380,10 @@ a{color:var(--sage-deep)}
             <div class="row"><span class="l">Contact</span><span>07700 900123 · jane@example.com</span></div>
           </div>
 
-          <!-- NEW account pointer -->
           <div class="acct-pointer">
             <div class="ap-h">✦ Your account is ready</div>
             <p>We’ve set up an account under <b>jane@example.com</b>. Sign in any time to view, manage or <b>cancel</b> this booking and complete your consultation.</p>
-            <a class="btn btn-primary btn-sm" href="#" onclick="showView('account',event)">View my bookings →</a>
+            <a class="btn btn-primary btn-sm" href="#">View my bookings →</a>
           </div>
 
           <p style="font-size:13px">Don’t see the email? Please check your spam or junk folder.</p>
@@ -366,26 +395,5 @@ a{color:var(--sage-deep)}
   </div>
 </div>
 
-<script>
-function showView(v,ev){if(ev&&ev.preventDefault)ev.preventDefault();
-  document.querySelectorAll('.view').forEach(el=>el.classList.add('hidden'));
-  document.getElementById('view-'+v).classList.remove('hidden');
-  document.querySelectorAll('.demo-bar [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-function toggleDevice(btn){const d=document.getElementById('device');d.classList.toggle('phone');btn.textContent=d.classList.contains('phone')?'🖥 Desktop view':'📱 Phone view';}
-function showEmail(which,btn){
-  document.getElementById('email-conf').classList.toggle('hidden',which!=='conf');
-  document.getElementById('email-rem').classList.toggle('hidden',which!=='rem');
-  document.querySelectorAll('.email-pick button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
-}
-/* account demo interactions */
-let cancelId=null;
-function openCancel(t,w,id){cancelId=id;document.getElementById('cmTreat').innerHTML=t;document.getElementById('cmWhen').textContent=w;document.getElementById('cancelModal').classList.remove('hidden');}
-function closeCancel(){document.getElementById('cancelModal').classList.add('hidden');}
-function confirmCancel(){closeCancel();const row=document.querySelector('.bk[data-id="'+cancelId+'"]');if(row)row.remove();document.getElementById('cancelToast').style.display='flex';
-  if(!document.querySelector('#upcoming .bk')){document.getElementById('emptyUpcoming').classList.remove('hidden');}}
-function toggleEmpty(){const u=document.getElementById('upcoming'),e=document.getElementById('emptyUpcoming');const show=e.classList.contains('hidden');u.style.display=show?'none':'';e.classList.toggle('hidden',!show);}
-</script>
 </body>
 </html>
