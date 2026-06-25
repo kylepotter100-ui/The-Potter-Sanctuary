@@ -7,6 +7,7 @@ import { siteConfig } from "@/lib/site";
 import { durationMinutesForTreatmentId } from "@/lib/services";
 import { customerHasReviewed } from "@/lib/reviews";
 import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
+import { formatLongDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +127,7 @@ export async function GET(req: Request) {
         ReviewRequest({
           firstName: b.customer_first_name,
           treatmentName: b.treatment_name,
+          visitDate: formatLongDate(b.booking_date),
           bookingId: b.id,
           siteUrl,
         })

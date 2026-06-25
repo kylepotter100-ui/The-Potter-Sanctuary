@@ -6,6 +6,7 @@ import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { customerHasReviewed } from "@/lib/reviews";
+import { formatLongDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export async function POST(
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_id, customer_first_name, customer_email, treatment_name, status, review_email_sent_at"
+      "id, customer_id, customer_first_name, customer_email, treatment_name, booking_date, status, review_email_sent_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -155,6 +156,7 @@ export async function POST(
         ReviewRequest({
           firstName: booking.customer_first_name,
           treatmentName: booking.treatment_name,
+          visitDate: formatLongDate(booking.booking_date),
           bookingId: booking.id,
           siteUrl,
         })
