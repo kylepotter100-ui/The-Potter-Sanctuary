@@ -30,6 +30,8 @@ function formatTime(t: string): string {
 type BookingRow = {
   id: string;
   treatment_name: string;
+  treatment_price: number | null;
+  duration_minutes: number | null;
   booking_date: string;
   booking_time: string;
   status: "pending" | "confirmed" | "cancelled";
@@ -83,7 +85,9 @@ export default async function AccountPage({
   if (customer) {
     const { data: bookings } = await supabaseAdmin
       .from("bookings")
-      .select("id, treatment_name, booking_date, booking_time, status")
+      .select(
+        "id, treatment_name, treatment_price, duration_minutes, booking_date, booking_time, status"
+      )
       .eq("customer_id", customer.id)
       .order("booking_date", { ascending: false })
       .order("booking_time", { ascending: false });
@@ -130,88 +134,118 @@ export default async function AccountPage({
             <div className="email">{user.email}</div>
           </div>
           <div className="account-actions">
-            <Link href="/account/profile" className="account-link">
+            <Link href="/account/profile" className="btn btn-ghost btn-sm">
               Edit profile
             </Link>
-            <SignOutButton />
+            <SignOutButton className="btn btn-ghost btn-sm" />
           </div>
         </header>
+        <p className="acct-sub">
+          View, reschedule, or cancel your bookings below. We ask for at least
+          12 hours&apos; notice.
+        </p>
 
-        <section className="account-section">
-          <h2>Upcoming visits</h2>
-          {upcoming.length === 0 ? (
-            <p className="account-empty">
-              No upcoming visits. <Link href="/#booking">Book a session →</Link>
-            </p>
-          ) : (
-            <ul className="account-bookings-list">
-              {upcoming.map((b) => {
-                const done = consultedBookingIds.has(b.id);
-                return (
-                  <li key={b.id}>
-                    <div>
-                      <div className="b-when">
-                        {formatDate(b.booking_date)} · {formatTime(b.booking_time)}
-                      </div>
-                      <div className="b-treatment">{b.treatment_name}</div>
-                    </div>
-                    <div className="b-actions">
-                      {done ? (
-                        <span className="badge-consult done">✓ Completed</span>
-                      ) : (
-                        <Link
-                          href={`/questionnaire?booking=${b.id}`}
-                          className="submit-btn-link"
-                        >
-                          Submit consultation
-                        </Link>
-                      )}
-                      <Link
-                        href={`/account/reschedule/${b.id}`}
-                        className="reschedule-link"
-                      >
-                        Reschedule
-                      </Link>
-                      <CancelBookingButton
-                        bookingId={b.id}
-                        treatmentName={b.treatment_name}
-                        bookingDate={formatDate(b.booking_date)}
-                        bookingTime={formatTime(b.booking_time)}
-                        startsAt={ukWallTimeToUtc(
-                          b.booking_date,
-                          b.booking_time
-                        ).toISOString()}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="account-section">
-          <h2>Past visits</h2>
-          {past.length === 0 ? (
-            <p className="account-empty">No past visits yet.</p>
-          ) : (
-            <ul className="account-bookings-list">
-              {past.map((b) => (
-                <li key={b.id}>
-                  <div>
-                    <div className="b-when">
-                      {formatDate(b.booking_date)} · {formatTime(b.booking_time)}
-                    </div>
-                    <div className="b-treatment">
-                      {b.treatment_name}
-                      {b.status === "cancelled" ? " · cancelled" : ""}
-                    </div>
+        <div className="sec-title">Upcoming visits</div>
+        {upcoming.length === 0 ? (
+          <p className="account-empty">
+            No upcoming visits. <Link href="/#booking">Book a session →</Link>
+          </p>
+        ) : (
+          upcoming.map((b) => {
+            const done = consultedBookingIds.has(b.id);
+            return (
+              <div className="bk" key={b.id}>
+                <div>
+                  <div className="bk-when">
+                    {formatDate(b.booking_date)} · {formatTime(b.booking_time)}
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  <div className="bk-treat">{b.treatment_name}</div>
+                  <div className="bk-meta">
+                    <span
+                      className={`pill ${
+                        b.status === "confirmed"
+                          ? "pill-confirmed"
+                          : "pill-pending"
+                      }`}
+                    >
+                      {b.status === "confirmed" ? "Confirmed" : "Pending"}
+                    </span>
+                    {b.duration_minutes ? `${b.duration_minutes} min` : null}
+                    {b.duration_minutes && b.treatment_price != null
+                      ? " · "
+                      : null}
+                    {b.treatment_price != null ? `£${b.treatment_price}` : null}
+                  </div>
+                </div>
+                <div className="bk-right">
+                  {done ? (
+                    <span className="pill pill-consult-ok">
+                      ✓ Consultation on file
+                    </span>
+                  ) : (
+                    <span className="pill pill-consult-no">
+                      ⏳ Consultation due
+                    </span>
+                  )}
+                  <div className="bk-actions">
+                    {!done && (
+                      <Link
+                        href={`/questionnaire?booking=${b.id}`}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Complete consultation
+                      </Link>
+                    )}
+                    <Link
+                      href={`/account/reschedule/${b.id}`}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      Reschedule
+                    </Link>
+                    <CancelBookingButton
+                      bookingId={b.id}
+                      treatmentName={b.treatment_name}
+                      bookingDate={formatDate(b.booking_date)}
+                      bookingTime={formatTime(b.booking_time)}
+                      startsAt={ukWallTimeToUtc(
+                        b.booking_date,
+                        b.booking_time
+                      ).toISOString()}
+                      triggerClassName="btn btn-danger btn-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        <div className="sec-title">Past visits</div>
+        {past.length === 0 ? (
+          <p className="account-empty">No past visits yet.</p>
+        ) : (
+          past.map((b) => {
+            const cancelled = b.status === "cancelled";
+            return (
+              <div className="bk past" key={b.id}>
+                <div>
+                  <div className="bk-when">
+                    {formatDate(b.booking_date)} · {formatTime(b.booking_time)}
+                  </div>
+                  <div className="bk-treat">
+                    {b.treatment_name}
+                    {cancelled ? " · cancelled" : ""}
+                  </div>
+                </div>
+                {!cancelled && (
+                  <div className="bk-right">
+                    <span className="pill pill-consult-ok">✓ Attended</span>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     </main>
   );

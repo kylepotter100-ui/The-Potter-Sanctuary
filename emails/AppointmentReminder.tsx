@@ -87,7 +87,6 @@ export default function AppointmentReminder({
         <CtaButton
           href={`${siteUrl}/login?next=/account`}
           label="Manage / Reschedule / Cancel"
-          variant="outline"
         />
       </ContentSection>
     </EmailLayout>

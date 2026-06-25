@@ -641,6 +641,17 @@ export default function Booking({ preselectId }: Props) {
         const body = await res.text();
         throw new Error(body || "Booking failed");
       }
+      // Mark that this browser now has an account so the header can show
+      // "Account" (not "Sign in"). UI hint only — no session/secret; the
+      // booking flow deliberately doesn't sign anyone in (OTP-gated).
+      try {
+        document.cookie =
+          "ps_account=1; path=/; max-age=31536000; samesite=lax";
+        // Tell the header (NavAccountLink) to flip to "Account" without a reload.
+        window.dispatchEvent(new Event("ps-account-changed"));
+      } catch {
+        // non-fatal — header just keeps showing "Sign in"
+      }
       setStep(4);
     } catch (err) {
       setSubmitError(
@@ -1099,8 +1110,8 @@ export default function Booking({ preselectId }: Props) {
           )}
           <div
             style={{
-              background: "var(--sage-pale)",
-              border: "1px solid var(--sage)",
+              background: "var(--sage-deep)",
+              border: "1px solid var(--sage-deep)",
               borderRadius: 12,
               padding: "16px 18px",
               margin: "18px 0",
@@ -1112,6 +1123,7 @@ export default function Booking({ preselectId }: Props) {
                 fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
                 fontSize: 19,
                 marginBottom: 4,
+                color: "#ffffff",
               }}
             >
               Your account is ready
@@ -1119,7 +1131,7 @@ export default function Booking({ preselectId }: Props) {
             <p
               style={{
                 fontSize: 14,
-                color: "var(--ink-soft)",
+                color: "#ffffff",
                 margin: "0 0 10px",
               }}
             >
@@ -1127,7 +1139,11 @@ export default function Booking({ preselectId }: Props) {
               Sign in any time to view, reschedule or cancel this booking. We&apos;ll
               email you a link to complete your consultation before your visit.
             </p>
-            <a href="/login?next=/account" className="account-link">
+            <a
+              href="/login?next=/account"
+              className="account-link"
+              style={{ color: "#ffffff", textDecoration: "underline" }}
+            >
               View my bookings →
             </a>
           </div>

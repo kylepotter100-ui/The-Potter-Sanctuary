@@ -137,7 +137,6 @@ export default function BookingConfirmation({
         <CtaButton
           href={`${siteUrl}/login?next=/account`}
           label="Manage / Reschedule / Cancel"
-          variant="outline"
         />
 
         <Divider />

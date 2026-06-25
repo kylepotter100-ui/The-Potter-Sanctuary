@@ -82,7 +82,6 @@ export default function RescheduleConfirmation({
         <CtaButton
           href={manageUrl}
           label="Manage / Reschedule / Cancel"
-          variant="outline"
         />
       </ContentSection>
     </EmailLayout>

@@ -2088,6 +2088,133 @@
   }
   .submit-btn-link:hover { background: var(--ink); }
 
+  /* ===== Account booking cards (mockup-aligned) ===== */
+  .account-page .acct-sub {
+    color: var(--ink-soft);
+    margin: -14px 0 6px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .account-page .sec-title {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 30px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .account-page .sec-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(28, 28, 28, 0.12);
+  }
+  .account-page .bk {
+    background: var(--bone);
+    border: 1px solid rgba(28, 28, 28, 0.12);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .account-page .bk-when {
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .account-page .bk-treat {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 26px;
+    line-height: 1.1;
+    margin-top: 3px;
+    color: var(--ink);
+  }
+  .account-page .bk-meta {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .account-page .bk-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .account-page .bk-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .account-page .bk.past {
+    background: transparent;
+    opacity: 0.78;
+  }
+  .account-page .bk.past .bk-treat {
+    font-size: 21px;
+  }
+  .account-page .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-family: var(--font-sans), 'Lora', serif;
+    white-space: nowrap;
+  }
+  .account-page .pill-confirmed { background: var(--sage); color: #fff; }
+  .account-page .pill-pending { background: var(--cream-warm); color: #7a5b1a; }
+  .account-page .pill-consult-ok { background: var(--sage-pale); color: var(--sage-deep); }
+  .account-page .pill-consult-no {
+    background: #f1e3cf;
+    color: #7a5b1a;
+    border: 1px solid #d9b87a;
+  }
+  .account-page .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 11px 20px;
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+    background: transparent;
+    user-select: none;
+  }
+  .account-page .btn-ghost {
+    color: var(--sage-deep);
+    border-color: rgba(28, 28, 28, 0.12);
+  }
+  .account-page .btn-ghost:hover { border-color: var(--sage); color: var(--ink); }
+  .account-page .btn-danger {
+    color: #9a4a3a;
+    border-color: rgba(154, 74, 58, 0.4);
+  }
+  .account-page .btn-danger:hover { border-color: #9a4a3a; }
+  .account-page .btn-sm { padding: 8px 14px; font-size: 11px; }
+
   /* ===== Questionnaire form ===== */
   .questionnaire-shell h1 {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;

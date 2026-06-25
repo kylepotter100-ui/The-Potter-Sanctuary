@@ -20,6 +20,10 @@ type Props = {
   // Called after a successful cancel so the parent can refresh its data
   // (e.g. re-fetch /api/me to drop the cancelled booking from a list).
   onCancelled?: () => void;
+  // Optional override for the trigger button's class (defaults to the plain
+  // "cancel-booking-link" text style). The account cards pass a small danger
+  // button class to match the booking-card layout.
+  triggerClassName?: string;
 };
 
 export default function CancelBookingButton({
@@ -30,6 +34,7 @@ export default function CancelBookingButton({
   startsAt,
   redirectTo = "/account",
   onCancelled,
+  triggerClassName = "cancel-booking-link",
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -90,7 +95,7 @@ export default function CancelBookingButton({
     <>
       <button
         type="button"
-        className="cancel-booking-link"
+        className={triggerClassName}
         onClick={() => setOpen(true)}
       >
         Cancel booking

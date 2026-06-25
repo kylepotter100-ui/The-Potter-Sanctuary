@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-export default function SignOutButton() {
+export default function SignOutButton({
+  className = "signout-link",
+}: {
+  className?: string;
+}) {
   const [pending, setPending] = useState(false);
   return (
     <form
@@ -10,7 +14,7 @@ export default function SignOutButton() {
       method="POST"
       onSubmit={() => setPending(true)}
     >
-      <button type="submit" className="signout-link" disabled={pending}>
+      <button type="submit" className={className} disabled={pending}>
         {pending ? "Signing out…" : "Sign out"}
       </button>
     </form>
