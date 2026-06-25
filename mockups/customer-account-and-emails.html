@@ -117,6 +117,14 @@ a{color:var(--sage-deep)}
 .field input:focus{border-color:var(--sage)}
 .field input:disabled{background:var(--cream-soft);color:var(--ink-soft)}
 .saved-note{display:inline-flex;align-items:center;gap:6px;color:var(--sage-deep);font-size:13px}
+.subhead{font-family:var(--serif);font-size:22px;margin:0 0 6px}
+.card+.card{margin-top:16px}
+.q-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 14px;margin:2px 0 8px}
+.q-check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}
+.q-check input{width:16px;height:16px;accent-color:var(--sage)}
+.q-radio-row{display:flex;gap:20px;flex-wrap:wrap}
+.q-radio-row label{display:flex;align-items:center;gap:7px;font-size:14px}
+.q-radio-row input{accent-color:var(--sage)}
 
 /* ===== reschedule (calendar + slots) ===== */
 .resched-cur{background:var(--cream-warm);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 6px;font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -378,7 +386,54 @@ a{color:var(--sage-deep)}
             <div class="field"><label>Emergency contact phone</label><input value="07811 222333"></div>
           </div>
           <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
-            <button class="btn btn-primary">Save changes</button>
+            <button class="btn btn-primary">Save details</button>
+            <span class="saved-note">✓ Saved.</span>
+          </div>
+        </div>
+
+        <!-- Consultation & health details (editable) -->
+        <div class="card">
+          <h3 class="subhead">Consultation &amp; health details</h3>
+          <p style="color:var(--ink-soft);font-size:14px;margin:0 0 18px">Keep these up to date — they’re used to tailor and prepare for your treatments, and apply to your upcoming visits.</p>
+
+          <div class="field full"><label>Health conditions</label>
+            <div class="q-checks">
+              <label class="q-check"><input type="checkbox">High blood pressure</label>
+              <label class="q-check"><input type="checkbox">Low blood pressure</label>
+              <label class="q-check"><input type="checkbox">Heart condition</label>
+              <label class="q-check"><input type="checkbox">Diabetes</label>
+              <label class="q-check"><input type="checkbox" checked>Arthritis</label>
+              <label class="q-check"><input type="checkbox" checked>Chronic pain</label>
+              <label class="q-check"><input type="checkbox">Headaches / migraines</label>
+              <label class="q-check"><input type="checkbox">Recent injury</label>
+              <label class="q-check"><input type="checkbox">Pregnancy</label>
+              <label class="q-check"><input type="checkbox">Skin conditions</label>
+              <label class="q-check"><input type="checkbox">Allergies</label>
+            </div>
+          </div>
+          <div class="field full"><label>Other medical conditions</label><textarea rows="2" placeholder="Anything else we should know…"></textarea></div>
+          <div class="field full"><label>Currently under medical care?</label>
+            <div class="q-radio-row"><label><input type="radio" name="care">Yes</label><label><input type="radio" name="care" checked>No</label></div>
+          </div>
+
+          <div class="field full" style="margin-top:8px"><label>Focus areas</label>
+            <div class="q-checks">
+              <label class="q-check"><input type="checkbox" checked>Back</label>
+              <label class="q-check"><input type="checkbox" checked>Neck</label>
+              <label class="q-check"><input type="checkbox">Shoulders</label>
+              <label class="q-check"><input type="checkbox">Legs</label>
+              <label class="q-check"><input type="checkbox">Arms</label>
+              <label class="q-check"><input type="checkbox">Feet</label>
+              <label class="q-check"><input type="checkbox">Full Body</label>
+            </div>
+          </div>
+          <div class="field full"><label>Areas to avoid</label><input value=""></div>
+          <div class="field full"><label>Pressure preference</label>
+            <div class="q-radio-row"><label><input type="radio" name="press">Light</label><label><input type="radio" name="press" checked>Medium</label><label><input type="radio" name="press">Firm</label></div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+            <button class="btn btn-primary">Save consultation</button>
             <span class="saved-note">✓ Saved.</span>
           </div>
         </div>
@@ -393,7 +448,7 @@ a{color:var(--sage-deep)}
       </div>
       <div class="form-wrap" style="max-width:760px">
         <div class="resched-cur">Currently booked: <b>Hot Stones Full Body</b> · Fri 26 Jun 2026 · 13:00 · 60 min</div>
-        <p class="resched-note">Pick a new time from live availability below. Your current slot is released and offered to others only once you confirm the new time.</p>
+        <p class="resched-note">Choose a new date and time, then confirm.</p>
         <div class="card">
           <div class="cal-wrap">
             <div>
@@ -424,7 +479,6 @@ a{color:var(--sage-deep)}
             </div>
           </div>
         </div>
-        <p style="font-size:12px;color:var(--ink-soft);margin-top:12px">On confirm: the booking moves to the new slot in one step, the old slot reopens online, and you get a rescheduled-confirmation email. (Same 12-hour cutoff as cancelling.)</p>
       </div>
     </main>
 
@@ -521,15 +575,10 @@ a{color:var(--sage-deep)}
             <div class="row"><span class="l">Price</span><span>£60</span></div>
             <div class="row"><span class="l">Contact</span><span>07700 900123 · jane@example.com</span></div>
           </div>
-          <div class="prompt prompt-consult">
-            <div class="ph">① Complete your consultation</div>
-            <p>Please fill in your brief consultation form before your visit so we can prepare. It only takes a few minutes.</p>
-            <a class="btn btn-primary btn-sm" href="#">Complete consultation →</a>
-          </div>
           <div class="prompt prompt-manage">
-            <div class="ph">② Manage your booking</div>
-            <p>We’ve set up an account under <b>jane@example.com</b>. Sign in any time to view, <b>reschedule</b> or <b>cancel</b> this booking.</p>
-            <a class="btn btn-ghost btn-sm" href="#">View my bookings →</a>
+            <div class="ph">✦ Your account is ready</div>
+            <p>We’ve set up an account under <b>jane@example.com</b>. Sign in any time to view, <b>reschedule</b> or <b>cancel</b> this booking. We’ll email you a link to complete your consultation before your visit.</p>
+            <a class="btn btn-primary btn-sm" href="#">View my bookings →</a>
           </div>
           <p style="font-size:13px">Don’t see the email? Please check your spam or junk folder.</p>
           <div style="margin-top:8px"><a class="btn btn-ghost" href="#">Book another session</a></div>
