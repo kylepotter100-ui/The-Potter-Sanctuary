@@ -1947,6 +1947,34 @@
     background: var(--cream);
     padding: 60px 20px;
   }
+  /* Account pages render the fixed site nav (app/account/layout.tsx); add top
+     padding so content clears it. */
+  .account-page {
+    padding-top: 104px;
+  }
+  .reschedule-link {
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--sage-deep);
+    text-decoration: none;
+    border: 1px solid rgba(58, 63, 49, 0.18);
+    border-radius: 999px;
+    padding: 7px 14px;
+    white-space: nowrap;
+  }
+  .reschedule-link:hover {
+    border-color: var(--sage);
+    color: var(--ink);
+  }
+  .reschedule-current {
+    background: var(--cream-warm);
+    border: 1px solid rgba(58, 63, 49, 0.14);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--ink);
+  }
   .account-shell,
   .questionnaire-shell {
     max-width: 760px;

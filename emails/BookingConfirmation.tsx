@@ -129,6 +129,18 @@ export default function BookingConfirmation({
         )}
 
         <Divider />
+        <SectionHeading>Manage your booking</SectionHeading>
+        <MutedParagraph>
+          Need a different time, or can&apos;t make it? You can reschedule or
+          cancel any time in your account — just sign in with this email address.
+        </MutedParagraph>
+        <CtaButton
+          href={`${siteUrl}/login?next=/account`}
+          label="Manage / Reschedule / Cancel"
+          variant="outline"
+        />
+
+        <Divider />
         <Paragraph>We look forward to caring for you.</Paragraph>
         <p
           style={{

@@ -15,28 +15,33 @@ import {
 type Props = {
   firstName: string;
   treatmentName: string;
-  bookingDate: string;
-  bookingTime: string;
+  bookingDate: string; // new date (long)
+  bookingTime: string; // new time (12h)
+  previousDate: string;
+  previousTime: string;
   siteUrl: string;
 };
 
-export default function AppointmentReminder({
+export default function RescheduleConfirmation({
   firstName,
   treatmentName,
   bookingDate,
   bookingTime,
+  previousDate,
+  previousTime,
   siteUrl,
 }: Props) {
+  const manageUrl = `${siteUrl}/login?next=/account`;
   return (
     <EmailLayout
       siteUrl={siteUrl}
-      preview={`See you tomorrow at ${bookingTime} — ${treatmentName}`}
+      preview={`Your appointment has been rescheduled to ${bookingDate} at ${bookingTime}`}
     >
       <ContentSection>
-        <SectionHeading>Looking forward to seeing you tomorrow</SectionHeading>
+        <SectionHeading>Your appointment has been rescheduled</SectionHeading>
         <Paragraph>
-          Dear {firstName}, just a friendly reminder that your appointment at
-          The Potter Sanctuary is tomorrow.
+          All done, {firstName} — your booking has been moved. Here are your new
+          details:
         </Paragraph>
 
         <Section
@@ -49,8 +54,12 @@ export default function AppointmentReminder({
           }}
         >
           <DetailRow label="Treatment" value={treatmentName} />
-          <DetailRow label="Date" value={bookingDate} />
-          <DetailRow label="Time" value={bookingTime} />
+          <DetailRow label="New date" value={bookingDate} />
+          <DetailRow label="New time" value={bookingTime} />
+          <DetailRow
+            label="Previously"
+            value={`${previousDate} at ${previousTime}`}
+          />
           <DetailRow
             label="Location"
             value="22 Lockheed Close, Beck Row, IP28 3AB"
@@ -59,33 +68,19 @@ export default function AppointmentReminder({
         </Section>
 
         <Divider />
-        <SectionHeading>Helpful info</SectionHeading>
-        <Paragraph>
-          Please arrive 5 minutes before your appointment to settle in. Wear
-          comfortable clothing — you may want to remove jewellery before your
-          session.
-        </Paragraph>
-
-        <Divider />
-        <SectionHeading>Payment</SectionHeading>
-        <Paragraph>
-          Payment is taken in cash directly after your treatment.
-        </Paragraph>
-
-        <Divider />
         <p
           style={{
-            fontSize: 13,
+            fontSize: 14,
             lineHeight: 1.6,
             color: INK_SOFT,
-            margin: 0,
+            margin: "0 0 4px",
           }}
         >
-          Need to change or cancel? Reschedule or cancel any time in your
-          account — we ask for at least 12 hours notice as a courtesy.
+          Need to change it again? You can reschedule or cancel any time in your
+          account.
         </p>
         <CtaButton
-          href={`${siteUrl}/login?next=/account`}
+          href={manageUrl}
           label="Manage / Reschedule / Cancel"
           variant="outline"
         />

@@ -233,8 +233,20 @@ export function MutedParagraph({ children }: { children: ReactNode }) {
   );
 }
 
-// Sage CTA button. Pass href + label.
-export function CtaButton({ href, label }: { href: string; label: string }) {
+// Sage CTA button. Pass href + label. `variant="outline"` renders a white
+// button with a sage border + sage text (used for the secondary
+// "Manage / reschedule / cancel" action so it doesn't compete with the primary
+// consultation CTA).
+export function CtaButton({
+  href,
+  label,
+  variant = "solid",
+}: {
+  href: string;
+  label: string;
+  variant?: "solid" | "outline";
+}) {
+  const outline = variant === "outline";
   return (
     <Section
       style={{ textAlign: "center" as const, margin: "32px 0" }}
@@ -242,8 +254,9 @@ export function CtaButton({ href, label }: { href: string; label: string }) {
       <Button
         href={href}
         style={{
-          background: SAGE,
-          color: "#ffffff",
+          background: outline ? "#ffffff" : SAGE,
+          color: outline ? SAGE_DEEP : "#ffffff",
+          border: `1px solid ${SAGE}`,
           fontFamily: SERIF,
           fontSize: 16,
           textDecoration: "none",

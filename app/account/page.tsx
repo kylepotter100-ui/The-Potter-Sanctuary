@@ -37,15 +37,18 @@ type BookingRow = {
 
 type ConsultRow = { booking_id: string | null };
 
-type SearchParams = Promise<{ cancelled?: string }>;
+type SearchParams = Promise<{ cancelled?: string; rescheduled?: string }>;
 
 export default async function AccountPage({
   searchParams,
 }: {
   searchParams?: SearchParams;
 }) {
-  const sp = searchParams ? await searchParams : ({} as { cancelled?: string });
+  const sp = searchParams
+    ? await searchParams
+    : ({} as { cancelled?: string; rescheduled?: string });
   const justCancelled = sp.cancelled === "1";
+  const justRescheduled = sp.rescheduled === "1";
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -116,6 +119,11 @@ export default async function AccountPage({
             Your booking has been cancelled.
           </div>
         )}
+        {justRescheduled && (
+          <div role="status" className="account-toast">
+            Your booking has been rescheduled.
+          </div>
+        )}
         <header className="account-header">
           <div>
             <h1>Welcome back, {displayName}.</h1>
@@ -158,6 +166,12 @@ export default async function AccountPage({
                           Submit consultation
                         </Link>
                       )}
+                      <Link
+                        href={`/account/reschedule/${b.id}`}
+                        className="reschedule-link"
+                      >
+                        Reschedule
+                      </Link>
                       <CancelBookingButton
                         bookingId={b.id}
                         treatmentName={b.treatment_name}

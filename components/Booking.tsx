@@ -1097,6 +1097,41 @@ export default function Booking({ preselectId }: Props) {
               </div>
             </div>
           )}
+          <div
+            style={{
+              background: "var(--sage-pale)",
+              border: "1px solid var(--sage)",
+              borderRadius: 12,
+              padding: "16px 18px",
+              margin: "18px 0",
+              textAlign: "left",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
+                fontSize: 19,
+                marginBottom: 4,
+              }}
+            >
+              Your account is ready
+            </div>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--ink-soft)",
+                margin: "0 0 10px",
+              }}
+            >
+              We&apos;ve set up your account{email ? <> under <strong>{email}</strong></> : null}.
+              Sign in any time to view, reschedule or cancel this booking. We&apos;ll
+              email you a link to complete your consultation before your visit.
+            </p>
+            <a href="/login?next=/account" className="account-link">
+              View my bookings →
+            </a>
+          </div>
+
           <div className="confirm-actions">
             <button
               type="button"

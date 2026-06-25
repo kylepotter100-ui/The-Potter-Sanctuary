@@ -68,6 +68,9 @@ export default function SignInPrompt() {
     return (
       <div className="signin-welcome">
         <span className="greeting">Welcome back, {firstName}.</span>
+        <a href="/account" className="signin-link">
+          View your account
+        </a>
         <button
           type="button"
           className="signout-link"

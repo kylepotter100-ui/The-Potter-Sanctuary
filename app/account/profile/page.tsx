@@ -3,7 +3,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
-import ProfileForm, { type ProfileSeed } from "@/components/ProfileForm";
+import ProfileForm, {
+  type ProfileSeed,
+  type ConsultSeed,
+} from "@/components/ProfileForm";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +39,7 @@ export default async function ProfilePage() {
   const { data: customer } = await supabaseAdmin
     .from("customers")
     .select(
-      "full_name, date_of_birth, phone_number, address, emergency_contact_name, emergency_contact_phone"
+      "id, full_name, date_of_birth, phone_number, address, emergency_contact_name, emergency_contact_phone"
     )
     .eq("email", emailLower)
     .maybeSingle();
@@ -49,6 +52,33 @@ export default async function ProfilePage() {
     emergency_contact_name: customer?.emergency_contact_name ?? null,
     emergency_contact_phone: customer?.emergency_contact_phone ?? null,
   };
+
+  // The customer's most-recent consultation on file (what carries to bookings).
+  let consult: ConsultSeed = null;
+  if (customer) {
+    const { data: c } = await supabaseAdmin
+      .from("consultation_responses")
+      .select(
+        "conditions, allergies_specify, other_medical_conditions, under_medical_care, medical_care_explanation, focus_areas, areas_to_avoid, pressure_preference"
+      )
+      .eq("customer_id", customer.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (c) {
+      consult = {
+        conditions: (c.conditions as Record<string, boolean>) ?? {},
+        allergies_specify: c.allergies_specify ?? null,
+        other_medical_conditions: c.other_medical_conditions ?? null,
+        under_medical_care: c.under_medical_care ?? null,
+        medical_care_explanation: c.medical_care_explanation ?? null,
+        focus_areas: (c.focus_areas as string[]) ?? [],
+        areas_to_avoid: c.areas_to_avoid ?? null,
+        pressure_preference:
+          (c.pressure_preference as "Light" | "Medium" | "Firm" | null) ?? null,
+      };
+    }
+  }
 
   return (
     <main className="account-page">
@@ -64,7 +94,7 @@ export default async function ProfilePage() {
             </Link>
           </div>
         </header>
-        <ProfileForm seed={seed} email={user.email} />
+        <ProfileForm seed={seed} consult={consult} email={user.email} />
       </div>
     </main>
   );

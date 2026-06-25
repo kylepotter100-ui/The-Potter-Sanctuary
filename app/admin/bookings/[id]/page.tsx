@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingActions from "@/components/AdminBookingActions";
+import AdminRescheduleButton from "@/components/AdminRescheduleButton";
 import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
 import RequestReviewButton from "@/components/RequestReviewButton";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -451,6 +452,13 @@ export default async function AdminBookingDetailPage({
               bookingId={booking.id}
               status={booking.status as "pending" | "confirmed"}
             />
+            <div className="btn-row" style={{ marginTop: 12 }}>
+              <AdminRescheduleButton
+                bookingId={booking.id}
+                currentDate={booking.booking_date as string}
+                currentTime={(booking.booking_time as string).slice(0, 5)}
+              />
+            </div>
           </section>
         )}
       </main>

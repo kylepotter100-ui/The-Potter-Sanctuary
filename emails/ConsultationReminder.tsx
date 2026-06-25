@@ -87,6 +87,11 @@ export default function ConsultationReminder({
             ? "Confirming your details helps us tailor your treatment safely."
             : "Without a completed questionnaire, your treatment may not be able to commence."}
         </p>
+        <CtaButton
+          href={`${siteUrl}/login?next=/account`}
+          label="Manage / Reschedule / Cancel"
+          variant="outline"
+        />
       </ContentSection>
     </EmailLayout>
   );

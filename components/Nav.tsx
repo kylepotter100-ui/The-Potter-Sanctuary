@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Menu, X } from "lucide-react";
+import NavAccountLink from "@/components/NavAccountLink";
 
 type Props = {
   // True on the homepage — sections live on the same page so we can
@@ -119,6 +120,7 @@ export default function Nav({ homeAnchors = false, solid = false }: Props) {
             {item.label}
           </Link>
         ))}
+        <NavAccountLink />
       </div>
 
       <div className="nav-right">
@@ -176,6 +178,7 @@ export default function Nav({ homeAnchors = false, solid = false }: Props) {
                   {item.label}
                 </Link>
               ))}
+              <NavAccountLink onNavigate={() => setMenuOpen(false)} />
             </div>
           </div>,
           document.body

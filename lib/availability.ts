@@ -237,7 +237,9 @@ export async function validateSlotAvailable(
   // Admin "book anytime" mode (manual booking by the owner): skip the
   // blocked-date, same-day lead-time, open-set and closing checks; keep the
   // past-date guard and the overlap check. See candidateRejection.
-  opts: { adminMode?: boolean } = {}
+  // `excludeBookingId` drops one booking from the overlap check — used when
+  // RESCHEDULING that booking, so it doesn't count as clashing with itself.
+  opts: { adminMode?: boolean; excludeBookingId?: string } = {}
 ): Promise<SlotValidation> {
   const adminMode = opts.adminMode === true;
   const slot = toHHMM(time);
@@ -281,11 +283,16 @@ export async function validateSlotAvailable(
       .from("slot_overrides")
       .select("slot_time, is_active")
       .eq("override_date", dateIso),
-    admin
-      .from("bookings")
-      .select("booking_time, duration_minutes")
-      .eq("booking_date", dateIso)
-      .in("status", ["pending", "confirmed"]),
+    (() => {
+      let q = admin
+        .from("bookings")
+        .select("booking_time, duration_minutes")
+        .eq("booking_date", dateIso)
+        .in("status", ["pending", "confirmed"]);
+      // Exclude the booking being rescheduled from its own overlap check.
+      if (opts.excludeBookingId) q = q.neq("id", opts.excludeBookingId);
+      return q;
+    })(),
   ]);
 
   if (overridesErr) {
