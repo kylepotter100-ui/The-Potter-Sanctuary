@@ -13,6 +13,9 @@ type ConsultationPayload = {
   focus_areas: string[];
   areas_to_avoid: string | null;
   pressure_preference: "Light" | "Medium" | "Firm" | null;
+  experiences_stress_regularly: boolean | null;
+  primary_reason: string | null;
+  additional_info: string | null;
 };
 
 type Payload = {
@@ -87,6 +90,9 @@ export async function POST(req: Request) {
       focus_areas: c.focus_areas ?? [],
       areas_to_avoid: c.areas_to_avoid,
       pressure_preference: c.pressure_preference,
+      experiences_stress_regularly: c.experiences_stress_regularly,
+      primary_reason: c.primary_reason,
+      additional_info: c.additional_info,
     };
     const { data: latest } = await supabaseAdmin
       .from("consultation_responses")

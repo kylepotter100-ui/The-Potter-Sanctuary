@@ -20,6 +20,9 @@ export type ConsultSeed = {
   focus_areas: string[];
   areas_to_avoid: string | null;
   pressure_preference: "Light" | "Medium" | "Firm" | null;
+  experiences_stress_regularly: boolean | null;
+  primary_reason: string | null;
+  additional_info: string | null;
 } | null;
 
 type Props = {
@@ -76,6 +79,17 @@ export default function ProfileForm({ seed, consult, email }: Props) {
     consult?.pressure_preference ?? ""
   );
 
+  // Lifestyle & wellness
+  const [stressRegularly, setStressRegularly] = useState<boolean | null>(
+    consult?.experiences_stress_regularly ?? null
+  );
+  const [primaryReason, setPrimaryReason] = useState(
+    consult?.primary_reason ?? ""
+  );
+  const [additionalInfo, setAdditionalInfo] = useState(
+    consult?.additional_info ?? ""
+  );
+
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +132,9 @@ export default function ProfileForm({ seed, consult, email }: Props) {
             focus_areas: focusAreas,
             areas_to_avoid: areasToAvoid.trim() || null,
             pressure_preference: pressure || null,
+            experiences_stress_regularly: stressRegularly,
+            primary_reason: primaryReason.trim() || null,
+            additional_info: additionalInfo.trim() || null,
           },
         }),
       });
@@ -240,6 +257,57 @@ export default function ProfileForm({ seed, consult, email }: Props) {
               </label>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Lifestyle & wellness */}
+      <section className="account-section">
+        <h2>Lifestyle &amp; wellness</h2>
+        <p className="account-empty" style={{ margin: "0 0 16px" }}>
+          A little context helps us tailor your treatments. These carry over to
+          your future visits.
+        </p>
+
+        <div className="q-field full">
+          <label>Do you experience stress regularly?</label>
+          <div className="q-radio-row">
+            <label>
+              <input
+                type="radio"
+                name="p-stress"
+                checked={stressRegularly === true}
+                onChange={() => setStressRegularly(true)}
+              />{" "}
+              Yes
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="p-stress"
+                checked={stressRegularly === false}
+                onChange={() => setStressRegularly(false)}
+              />{" "}
+              No
+            </label>
+          </div>
+        </div>
+        <div className="q-field full">
+          <label htmlFor="p-reason">Primary reason for your treatments</label>
+          <textarea
+            id="p-reason"
+            value={primaryReason}
+            onChange={(e) => setPrimaryReason(e.target.value)}
+          />
+        </div>
+        <div className="q-field full">
+          <label htmlFor="p-additional">
+            Anything else you&apos;d like your therapist to know
+          </label>
+          <textarea
+            id="p-additional"
+            value={additionalInfo}
+            onChange={(e) => setAdditionalInfo(e.target.value)}
+          />
         </div>
       </section>
 

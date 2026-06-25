@@ -59,7 +59,7 @@ export default async function ProfilePage() {
     const { data: c } = await supabaseAdmin
       .from("consultation_responses")
       .select(
-        "conditions, allergies_specify, other_medical_conditions, under_medical_care, medical_care_explanation, focus_areas, areas_to_avoid, pressure_preference"
+        "conditions, allergies_specify, other_medical_conditions, under_medical_care, medical_care_explanation, focus_areas, areas_to_avoid, pressure_preference, experiences_stress_regularly, primary_reason, additional_info"
       )
       .eq("customer_id", customer.id)
       .order("created_at", { ascending: false })
@@ -76,6 +76,9 @@ export default async function ProfilePage() {
         areas_to_avoid: c.areas_to_avoid ?? null,
         pressure_preference:
           (c.pressure_preference as "Light" | "Medium" | "Firm" | null) ?? null,
+        experiences_stress_regularly: c.experiences_stress_regularly ?? null,
+        primary_reason: c.primary_reason ?? null,
+        additional_info: c.additional_info ?? null,
       };
     }
   }

@@ -1926,6 +1926,18 @@
     font-size: 17px;
     color: var(--ink);
   }
+  .signin-welcome .signin-link {
+    color: var(--sage-deep);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 4px 8px;
+  }
+  .signin-welcome .signin-link:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
   .signin-welcome .signout-link {
     background: none;
     border: none;

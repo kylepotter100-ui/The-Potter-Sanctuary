@@ -206,6 +206,13 @@ export default function QuestionnaireForm({
           Your therapist will review this before your session. We look forward
           to caring for you.
         </p>
+        <a
+          href="/account"
+          className="q-submit"
+          style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+        >
+          Back to my account
+        </a>
       </div>
     );
   }
