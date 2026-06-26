@@ -1952,6 +1952,28 @@
   font-size: 22px;
   color: var(--admin-ink);
 }
+.admin-shell .voucher-group {
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 16px 16px 2px;
+  margin-bottom: 16px;
+  background: var(--admin-cream-soft);
+}
+.admin-shell .voucher-group-h {
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-sage-deep);
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.admin-shell .voucher-group-sub {
+  font-size: 12px;
+  color: var(--admin-ink-soft);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
 
 /* --- Create success state --- */
 .admin-shell .voucher-success-head {
