@@ -1869,3 +1869,251 @@
   .admin-title-row .lede { margin-bottom: 0; }
   .admin-title-row .btn { width: 100%; justify-content: center; }
 }
+
+/* ===========================================================================
+   GIFT-VOUCHER MOCKUP (front-end-only prototype) — scoped to .admin-shell.
+   Non-functional: styles for the Bookings/Vouchers segmented control, the
+   create-voucher form, the branded e-card template, and the vouchers list.
+   =========================================================================== */
+
+/* --- Native-style segmented control (Bookings | Vouchers) --- */
+.admin-shell .seg-control {
+  display: flex;
+  gap: 6px;
+  background: var(--admin-cream);
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 20px;
+}
+.admin-shell .seg-control-seg {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 11px 12px;
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--admin-ink-soft);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.admin-shell .seg-control-seg.is-active {
+  background: var(--admin-sage-deep);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Vouchers panel chrome --- */
+.admin-shell .voucher-mock-flag {
+  background: var(--admin-amber-soft);
+  color: #7a5b1a;
+  border: 1px solid #d9b87a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  margin-bottom: 18px;
+}
+
+/* --- Create form: treatment picker (reuses .svc-pick) + price line --- */
+.admin-shell .voucher-svc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-shell .voucher-svc-list .svc-pick {
+  width: 100%;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.admin-shell .svc-pick-meta {
+  display: flex;
+  flex-direction: column;
+}
+.admin-shell .voucher-price-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  margin: 6px 0 18px;
+  background: var(--admin-info-soft);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--admin-ink-soft);
+}
+.admin-shell .voucher-price-line strong {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 22px;
+  color: var(--admin-ink);
+}
+
+/* --- Create success state --- */
+.admin-shell .voucher-success-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.admin-shell .voucher-success-code {
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  color: var(--admin-sage-deep);
+}
+.admin-shell .voucher-success-note {
+  margin: 14px 0;
+}
+
+/* --- The e-card template (echoes og-image.png) --- */
+.admin-shell .voucher-ecard {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 1200 / 630;
+  background: linear-gradient(135deg, #97aa92 0%, #8a9e85 55%, #7e9278 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 6% 7%;
+  color: var(--admin-cream);
+  box-shadow: 0 6px 20px rgba(28, 28, 28, 0.12);
+  overflow: hidden;
+}
+.admin-shell .voucher-ecard-art {
+  flex: 0 0 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-shell .voucher-flower {
+  width: 100%;
+  max-width: 110px;
+  height: auto;
+  opacity: 0.95;
+}
+.admin-shell .voucher-ecard-body {
+  flex: 1;
+  min-width: 0;
+}
+.admin-shell .voucher-ecard-brand {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: clamp(13px, 3.2vw, 18px);
+  letter-spacing: 0.02em;
+  opacity: 0.92;
+  margin-bottom: 2%;
+}
+.admin-shell .voucher-ecard-eyebrow {
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: clamp(9px, 2.2vw, 12px);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 3%;
+}
+.admin-shell .voucher-ecard-treatment {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(20px, 6vw, 34px);
+  line-height: 1.05;
+  margin-bottom: 2%;
+}
+.admin-shell .voucher-ecard-price {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: clamp(18px, 5vw, 28px);
+  margin-bottom: 4%;
+}
+.admin-shell .voucher-ecard-code {
+  display: inline-block;
+  background: rgba(245, 240, 232, 0.18);
+  border: 1px solid rgba(245, 240, 232, 0.5);
+  border-radius: 999px;
+  padding: 1.5% 4%;
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: clamp(10px, 2.6vw, 14px);
+  letter-spacing: 0.18em;
+  margin-bottom: 3%;
+}
+.admin-shell .voucher-ecard-validity {
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: clamp(8px, 2vw, 11px);
+  opacity: 0.8;
+  letter-spacing: 0.04em;
+}
+
+/* --- E-card examples grid --- */
+.admin-shell .voucher-examples {
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 720px) {
+  .admin-shell .voucher-examples {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* --- Real-world flow explainer --- */
+.admin-shell .voucher-flow-note {
+  background: var(--admin-info-soft);
+  border-left: 3px solid var(--admin-sage);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--admin-ink-soft);
+  margin: 0 0 16px;
+}
+
+/* --- Issued-vouchers list --- */
+.admin-shell .voucher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-shell .voucher-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fff;
+  flex-wrap: wrap;
+}
+.admin-shell .voucher-row-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.admin-shell .voucher-row-code {
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--admin-ink);
+}
+.admin-shell .voucher-row-treat {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 18px;
+}
+.admin-shell .voucher-row-recipient {
+  font-size: 12px;
+  color: var(--admin-ink-soft);
+  margin-top: 2px;
+}
+.admin-shell .voucher-row-redeemed {
+  font-size: 12px;
+  color: var(--admin-sage-deep);
+  margin-top: 6px;
+}
+.admin-shell .voucher-row-action {
+  margin-left: auto;
+}

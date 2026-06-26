@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingFilters from "@/components/AdminBookingFilters";
+import BookingsTabs from "@/components/admin/BookingsTabs";
 import { supabaseAdmin } from "@/lib/supabase";
 import {
   getReviewedIndex,
@@ -163,6 +164,9 @@ export default async function BookingsPage({
     <>
       <AdminHeader active="bookings" />
       <main className="admin-main">
+        <BookingsTabs
+          bookingsContent={
+            <>
         <div className="admin-title-row">
           <div>
             <h1>Bookings</h1>
@@ -232,6 +236,9 @@ export default async function BookingsPage({
             })}
           </div>
         )}
+            </>
+          }
+        />
       </main>
     </>
   );
