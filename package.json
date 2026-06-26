@@ -13,7 +13,8 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "wipe:vouchers": "node scripts/wipe-test-vouchers.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.4",

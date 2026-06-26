@@ -1,100 +1,130 @@
 "use client";
 
-// MOCKUP ONLY — non-functional gift-voucher prototype. Everything here is local
-// React state with hardcoded placeholder data. NO database, NO API calls, NO
-// email, NO payment, NO persistence (a reload resets it). Built so the owner can
-// react to the workflow before anything real is built.
+// Admin gift-voucher panel (Vouchers segment of the Bookings page). Owner-
+// initiated: create a voucher (the buyer is emailed the e-card) and redeem it at
+// the appointment. The issued list is server-fed via the `vouchers` prop; after
+// a create/redeem we call router.refresh() to re-pull it.
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { services } from "@/lib/services";
 import VoucherCard from "./VoucherCard";
+
+export type VoucherListItem = {
+  id: string;
+  code: string;
+  treatment_name: string;
+  value: number;
+  recipient_name: string;
+  status: "active" | "redeemed";
+};
 
 function treatmentLabel(s: (typeof services)[number]): string {
   return `${s.name} ${s.nameEm}`.replace(/\s+/g, " ").trim();
 }
 
-// Mock unique-code generator (browser-only, prototype). Real version would mint
-// a server-checked single-use code — see the "future real build" note.
-function mockCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const block = () =>
-    Array.from({ length: 4 }, () =>
-      alphabet[Math.floor(Math.random() * alphabet.length)]
-    ).join("");
-  return `PS-${block()}-${block()}`;
-}
-
-type VoucherRow = {
-  id: string;
+type Created = {
+  treatmentName: string;
+  value: number;
   code: string;
-  treatment: string;
-  value: string;
-  recipient: string;
-  status: "active" | "redeemed";
+  recipientName: string;
+  purchaserEmail: string;
+  emailSent: boolean;
 };
 
-// Placeholder issued vouchers.
-const INITIAL_VOUCHERS: VoucherRow[] = [
-  { id: "v1", code: "PS-7F2A-9K3D", treatment: "Full Body Aromatherapy", value: "£50", recipient: "Emma Harding", status: "active" },
-  { id: "v2", code: "PS-3M8Q-4B6P", treatment: "Hot Stones Full Body", value: "£60", recipient: "Sophie Bennett", status: "active" },
-  { id: "v3", code: "PS-9X1K-2T7R", treatment: "Back, Neck & Scalp", value: "£25", recipient: "James Whitfield", status: "redeemed" },
-  { id: "v4", code: "PS-5H4D-8N2W", treatment: "Hot Stones Back", value: "£35", recipient: "Olivia Reed", status: "active" },
-  { id: "v5", code: "PS-2K6P-7Q9F", treatment: "Full Body Aromatherapy", value: "£50", recipient: "Daniel Cole", status: "active" },
-];
+export default function VouchersPanel({
+  vouchers,
+}: {
+  vouchers: VoucherListItem[];
+}) {
+  const router = useRouter();
 
-export default function VouchersPanel() {
-  // ---- Create form (mock) ----
-  const [treatmentSlug, setTreatmentSlug] = useState<string | null>(null);
+  // ---- Create form ----
+  const [treatmentId, setTreatmentId] = useState<string | null>(null);
   const [purchaser, setPurchaser] = useState("");
   const [purchaserEmail, setPurchaserEmail] = useState("");
   const [recipient, setRecipient] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
-  const [generated, setGenerated] = useState<{
-    treatment: string;
-    price: string;
-    code: string;
-  } | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [created, setCreated] = useState<Created | null>(null);
 
-  const selected = treatmentSlug
-    ? services.find((s) => s.slug === treatmentSlug) ?? null
+  const selected = treatmentId
+    ? services.find((s) => s.bookingId === treatmentId) ?? null
     : null;
-
-  const canGenerate =
+  const canCreate =
     !!selected &&
     !!purchaser.trim() &&
-    !!purchaserEmail.trim() &&
+    /\S+@\S+\.\S+/.test(purchaserEmail.trim()) &&
     !!recipient.trim();
 
-  function generate() {
-    if (!canGenerate || !selected) return;
-    setGenerated({
-      treatment: treatmentLabel(selected),
-      price: selected.priceLabel,
-      code: mockCode(),
-    });
+  async function create() {
+    if (!canCreate || !selected) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch("/api/admin/vouchers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          treatmentId: selected.bookingId,
+          purchaserName: purchaser.trim(),
+          purchaserEmail: purchaserEmail.trim(),
+          recipientName: recipient.trim(),
+          giftMessage: giftMessage.trim() || undefined,
+        }),
+      });
+      const body = (await res.json().catch(() => null)) as
+        | { ok?: boolean; emailSent?: boolean; voucher?: { treatmentName: string; value: number; code: string; recipientName: string; purchaserEmail: string }; error?: string; message?: string }
+        | null;
+      if (!res.ok || !body?.ok || !body.voucher) {
+        throw new Error(body?.message || body?.error || "Could not create the voucher");
+      }
+      setCreated({ ...body.voucher, emailSent: !!body.emailSent });
+      router.refresh(); // so the new voucher shows in the issued list
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Could not create the voucher");
+    } finally {
+      setCreating(false);
+    }
   }
   function reset() {
-    setGenerated(null);
-    setTreatmentSlug(null);
+    setCreated(null);
+    setTreatmentId(null);
     setPurchaser("");
     setPurchaserEmail("");
     setRecipient("");
     setGiftMessage("");
+    setCreateError(null);
   }
 
-  // ---- Vouchers list + redemption (mock) — simply marks the row redeemed ----
-  const [vouchers, setVouchers] = useState<VoucherRow[]>(INITIAL_VOUCHERS);
+  // ---- Redeem ----
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
   const redeemingVoucher = vouchers.find((v) => v.id === redeemingId) ?? null;
 
-  function confirmRedeem() {
+  async function confirmRedeem() {
     if (!redeemingId) return;
-    setVouchers((prev) =>
-      prev.map((v) =>
-        v.id === redeemingId ? { ...v, status: "redeemed" } : v
-      )
-    );
-    setRedeemingId(null);
+    setRedeeming(true);
+    setRedeemError(null);
+    try {
+      const res = await fetch(`/api/admin/vouchers/${redeemingId}/redeem`, {
+        method: "POST",
+      });
+      const body = (await res.json().catch(() => null)) as
+        | { ok?: boolean; error?: string; message?: string }
+        | null;
+      if (!res.ok || !body?.ok) {
+        throw new Error(body?.message || body?.error || "Could not redeem the voucher");
+      }
+      setRedeemingId(null);
+      router.refresh();
+    } catch (err) {
+      setRedeemError(err instanceof Error ? err.message : "Could not redeem the voucher");
+    } finally {
+      setRedeeming(false);
+    }
   }
 
   return (
@@ -106,11 +136,7 @@ export default function VouchersPanel() {
         </div>
       </div>
 
-      <div className="voucher-mock-flag">
-        Prototype — placeholder data only. Nothing here is saved or sent.
-      </div>
-
-      {/* ============ CREATE VOUCHER ============ */}
+      {/* ============ CREATE ============ */}
       <section className="admin-card voucher-create">
         <h2>Create a voucher</h2>
         <p className="lede" style={{ marginTop: 0 }}>
@@ -118,19 +144,19 @@ export default function VouchersPanel() {
           voucher, then it&apos;s emailed to the buyer.
         </p>
 
-        {!generated ? (
+        {!created ? (
           <>
             <div className="field">
               <label>Treatment</label>
               <div className="voucher-svc-list">
                 {services.map((s) => {
-                  const on = treatmentSlug === s.slug;
+                  const on = treatmentId === s.bookingId;
                   return (
                     <button
                       type="button"
-                      key={s.slug}
+                      key={s.bookingId}
                       className={`svc-pick${on ? " is-on" : ""}`}
-                      onClick={() => setTreatmentSlug(s.slug)}
+                      onClick={() => setTreatmentId(s.bookingId)}
                       aria-pressed={on}
                     >
                       <span className="svc-pick-meta">
@@ -149,7 +175,6 @@ export default function VouchersPanel() {
               <strong>{selected ? selected.priceLabel : "—"}</strong>
             </div>
 
-            {/* Purchaser (the buyer) */}
             <div className="voucher-group">
               <div className="voucher-group-h">Purchaser — the buyer</div>
               <div className="voucher-group-sub">
@@ -178,7 +203,6 @@ export default function VouchersPanel() {
               </div>
             </div>
 
-            {/* Recipient (who it's for) */}
             <div className="voucher-group">
               <div className="voucher-group-h">Recipient — who it&apos;s for</div>
               <div className="voucher-group-sub">
@@ -207,33 +231,38 @@ export default function VouchersPanel() {
               />
             </div>
 
+            {createError && (
+              <div role="alert" className="modal-error" style={{ marginBottom: 12 }}>
+                {createError}
+              </div>
+            )}
+
             <button
               type="button"
               className="btn"
-              disabled={!canGenerate}
-              onClick={generate}
+              disabled={!canCreate || creating}
+              onClick={create}
             >
-              Generate voucher
+              {creating ? "Creating…" : "Generate voucher"}
             </button>
           </>
         ) : (
           <div className="voucher-success">
             <div className="voucher-success-head">
               <span className="badge badge-confirmed">✓ Voucher created</span>
-              <span className="voucher-success-code">{generated.code}</span>
+              <span className="voucher-success-code">{created.code}</span>
             </div>
             <VoucherCard
-              treatmentName={generated.treatment}
-              price={generated.price}
-              code={generated.code}
+              treatmentName={created.treatmentName}
+              price={`£${created.value}`}
+              code={created.code}
             />
             <p className="lede voucher-success-note">
-              This e-card is emailed to the buyer
-              {purchaserEmail ? (
-                <> at <strong>{purchaserEmail}</strong></>
-              ) : null}
-              , who gives it to {recipient || "the recipient"}. (Mockup — no
-              email is sent.)
+              {created.emailSent ? (
+                <>Emailed to <strong>{created.purchaserEmail}</strong>, who gives it to {created.recipientName}.</>
+              ) : (
+                <>Voucher created. The delivery email couldn&apos;t be sent just now — check the email settings.</>
+              )}
             </p>
             <button type="button" className="btn-ghost" onClick={reset}>
               Create another
@@ -242,7 +271,7 @@ export default function VouchersPanel() {
         )}
       </section>
 
-      {/* ============ VOUCHERS LIST + REDEMPTION ============ */}
+      {/* ============ ISSUED LIST + REDEEM ============ */}
       <section className="admin-card">
         <h2>Issued vouchers</h2>
         <p className="voucher-flow-note">
@@ -252,46 +281,53 @@ export default function VouchersPanel() {
           online; you redeem on their behalf.)
         </p>
 
-        <div className="voucher-list">
-          {vouchers.map((v) => (
-            <div key={v.id} className="voucher-row">
-              <div className="voucher-row-main">
-                <div className="voucher-row-top">
-                  <span className="voucher-row-code">{v.code}</span>
-                  <span
-                    className={`badge ${
-                      v.status === "active" ? "badge-confirmed" : "badge-cancelled"
-                    }`}
-                  >
-                    {v.status === "active" ? "Active" : "Redeemed"}
-                  </span>
+        {vouchers.length === 0 ? (
+          <p className="lede" style={{ margin: 0 }}>No vouchers issued yet.</p>
+        ) : (
+          <div className="voucher-list">
+            {vouchers.map((v) => (
+              <div key={v.id} className="voucher-row">
+                <div className="voucher-row-main">
+                  <div className="voucher-row-top">
+                    <span className="voucher-row-code">{v.code}</span>
+                    <span
+                      className={`badge ${
+                        v.status === "active" ? "badge-confirmed" : "badge-cancelled"
+                      }`}
+                    >
+                      {v.status === "active" ? "Active" : "Redeemed"}
+                    </span>
+                  </div>
+                  <div className="voucher-row-treat">
+                    {v.treatment_name} · £{v.value}
+                  </div>
+                  <div className="voucher-row-recipient">For {v.recipient_name}</div>
                 </div>
-                <div className="voucher-row-treat">
-                  {v.treatment} · {v.value}
+                <div className="voucher-row-action">
+                  {v.status === "active" ? (
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={() => {
+                        setRedeemError(null);
+                        setRedeemingId(v.id);
+                      }}
+                    >
+                      Mark redeemed
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-sm" disabled>
+                      Redeemed
+                    </button>
+                  )}
                 </div>
-                <div className="voucher-row-recipient">For {v.recipient}</div>
               </div>
-              <div className="voucher-row-action">
-                {v.status === "active" ? (
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    onClick={() => setRedeemingId(v.id)}
-                  >
-                    Mark redeemed
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn-sm" disabled>
-                    Redeemed
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* ============ REDEEM CONFIRMATION (simple — no booking) ============ */}
+      {/* ============ REDEEM CONFIRM ============ */}
       {redeemingVoucher && (
         <div
           className="modal-backdrop"
@@ -299,28 +335,39 @@ export default function VouchersPanel() {
           aria-modal="true"
           aria-label="Mark voucher redeemed"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setRedeemingId(null);
+            if (e.target === e.currentTarget && !redeeming) setRedeemingId(null);
           }}
         >
           <div className="modal-card">
             <h3 className="modal-title">Mark voucher redeemed?</h3>
             <p style={{ fontSize: 13, color: "var(--admin-ink-soft)", margin: "0 0 8px" }}>
-              {redeemingVoucher.code} · {redeemingVoucher.treatment} ·{" "}
-              {redeemingVoucher.value} · for {redeemingVoucher.recipient}
+              {redeemingVoucher.code} · {redeemingVoucher.treatment_name} · £
+              {redeemingVoucher.value} · for {redeemingVoucher.recipient_name}
             </p>
             <p style={{ fontSize: 13, color: "var(--admin-ink-soft)", margin: 0 }}>
-              This marks the voucher as used. Mockup — nothing is saved.
+              This marks the voucher as used and can&apos;t be undone.
             </p>
+            {redeemError && (
+              <div role="alert" className="modal-error" style={{ marginTop: 12 }}>
+                {redeemError}
+              </div>
+            )}
             <div className="modal-actions">
               <button
                 type="button"
                 className="btn-ghost"
                 onClick={() => setRedeemingId(null)}
+                disabled={redeeming}
               >
                 Cancel
               </button>
-              <button type="button" className="btn" onClick={confirmRedeem}>
-                Mark redeemed
+              <button
+                type="button"
+                className="btn"
+                onClick={confirmRedeem}
+                disabled={redeeming}
+              >
+                {redeeming ? "Redeeming…" : "Mark redeemed"}
               </button>
             </div>
           </div>

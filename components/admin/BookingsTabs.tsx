@@ -7,14 +7,16 @@
 // AdminTabBar stays on "Bookings" either way.
 
 import { useState } from "react";
-import VouchersPanel from "./VouchersPanel";
+import VouchersPanel, { type VoucherListItem } from "./VouchersPanel";
 
 type Seg = "bookings" | "vouchers";
 
 export default function BookingsTabs({
   bookingsContent,
+  vouchers,
 }: {
   bookingsContent: React.ReactNode;
+  vouchers: VoucherListItem[];
 }) {
   const [active, setActive] = useState<Seg>("bookings");
 
@@ -41,7 +43,7 @@ export default function BookingsTabs({
         </button>
       </div>
 
-      {active === "bookings" ? bookingsContent : <VouchersPanel />}
+      {active === "bookings" ? bookingsContent : <VouchersPanel vouchers={vouchers} />}
     </>
   );
 }

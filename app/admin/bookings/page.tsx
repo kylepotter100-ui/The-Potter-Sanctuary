@@ -2,6 +2,7 @@ import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingFilters from "@/components/AdminBookingFilters";
 import BookingsTabs from "@/components/admin/BookingsTabs";
+import type { VoucherListItem } from "@/components/admin/VouchersPanel";
 import { supabaseAdmin } from "@/lib/supabase";
 import {
   getReviewedIndex,
@@ -149,22 +150,28 @@ export default async function BookingsPage({
   // Everything below is independent of each other — run concurrently instead of
   // a serial chain. getReviewedIndex is memoised (React cache) so the index it
   // shares with listOutstandingReviewClients is scanned once, not twice.
-  const [consultState, reviewedIndex, outstanding] = await Promise.all([
+  const [consultState, reviewedIndex, outstanding, voucherData] = await Promise.all([
     getConsultationStateIndex(
       supabaseAdmin,
       rows.map((b) => ({ id: b.id, customer_id: b.customer_id }))
     ),
     getReviewedIndex(supabaseAdmin),
     listOutstandingReviewClients(supabaseAdmin, ukTodayIso()),
+    supabaseAdmin
+      .from("vouchers")
+      .select("id, code, treatment_name, value, recipient_name, status")
+      .order("created_at", { ascending: false }),
   ]);
 
   const outstandingCount = outstanding.length;
+  const vouchers = (voucherData.data ?? []) as VoucherListItem[];
 
   return (
     <>
       <AdminHeader active="bookings" />
       <main className="admin-main">
         <BookingsTabs
+          vouchers={vouchers}
           bookingsContent={
             <>
         <div className="admin-title-row">

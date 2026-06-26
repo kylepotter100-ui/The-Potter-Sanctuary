@@ -136,6 +136,36 @@ CREATE TABLE IF NOT EXISTS public.reviews (
 CREATE INDEX IF NOT EXISTS reviews_booking_id_idx ON public.reviews (booking_id);
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 
+-- ===== vouchers =====
+-- Gift vouchers. Owner-initiated: Caitlin is paid OFFLINE (bank transfer/cash),
+-- creates a voucher in admin, the buyer is emailed a branded e-card with a
+-- unique single-use `code`, and the recipient brings it to their appointment
+-- where the owner redeems it (status active -> redeemed). No online payment, no
+-- customer code entry. All access via the service-role client; RLS deny-by-default.
+CREATE TABLE IF NOT EXISTS public.vouchers (
+  id                      uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code                    text NOT NULL,
+  treatment_id            text NOT NULL,
+  treatment_name          text NOT NULL,
+  value                   int  NOT NULL,           -- pounds (matches bookings.treatment_price)
+  purchaser_name          text NOT NULL,
+  purchaser_email         text NOT NULL,
+  recipient_name          text NOT NULL,
+  gift_message            text,
+  status                  text NOT NULL DEFAULT 'active'
+                            CHECK (status IN ('active','redeemed')),
+  delivery_email_sent_at  timestamptz,
+  redeemed_at             timestamptz,
+  expires_at              date,
+  created_at              timestamptz NOT NULL DEFAULT now()
+);
+-- Unique code = the anti-double-redeem guard: a photocopied voucher can't create
+-- a second row, and redemption flips the single row to 'redeemed'.
+CREATE UNIQUE INDEX IF NOT EXISTS vouchers_code_key            ON public.vouchers (code);
+CREATE INDEX        IF NOT EXISTS vouchers_purchaser_email_idx ON public.vouchers (purchaser_email);
+CREATE INDEX        IF NOT EXISTS vouchers_status_idx          ON public.vouchers (status);
+ALTER TABLE public.vouchers ENABLE ROW LEVEL SECURITY;
+
 -- ===== daily_summaries_sent =====
 -- Dedupe row written once per UK day after the morning-summary email goes
 -- out, so the hourly cron can skip subsequent runs on the same date.
