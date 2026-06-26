@@ -1973,6 +1973,7 @@
 
 /* --- The e-card template (echoes og-image.png) --- */
 .admin-shell .voucher-ecard {
+  container-type: inline-size;
   width: 100%;
   max-width: 520px;
   aspect-ratio: 1200 / 630;
@@ -1980,23 +1981,23 @@
   border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 4%;
   padding: 6% 7%;
   color: var(--admin-cream);
-  box-shadow: 0 6px 20px rgba(28, 28, 28, 0.12);
+  box-shadow: 0 6px 20px rgba(28, 28, 28, 0.14);
   overflow: hidden;
 }
 .admin-shell .voucher-ecard-art {
-  flex: 0 0 22%;
+  flex: 0 0 24%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .admin-shell .voucher-flower {
   width: 100%;
-  max-width: 110px;
+  max-width: 120px;
   height: auto;
-  opacity: 0.95;
+  filter: brightness(1.04);
 }
 .admin-shell .voucher-ecard-body {
   flex: 1;
@@ -2004,15 +2005,15 @@
 }
 .admin-shell .voucher-ecard-brand {
   font-family: var(--font-serif), 'Cormorant Garamond', serif;
-  font-size: clamp(13px, 3.2vw, 18px);
+  font-size: clamp(12px, 3.6cqw, 18px);
   letter-spacing: 0.02em;
   opacity: 0.92;
-  margin-bottom: 2%;
+  margin-bottom: 2.5%;
 }
 .admin-shell .voucher-ecard-eyebrow {
   font-family: var(--font-sans), 'Lora', serif;
-  font-size: clamp(9px, 2.2vw, 12px);
-  letter-spacing: 0.3em;
+  font-size: clamp(8px, 2.4cqw, 12px);
+  letter-spacing: 0.34em;
   text-transform: uppercase;
   opacity: 0.85;
   margin-bottom: 3%;
@@ -2020,13 +2021,13 @@
 .admin-shell .voucher-ecard-treatment {
   font-family: var(--font-serif), 'Cormorant Garamond', serif;
   font-style: italic;
-  font-size: clamp(20px, 6vw, 34px);
-  line-height: 1.05;
+  font-size: clamp(18px, 7cqw, 33px);
+  line-height: 1.04;
   margin-bottom: 2%;
 }
 .admin-shell .voucher-ecard-price {
   font-family: var(--font-serif), 'Cormorant Garamond', serif;
-  font-size: clamp(18px, 5vw, 28px);
+  font-size: clamp(15px, 5.4cqw, 27px);
   margin-bottom: 4%;
 }
 .admin-shell .voucher-ecard-code {
@@ -2034,15 +2035,15 @@
   background: rgba(245, 240, 232, 0.18);
   border: 1px solid rgba(245, 240, 232, 0.5);
   border-radius: 999px;
-  padding: 1.5% 4%;
+  padding: 1.4% 4%;
   font-family: var(--font-sans), 'Lora', serif;
-  font-size: clamp(10px, 2.6vw, 14px);
+  font-size: clamp(9px, 2.8cqw, 13px);
   letter-spacing: 0.18em;
   margin-bottom: 3%;
 }
 .admin-shell .voucher-ecard-validity {
   font-family: var(--font-sans), 'Lora', serif;
-  font-size: clamp(8px, 2vw, 11px);
+  font-size: clamp(8px, 2.2cqw, 11px);
   opacity: 0.8;
   letter-spacing: 0.04em;
 }
