@@ -14,11 +14,13 @@ type Seg = "bookings" | "vouchers";
 export default function BookingsTabs({
   bookingsContent,
   vouchers,
+  initialTab = "bookings",
 }: {
   bookingsContent: React.ReactNode;
   vouchers: VoucherListItem[];
+  initialTab?: Seg;
 }) {
-  const [active, setActive] = useState<Seg>("bookings");
+  const [active, setActive] = useState<Seg>(initialTab);
 
   return (
     <>

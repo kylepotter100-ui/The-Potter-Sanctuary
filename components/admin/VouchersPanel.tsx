@@ -6,6 +6,7 @@
 // a create/redeem we call router.refresh() to re-pull it.
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { services } from "@/lib/services";
 import VoucherCard from "./VoucherCard";
@@ -287,7 +288,7 @@ export default function VouchersPanel({
           <div className="voucher-list">
             {vouchers.map((v) => (
               <div key={v.id} className="voucher-row">
-                <div className="voucher-row-main">
+                <Link href={`/admin/vouchers/${v.id}`} className="voucher-row-main">
                   <div className="voucher-row-top">
                     <span className="voucher-row-code">{v.code}</span>
                     <span
@@ -302,7 +303,7 @@ export default function VouchersPanel({
                     {v.treatment_name} · £{v.value}
                   </div>
                   <div className="voucher-row-recipient">For {v.recipient_name}</div>
-                </div>
+                </Link>
                 <div className="voucher-row-action">
                   {v.status === "active" ? (
                     <button

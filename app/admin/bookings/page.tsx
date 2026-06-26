@@ -35,7 +35,7 @@ type Booking = {
 type Status = "active" | "pending" | "confirmed" | "cancelled" | "all";
 type Range = "today" | "week" | "month" | "next30" | "upcoming" | "";
 
-type SearchParams = Promise<{ status?: string; range?: string }>;
+type SearchParams = Promise<{ status?: string; range?: string; tab?: string }>;
 
 // "WED 18 JUN · 14:00" — compact; uppercased via CSS.
 function fmtWhen(dateIso: string, t: string): string {
@@ -111,6 +111,7 @@ export default async function BookingsPage({
   const status = (params.status as Status | undefined) ?? "active";
   const range = ((params.range as Range | undefined) ?? "upcoming") as Range;
   const bounds = rangeBounds(range);
+  const initialTab = params.tab === "vouchers" ? "vouchers" : "bookings";
 
   if (!supabaseAdmin) {
     return (
@@ -172,6 +173,7 @@ export default async function BookingsPage({
       <main className="admin-main">
         <BookingsTabs
           vouchers={vouchers}
+          initialTab={initialTab}
           bookingsContent={
             <>
         <div className="admin-title-row">

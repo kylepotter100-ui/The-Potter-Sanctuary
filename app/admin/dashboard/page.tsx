@@ -13,6 +13,7 @@ type SearchParams = Promise<{ year?: string; month?: string; view?: string }>;
 type RevenueRow = { treatment_price: number; booking_date: string };
 type PopularityRow = { treatment_name: string };
 type RatingRow = { rating: number };
+type VoucherRevenueRow = { value: number; created_at: string };
 
 const MONTHS_SHORT = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -143,6 +144,10 @@ export default async function DashboardPage({
   // drift; see lib/uk-time.ts). [start 00:00, dayAfterEnd 00:00).
   const reviewsFromUtc = ukWallTimeToUtc(periodStart, "00:00").toISOString();
   const reviewsToUtc = ukWallTimeToUtc(addDaysIso(periodEnd, 1), "00:00").toISOString();
+  // Vouchers carry a timestamptz created_at — bound it the same way (the
+  // current period + the previous period for the trend delta).
+  const prevFromUtc = ukWallTimeToUtc(prevStart, "00:00").toISOString();
+  const prevToUtc = ukWallTimeToUtc(addDaysIso(prevEnd, 1), "00:00").toISOString();
 
   const [
     pending,
@@ -154,6 +159,8 @@ export default async function DashboardPage({
     prevConfirmed,
     prevRevenueRes,
     reviewsRes,
+    vouchersRes,
+    prevVouchersRes,
   ] = await Promise.all([
     supabaseAdmin
       .from("bookings")
@@ -213,15 +220,33 @@ export default async function DashboardPage({
       .select("rating")
       .gte("created_at", reviewsFromUtc)
       .lt("created_at", reviewsToUtc),
+    // Vouchers issued in-period — revenue is captured at CREATION (paid offline
+    // when the owner makes the voucher), so no status filter. Tolerate a read
+    // error (e.g. pre-migration) and fall back to none.
+    supabaseAdmin
+      .from("vouchers")
+      .select("value, created_at")
+      .gte("created_at", reviewsFromUtc)
+      .lt("created_at", reviewsToUtc),
+    supabaseAdmin
+      .from("vouchers")
+      .select("value")
+      .gte("created_at", prevFromUtc)
+      .lt("created_at", prevToUtc),
   ]);
 
   const revenueRows = (revenueRes.data ?? []) as RevenueRow[];
   const popularityRows = (popularityRes.data ?? []) as PopularityRow[];
   const prevRevenueRows = (prevRevenueRes.data ?? []) as { treatment_price: number }[];
   const ratingRows = (reviewsRes.error ? [] : reviewsRes.data ?? []) as RatingRow[];
+  const voucherRows = (vouchersRes.error ? [] : vouchersRes.data ?? []) as VoucherRevenueRow[];
+  const prevVoucherRows = (prevVouchersRes.error ? [] : prevVouchersRes.data ?? []) as { value: number }[];
 
   if (reviewsRes.error) {
     console.error("[admin dashboard] reviews read failed", reviewsRes.error);
+  }
+  if (vouchersRes.error) {
+    console.error("[admin dashboard] vouchers read failed", vouchersRes.error);
   }
 
   const confirmedCount = confirmed.count ?? 0;
@@ -230,19 +255,29 @@ export default async function DashboardPage({
   const totalCount = total.count ?? 0;
   const prevConfirmedCount = prevConfirmed.count ?? 0;
 
-  const revenueTotal = revenueRows.reduce(
+  // Booking revenue (confirmed list prices) — drives Avg booking.
+  const bookingsRevenue = revenueRows.reduce(
     (sum, r) => sum + (r.treatment_price ?? 0),
     0
   );
-  const prevRevenueTotal = prevRevenueRows.reduce(
+  const prevBookingsRevenue = prevRevenueRows.reduce(
     (sum, r) => sum + (r.treatment_price ?? 0),
     0
   );
+  // Voucher revenue (value of vouchers issued in-period), captured at creation.
+  const vouchersRevenue = voucherRows.reduce((sum, r) => sum + (r.value ?? 0), 0);
+  const prevVouchersRevenue = prevVoucherRows.reduce((sum, r) => sum + (r.value ?? 0), 0);
+  const vouchersCount = voucherRows.length;
 
-  // Divide-by-zero guarded — null renders as "—", never NaN/Infinity.
-  const avgBookingValue = confirmedCount ? revenueTotal / confirmedCount : null;
+  // Headline revenue = confirmed bookings + vouchers issued.
+  const revenueTotal = bookingsRevenue + vouchersRevenue;
+  const prevRevenueTotal = prevBookingsRevenue + prevVouchersRevenue;
+
+  // Divide-by-zero guarded — null renders as "—", never NaN/Infinity. Avg booking
+  // uses bookings-only revenue (vouchers aren't bookings).
+  const avgBookingValue = confirmedCount ? bookingsRevenue / confirmedCount : null;
   const prevAvgBooking = prevConfirmedCount
-    ? prevRevenueTotal / prevConfirmedCount
+    ? prevBookingsRevenue / prevConfirmedCount
     : null;
   const confirmationRate = totalCount ? confirmedCount / totalCount : null;
   const cancellationRate = totalCount ? cancelledCount / totalCount : null;
@@ -264,6 +299,10 @@ export default async function DashboardPage({
     for (const r of revenueRows) {
       const m = Number(r.booking_date.slice(5, 7));
       if (m >= 1 && m <= 12) perMonth[m - 1] += r.treatment_price ?? 0;
+    }
+    for (const r of voucherRows) {
+      const m = Number(r.created_at.slice(5, 7));
+      if (m >= 1 && m <= 12) perMonth[m - 1] += r.value ?? 0;
     }
   }
   const maxMonth = Math.max(0, ...perMonth);
@@ -301,7 +340,7 @@ export default async function DashboardPage({
         {/* Revenue headline */}
         <div className="stat-hero">
           <div className="hero-top">
-            <span className="label">Revenue — confirmed</span>
+            <span className="label">Revenue</span>
             {revenueDelta !== null && (
               <span className="hero-delta">
                 <Delta pct={revenueDelta} />
@@ -310,7 +349,10 @@ export default async function DashboardPage({
             )}
           </div>
           <span className="value">{formatMoney(revenueTotal)}</span>
-          <span className="caption">List price · excludes any discounts</span>
+          <span className="caption">Confirmed bookings + vouchers · list price</span>
+          {vouchersRevenue > 0 && (
+            <span className="caption">incl. {formatMoney(vouchersRevenue)} from vouchers</span>
+          )}
         </div>
 
         {/* Booking status */}
@@ -410,27 +452,39 @@ export default async function DashboardPage({
 
         <section className="dash-section">
           <h2 className="dash-h2">Most booked</h2>
-          {ranking.length === 0 ? (
+          {ranking.length === 0 && vouchersCount === 0 ? (
             <p className="dashboard-empty">No bookings {periodLabel}.</p>
           ) : (
-            <ol className="rank-list">
-              {ranking.map(([name, count]) => (
-                <li key={name}>
-                  <div className="rank-row">
-                    <span className="rank-name">{name}</span>
-                    <span className="rank-count">
-                      <strong>{count}</strong> {count === 1 ? "booking" : "bookings"}
-                    </span>
-                  </div>
-                  <div className="rank-track">
-                    <div
-                      className="rank-fill"
-                      style={{ width: `${topCount ? (count / topCount) * 100 : 0}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <>
+              {ranking.length > 0 && (
+                <ol className="rank-list">
+                  {ranking.map(([name, count]) => (
+                    <li key={name}>
+                      <div className="rank-row">
+                        <span className="rank-name">{name}</span>
+                        <span className="rank-count">
+                          <strong>{count}</strong> {count === 1 ? "booking" : "bookings"}
+                        </span>
+                      </div>
+                      <div className="rank-track">
+                        <div
+                          className="rank-fill"
+                          style={{ width: `${topCount ? (count / topCount) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {vouchersCount > 0 && (
+                <div className="rank-row voucher-rank-row">
+                  <span className="rank-name">Vouchers</span>
+                  <span className="rank-count">
+                    <strong>{vouchersCount}</strong> issued
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </section>
       </main>

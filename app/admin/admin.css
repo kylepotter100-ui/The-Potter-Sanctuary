@@ -2140,3 +2140,50 @@
 .admin-shell .voucher-row-action {
   margin-left: auto;
 }
+/* The row info is a link to the voucher detail page (the action button is a
+   sibling, not nested). */
+.admin-shell a.voucher-row-main {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.admin-shell a.voucher-row-main:hover .voucher-row-code {
+  color: var(--admin-sage-deep);
+}
+
+/* "Vouchers" row under the dashboard Most-booked list (a separate category from
+   ranked treatments, so it sits below the list, not numbered in it). */
+.admin-shell .voucher-rank-row {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-line);
+}
+
+/* --- Voucher detail page --- */
+.admin-shell .voucher-detail-row {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--admin-line);
+}
+.admin-shell .voucher-detail-row:last-child {
+  border-bottom: none;
+}
+.admin-shell .voucher-detail-label {
+  flex: 0 0 140px;
+  font-family: var(--font-sans), 'Lora', serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+  padding-top: 3px;
+}
+.admin-shell .voucher-detail-value {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 18px;
+  color: var(--admin-ink);
+  word-break: break-word;
+}
