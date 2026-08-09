@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin mock-up — Change treatment (PWA mobile)</title>
+<style>
+/* ===== Tokens copied from app/admin/admin.css ===== */
+:root{
+  --admin-sage:#8a9e85; --admin-sage-deep:#6e8068; --admin-cream:#f5f0e8;
+  --admin-cream-soft:#fbf7ec; --admin-ink:#1c1c1c; --admin-ink-soft:#4a4a4a;
+  --admin-line:rgba(28,28,28,.12); --admin-amber:#c98a2c; --admin-amber-soft:#f5e7c8;
+  --admin-amber-tint:rgba(201,138,44,.06); --admin-grey:#8a8a8a; --admin-grey-soft:#e0ddd5;
+  --admin-error:#b04a3a; --admin-error-soft:#f5dcd6; --admin-info-soft:#e8efe5;
+  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --sans:'Lora',Georgia,serif;
+  /* email tokens from emails/_shared.tsx */
+  --e-sage:#8A9E85; --e-cream:#F5F0E8; --e-bone:#FBF7EC; --e-ink:#1C1C1C; --e-ink-soft:#4A4A4A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#e7e0d2;color:var(--admin-ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.005em;color:var(--admin-ink);line-height:1.15;margin:0}
+h1{font-size:30px}h2{font-size:24px}h3{font-size:20px}
+a{color:var(--admin-sage-deep);text-decoration:none;cursor:pointer}
+.hidden{display:none !important}
+
+/* demo chrome (not product) */
+.demo-bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#23291f;color:#e7e0d2}
+.demo-bar strong{font-family:var(--serif);font-size:16px;margin-right:8px}
+.demo-bar button{font-family:var(--sans);font-size:12px;letter-spacing:.04em;cursor:pointer;border:1px solid #4c5544;background:transparent;color:#dfe6da;border-radius:999px;padding:6px 14px}
+.demo-bar button.on{background:var(--admin-sage);border-color:var(--admin-sage);color:#fff}
+.demo-note{margin-left:auto;font-size:11px;color:#a9b3a0}
+.flowhint{max-width:402px;margin:0 auto 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6b6455;text-align:center}
+
+.stage{display:flex;justify-content:center;padding:22px 16px 90px}
+.device{position:relative;background:var(--admin-cream);border:1px solid rgba(0,0,0,.15);border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -40px rgba(0,0,0,.5);width:100%;max-width:1180px;transition:max-width .2s}
+.device.phone{max-width:402px;border-radius:38px;border:10px solid #15140f;padding-bottom:0}
+
+/* iOS status bar + notch (phone only) */
+.device-top{display:none}
+.device.phone .device-top{display:flex;justify-content:space-between;align-items:center;padding:10px 26px 6px;background:var(--admin-cream-soft);font-size:13px;font-weight:700;position:relative}
+.device.phone .device-top::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:130px;height:20px;background:#15140f;border-radius:0 0 16px 16px}
+.dt-batt{display:inline-flex;gap:5px;align-items:center}
+
+/* header */
+.admin-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--admin-cream-soft);border-bottom:1px solid var(--admin-line)}
+.admin-header .brand{font-family:var(--serif);font-size:19px}
+.admin-header .brand em{font-style:italic;font-weight:300;opacity:.65;margin-left:6px;font-size:15px}
+.nav-links{display:flex;gap:22px;align-items:center}
+.device.phone .nav-links{display:none}
+.nav-links a{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.nav-links a.active{color:var(--admin-sage-deep)}
+.admin-main{max-width:1180px;margin:0 auto;padding:22px 20px 30px}
+.device.phone .admin-main{padding:18px 16px 26px}
+.lede{color:var(--admin-ink-soft);margin:4px 0 20px;font-size:13.5px}
+.admin-back-link{display:inline-flex;gap:6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--admin-sage-deep);margin-bottom:12px}
+.admin-subheading{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--admin-ink-soft);margin:0 0 10px}
+
+/* cards */
+.admin-card{background:#fff;border:1px solid var(--admin-line);border-radius:10px;padding:18px 16px;margin-bottom:14px}
+.admin-card h2{margin:0 0 12px;font-size:21px}
+.drow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:14px;border-bottom:1px solid rgba(28,28,28,.06)}
+.drow:last-child{border-bottom:none}
+.drow .k{color:var(--admin-ink-soft);font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding-top:2px}
+.drow .v{text-align:right}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--admin-sage);color:#fff;border:1px solid var(--admin-sage);padding:12px 18px;border-radius:999px;font-family:inherit;font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;min-height:44px}
+.btn:hover{background:var(--admin-sage-deep);border-color:var(--admin-sage-deep)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--admin-ink);border-color:var(--admin-line)}
+.btn-ghost:hover{background:var(--admin-ink);color:var(--admin-cream)}
+.btn-danger{background:transparent;color:var(--admin-error);border-color:var(--admin-error)}
+.btn-danger:hover{background:var(--admin-error);color:#fff}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row .btn{flex:1;min-width:150px}
+
+/* chips / badges */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:999px}
+.chip-ok{background:var(--admin-info-soft);color:var(--admin-sage-deep)}
+.chip-warn{background:var(--admin-amber-soft);color:#7a5b1a;border:1px solid #d9b87a}
+.chip-cur{background:var(--admin-grey-soft);color:var(--admin-ink-soft)}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.badge-confirmed{background:var(--admin-sage);color:#fff}
+
+/* treatment option rows — the ONE new block of admin CSS this feature needs */
+.svc-opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1px solid var(--admin-line);border-radius:12px;padding:14px 14px;margin-bottom:10px;cursor:pointer;font-family:inherit;color:inherit;transition:border-color .15s,box-shadow .15s}
+.svc-opt:hover{border-color:var(--admin-sage)}
+.svc-opt.on{border-color:var(--admin-sage);box-shadow:0 0 0 2px rgba(138,158,133,.28)}
+.svc-opt.current{background:var(--admin-cream-soft)}
+.svc-num{font-size:10px;letter-spacing:.18em;color:var(--admin-ink-soft);padding-top:4px;min-width:20px}
+.svc-body{flex:1;min-width:0}
+.svc-name{font-family:var(--serif);font-size:19px;line-height:1.2}
+.svc-meta{font-size:12.5px;color:var(--admin-ink-soft);margin-top:2px}
+.svc-fit{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.svc-why{font-size:11.5px;color:#7a5b1a}
+.svc-price{font-family:var(--serif);font-size:19px;padding-top:2px;white-space:nowrap}
+
+/* notices */
+.notice{border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:14px}
+.notice-warn{background:var(--admin-amber-tint);border:1px solid #d9b87a;color:#6b4d12}
+.info-text{background:var(--admin-info-soft);color:var(--admin-sage-deep);border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+.notice b{font-weight:700}
+
+/* delta summary */
+.delta{background:var(--admin-cream-soft);border:1px solid var(--admin-line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.delta .line{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:5px 0}
+.delta .k{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--admin-ink-soft)}
+.was{color:var(--admin-ink-soft);text-decoration:line-through;margin-right:6px}
+.arrow{color:var(--admin-sage-deep)}
+
+/* sticky save bar (mobile) */
+.savebar{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(245,240,232,0) 0%,var(--admin-cream) 26%);padding:14px 0 4px;margin-top:6px}
+
+/* calendar */
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cal-head .m{font-family:var(--serif);font-size:18px}
+.cal-nav{border:1px solid var(--admin-line);background:#fff;border-radius:999px;width:34px;height:34px;cursor:pointer;color:var(--admin-ink-soft);font-size:14px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal .dow{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--admin-ink-soft);text-align:center;padding-bottom:4px}
+.cal .day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--admin-line);background:#fff;font-size:13.5px;cursor:pointer}
+.cal .day.off{background:transparent;border-color:transparent;color:rgba(28,28,28,.25);cursor:not-allowed}
+.cal .day.sel{background:var(--admin-sage);border-color:var(--admin-sage);color:#fff}
+.cal .day.today{box-shadow:inset 0 0 0 1px var(--admin-sage-deep)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.slot{border:1px solid var(--admin-line);background:#fff;border-radius:9px;padding:11px 4px;font-family:inherit;font-size:13.5px;cursor:pointer;min-height:44px}
+.slot:hover{border-color:var(--admin-sage)}
+.slot.on{background:var(--admin-sage);border-color:var(--admin-sage);color:#fff}
+.slotgap{grid-column:1/-1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-ink-soft);padding:6px 0 2px;text-align:center}
+
+/* modal */
+.modal-backdrop{position:absolute;inset:0;background:rgba(28,28,28,.55);z-index:20;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal-card{background:#fff;border-radius:14px;padding:22px 20px 18px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(28,28,28,.28)}
+.modal-title{font-family:var(--serif);font-weight:400;font-size:23px;margin:0 0 12px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.modal-actions .btn{flex:1}
+
+/* success */
+.tick{width:54px;height:54px;border-radius:999px;background:var(--admin-sage);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px}
+
+/* tab bar */
+.admin-tabbar{display:none}
+.device.phone .admin-tabbar{display:flex;align-items:stretch;border-top:1px solid var(--admin-line);background:var(--admin-cream-soft);box-shadow:0 -1px 8px rgba(28,28,28,.06);padding-bottom:8px}
+.admin-tab{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 2px;color:var(--admin-ink-soft);font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.admin-tab-inner{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 12px;border-radius:16px}
+.admin-tab.is-active{color:var(--admin-sage-deep)}
+.admin-tab.is-active .admin-tab-inner{background:rgba(138,158,133,.18)}
+.admin-tab svg{width:22px;height:22px}
+
+/* ===== email preview ===== */
+.mailwrap{background:var(--e-cream);padding:16px 12px 24px}
+.mailmeta{font-size:11px;color:var(--admin-ink-soft);padding:0 4px 10px;letter-spacing:.04em}
+.mail{max-width:600px;margin:0 auto;background:#fff;font-family:Georgia,'Times New Roman',serif}
+.mail-head{background:var(--e-sage);padding:20px 22px;display:flex;align-items:center;gap:12px}
+.mail-logo{height:60px;width:auto;display:block}
+.mail-head h1{color:#fff;font-size:21px;font-family:Georgia,serif;font-weight:400;letter-spacing:.01em}
+.mail-body{padding:28px 24px}
+.mail-body h2{font-family:Georgia,serif;font-size:21px;font-weight:400;margin:0 0 12px}
+.mail-body p{font-size:15.5px;line-height:1.6;color:var(--e-ink);margin:0 0 13px}
+.mail-card{background:var(--e-bone);border:1px solid rgba(28,28,28,.12);border-radius:10px;padding:18px 18px;margin:8px 0 4px}
+.mrow{display:flex;gap:10px;padding:5px 0;align-items:flex-start}
+.mrow .k{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--e-ink-soft);width:104px;flex:none;padding-top:4px}
+.mrow .v{font-size:16px;color:var(--e-ink)}
+.mrow .v small{display:block;font-size:13px;color:var(--e-ink-soft)}
+.mdiv{border-top:1px solid var(--e-sage);margin:20px 0}
+.mcta{text-align:center;margin:24px 0 8px}
+.mcta span{display:inline-block;background:var(--e-sage);color:#fff;padding:14px 26px;border-radius:6px;font-size:14.5px;letter-spacing:.02em}
+.mail-foot{background:var(--e-sage);color:#fff;padding:18px 22px;text-align:center;font-size:12.5px;line-height:1.7}
+.mail-foot a{color:#fff;text-decoration:underline}
+.muted-note{font-size:13.5px;color:var(--e-ink-soft);margin:0 0 4px}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <strong>Change treatment</strong>
+  <button data-view="detail" onclick="showView('detail',event)">1 · Booking</button>
+  <button data-view="picker" onclick="showView('picker',event)">2 · Pick</button>
+  <button data-view="fits"   onclick="showView('fits',event)">3a · Fits</button>
+  <button data-view="clash"  onclick="showView('clash',event)">3b · Clash</button>
+  <button data-view="confirm" onclick="showView('confirm',event)">4 · Confirm</button>
+  <button data-view="done"   onclick="showView('done',event)">5 · Saved</button>
+  <button data-view="email"  onclick="showView('email',event)">6 · Client email</button>
+  <button data-view="owner"  onclick="showView('owner',event)">7 · Owner copy</button>
+  <button onclick="toggleDevice(this)" id="devBtn">🖥 Desktop view</button>
+  <span class="demo-note">Mock-up only — no live data</span>
+</div>
+
+<div class="stage">
+<div class="device phone" id="device">
+  <div class="device-top">
+    <span>9:41</span>
+    <span class="dt-batt">▮▮▮ ⌁ 100%</span>
+  </div>
+
+  <div class="admin-header">
+    <div class="brand">The Potter Sanctuary <em>admin</em></div>
+    <div class="nav-links">
+      <a class="active">Bookings</a><a>Clients</a><a>Availability</a><a>Dashboard</a>
+    </div>
+  </div>
+
+  <!-- ============ 1 · BOOKING DETAIL ============ -->
+  <div class="view" id="view-detail">
+    <div class="admin-main">
+      <a class="admin-back-link">← All bookings</a>
+      <h1>Sarah Mills</h1>
+      <p class="lede">Back, Neck &amp; Scalp · Wed, 12 August 2026 at 2:00pm</p>
+
+      <div class="admin-card">
+        <h2>Booking details</h2>
+        <div class="drow"><span class="k">Date</span><span class="v">Wed, 12 Aug 2026</span></div>
+        <div class="drow"><span class="k">Time</span><span class="v">2:00pm</span></div>
+        <div class="drow"><span class="k">Treatment</span><span class="v">Back, Neck &amp; Scalp</span></div>
+        <div class="drow"><span class="k">Duration</span><span class="v">30 min</span></div>
+        <div class="drow"><span class="k">Price</span><span class="v">£25</span></div>
+        <div class="drow"><span class="k">Status</span><span class="v"><span class="badge badge-confirmed">Confirmed</span></span></div>
+      </div>
+
+      <div class="admin-card">
+        <h2>Actions</h2>
+        <div class="btn-row">
+          <button class="btn btn-ghost">Reschedule</button>
+          <button class="btn btn-ghost" onclick="showView('picker')" style="border-color:var(--admin-sage);color:var(--admin-sage-deep)">Change treatment</button>
+        </div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn btn-danger">Cancel booking</button>
+        </div>
+        <p style="font-size:11.5px;color:var(--admin-ink-soft);margin:12px 0 0">
+          “Change treatment” is the new action. Hidden on cancelled bookings, exactly like the others.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2 · PICKER ============ -->
+  <div class="view hidden" id="view-picker">
+    <div class="admin-main">
+      <a class="admin-back-link" onclick="showView('detail')">← Sarah Mills</a>
+      <h1>Change treatment</h1>
+      <p class="lede">Wed, 12 August 2026 at 2:00pm</p>
+
+      <div class="admin-card" style="padding:14px 16px">
+        <p class="admin-subheading" style="margin-bottom:6px">Currently</p>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+          <span style="font-family:var(--serif);font-size:19px">Back, Neck &amp; Scalp</span>
+          <span style="font-family:var(--serif);font-size:19px">£25</span>
+        </div>
+        <div class="svc-meta">30 min · 2:00pm – 2:30pm</div>
+      </div>
+
+      <p class="admin-subheading" style="margin-top:18px">New treatment</p>
+
+      <button class="svc-opt" onclick="showView('clash')">
+        <span class="svc-num">01</span>
+        <span class="svc-body">
+          <span class="svc-name">Full Body Aromatherapy</span>
+          <div class="svc-meta">60 min · Medium</div>
+          <div class="svc-fit">
+            <span class="chip chip-warn">⚠ Needs a new time</span>
+            <span class="svc-why">clashes with the 3:00pm booking</span>
+          </div>
+        </span>
+        <span class="svc-price">£50</span>
+      </button>
+
+      <button class="svc-opt current">
+        <span class="svc-num">02</span>
+        <span class="svc-body">
+          <span class="svc-name">Back, Neck &amp; Scalp</span>
+          <div class="svc-meta">30 min · Medium · Firm</div>
+          <div class="svc-fit"><span class="chip chip-cur">● Current treatment</span></div>
+        </span>
+        <span class="svc-price">£25</span>
+      </button>
+
+      <button class="svc-opt" onclick="showView('clash')">
+        <span class="svc-num">03</span>
+        <span class="svc-body">
+          <span class="svc-name">Hot Stones Full Body</span>
+          <div class="svc-meta">60 min · Gentle · Warm</div>
+          <div class="svc-fit">
+            <span class="chip chip-warn">⚠ Needs a new time</span>
+            <span class="svc-why">clashes with the 3:00pm booking</span>
+          </div>
+        </span>
+        <span class="svc-price">£60</span>
+      </button>
+
+      <button class="svc-opt" onclick="showView('fits')">
+        <span class="svc-num">04</span>
+        <span class="svc-body">
+          <span class="svc-name">Hot Stones Back</span>
+          <div class="svc-meta">30 min · Gentle · Warm</div>
+          <div class="svc-fit"><span class="chip chip-ok">✓ Fits at 2:00pm</span></div>
+        </span>
+        <span class="svc-price">£35</span>
+      </button>
+
+      <p style="font-size:11.5px;color:var(--admin-ink-soft);margin:6px 2px 0">
+        Fit is calculated live from the studio’s open hours and the other bookings that day —
+        this booking is excluded from its own clash check.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ 3a · FITS ============ -->
+  <div class="view hidden" id="view-fits">
+    <div class="admin-main">
+      <a class="admin-back-link" onclick="showView('picker')">← Change treatment</a>
+      <h1>Change treatment</h1>
+      <p class="lede">Wed, 12 August 2026 at 2:00pm</p>
+
+      <button class="svc-opt on" onclick="showView('picker')">
+        <span class="svc-num">04</span>
+        <span class="svc-body">
+          <span class="svc-name">Hot Stones Back</span>
+          <div class="svc-meta">30 min · Gentle · Warm</div>
+          <div class="svc-fit"><span class="chip chip-ok">✓ Fits at 2:00pm</span></div>
+        </span>
+        <span class="svc-price">£35</span>
+      </button>
+
+      <div class="info-text">The time doesn’t need to change — this treatment is the same length.</div>
+
+      <div class="delta">
+        <div class="line"><span class="k">Treatment</span><span><span class="was">Back, Neck &amp; Scalp</span><span class="arrow">→</span> Hot Stones Back</span></div>
+        <div class="line"><span class="k">Duration</span><span>30 min (unchanged)</span></div>
+        <div class="line"><span class="k">Price</span><span><span class="was">£25</span><span class="arrow">→</span> <b>£35</b></span></div>
+        <div class="line"><span class="k">When</span><span>Wed 12 Aug, 2:00pm (unchanged)</span></div>
+      </div>
+
+      <div class="savebar">
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="showView('picker')">Back</button>
+          <button class="btn" onclick="showView('confirm')">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3b · CLASH ============ -->
+  <div class="view hidden" id="view-clash">
+    <div class="admin-main">
+      <a class="admin-back-link" onclick="showView('picker')">← Change treatment</a>
+      <h1>Change treatment</h1>
+      <p class="lede">Wed, 12 August 2026 at 2:00pm</p>
+
+      <button class="svc-opt on" onclick="showView('picker')">
+        <span class="svc-num">03</span>
+        <span class="svc-body">
+          <span class="svc-name">Hot Stones Full Body</span>
+          <div class="svc-meta">60 min · Gentle · Warm</div>
+          <div class="svc-fit"><span class="chip chip-warn">⚠ Needs a new time</span></div>
+        </span>
+        <span class="svc-price">£60</span>
+      </button>
+
+      <div class="notice notice-warn">
+        <b>Hot Stones Full Body needs 60 minutes.</b> It won’t fit at 2:00pm — it would run
+        into Emma Hart’s 3:00pm booking. Choose a new time below, and both changes save together.
+      </div>
+
+      <div class="admin-card">
+        <div class="cal-head">
+          <button class="cal-nav">‹</button>
+          <span class="m">August 2026</span>
+          <button class="cal-nav">›</button>
+        </div>
+        <div class="cal">
+          <div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div><div class="dow">S</div>
+          <div class="day off"></div><div class="day off"></div><div class="day off"></div><div class="day off"></div><div class="day off">·</div><div class="day">1</div><div class="day off">·</div>
+          <div class="day off">·</div><div class="day">4</div><div class="day">5</div><div class="day">6</div><div class="day">7</div><div class="day">8</div><div class="day off">·</div>
+          <div class="day off">·</div><div class="day">11</div><div class="day sel">12</div><div class="day">13</div><div class="day">14</div><div class="day">15</div><div class="day off">·</div>
+          <div class="day off">·</div><div class="day">18</div><div class="day">19</div><div class="day">20</div><div class="day">21</div><div class="day">22</div><div class="day off">·</div>
+          <div class="day off">·</div><div class="day">25</div><div class="day">26</div><div class="day">27</div><div class="day">28</div><div class="day">29</div><div class="day off">·</div>
+        </div>
+        <p style="font-size:11px;color:var(--admin-ink-soft);margin:10px 0 0">
+          Days with no 60-minute gap are greyed out automatically.
+        </p>
+      </div>
+
+      <div class="admin-card">
+        <p class="admin-subheading">Wednesday 12 August — fits 60 min</p>
+        <div class="slots">
+          <button class="slot">9:30</button><button class="slot">10:00</button><button class="slot">10:30</button>
+          <button class="slot">11:00</button><button class="slot">11:30</button><button class="slot">12:00</button>
+          <button class="slot">12:30</button><button class="slot">13:00</button><button class="slot">13:45</button>
+          <div class="slotgap">— 2:00pm–3:45pm unavailable (3:00pm booking) —</div>
+          <button class="slot">15:45</button><button class="slot on">16:15</button><button class="slot">16:45</button>
+          <button class="slot">17:15</button><button class="slot">17:45</button><button class="slot">18:00</button>
+        </div>
+      </div>
+
+      <div class="delta">
+        <div class="line"><span class="k">Treatment</span><span><span class="was">Back, Neck &amp; Scalp</span><span class="arrow">→</span> Hot Stones Full Body</span></div>
+        <div class="line"><span class="k">Duration</span><span><span class="was">30 min</span><span class="arrow">→</span> 60 min</span></div>
+        <div class="line"><span class="k">Price</span><span><span class="was">£25</span><span class="arrow">→</span> <b>£60</b></span></div>
+        <div class="line"><span class="k">When</span><span><span class="was">2:00pm</span><span class="arrow">→</span> <b>4:15pm</b></span></div>
+      </div>
+
+      <div class="savebar">
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="showView('picker')">Back</button>
+          <button class="btn" onclick="showView('confirm')">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4 · CONFIRM MODAL ============ -->
+  <div class="view hidden" id="view-confirm">
+    <div class="admin-main" style="filter:blur(1.5px);opacity:.55">
+      <a class="admin-back-link">← Change treatment</a>
+      <h1>Change treatment</h1>
+      <p class="lede">Wed, 12 August 2026 at 2:00pm</p>
+      <div class="admin-card" style="height:150px"></div>
+      <div class="admin-card" style="height:110px"></div>
+    </div>
+    <div class="modal-backdrop">
+      <div class="modal-card" role="dialog" aria-modal="true">
+        <h3 class="modal-title">Confirm treatment change</h3>
+        <div class="drow"><span class="k">Treatment</span><span class="v"><span class="was">Back, Neck &amp; Scalp</span><br>Hot Stones Full Body</span></div>
+        <div class="drow"><span class="k">Duration</span><span class="v">30 min → 60 min</span></div>
+        <div class="drow"><span class="k">Price</span><span class="v">£25 → <b>£60</b></span></div>
+        <div class="drow"><span class="k">When</span><span class="v">Wed 12 Aug<br>2:00pm → <b>4:15pm</b></span></div>
+        <p style="font-size:13px;color:var(--admin-ink-soft);margin:14px 0 0">
+          Sarah Mills will be emailed a confirmation of these changes. A copy will be sent to you.
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="showView('clash')">Back</button>
+          <button class="btn" onclick="showView('done')">Confirm change</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5 · SAVED ============ -->
+  <div class="view hidden" id="view-done">
+    <div class="admin-main">
+      <a class="admin-back-link" onclick="showView('detail')">← All bookings</a>
+      <div class="admin-card" style="text-align:center;padding:26px 18px">
+        <div class="tick">✓</div>
+        <h2 style="margin-bottom:8px">Treatment changed</h2>
+        <p style="font-size:14px;color:var(--admin-ink-soft);margin:0 0 4px">
+          Sarah Mills is now booked for <b style="color:var(--admin-ink)">Hot Stones Full Body</b>
+          on Wed 12 Aug at <b style="color:var(--admin-ink)">4:15pm</b> · £60.
+        </p>
+        <p style="font-size:13px;color:var(--admin-ink-soft);margin:10px 0 0">
+          Confirmation emailed to sarah.mills@example.com. The 2:00pm slot is now free on the website.
+        </p>
+      </div>
+      <div class="admin-card">
+        <h2>Booking details</h2>
+        <div class="drow"><span class="k">Treatment</span><span class="v">Hot Stones Full Body</span></div>
+        <div class="drow"><span class="k">Duration</span><span class="v">60 min</span></div>
+        <div class="drow"><span class="k">Price</span><span class="v">£60</span></div>
+        <div class="drow"><span class="k">Time</span><span class="v">4:15pm</span></div>
+        <div class="drow"><span class="k">Status</span><span class="v"><span class="badge badge-confirmed">Confirmed</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6 · CLIENT EMAIL ============ -->
+  <div class="view hidden" id="view-email">
+    <div class="mailwrap">
+      <div class="mailmeta">
+        <b>To:</b> sarah.mills@example.com &nbsp;·&nbsp; <b>From:</b> The Potter Sanctuary<br>
+        <b>Subject:</b> Your booking has been updated — The Potter Sanctuary
+      </div>
+      <div class="mail">
+        <div class="mail-head">
+          <img class="mail-logo" src="../public/sanctuary-logo.png" alt="The Potter Sanctuary" />
+          <h1>The Potter Sanctuary</h1>
+        </div>
+        <div class="mail-body">
+          <h2>Your booking has been updated</h2>
+          <p>Hello Sarah — your treatment has been changed. Here are your updated details:</p>
+          <div class="mail-card">
+            <div class="mrow"><span class="k">Treatment</span><span class="v">Hot Stones Full Body</span></div>
+            <div class="mrow"><span class="k">Date</span><span class="v">Wednesday, 12 August 2026</span></div>
+            <div class="mrow"><span class="k">Time</span><span class="v">4:15pm</span></div>
+            <div class="mrow"><span class="k">Price</span><span class="v">£60</span></div>
+            <div class="mrow"><span class="k">Previously</span><span class="v">Back, Neck &amp; Scalp · £25<small>at 2:00pm</small></span></div>
+            <div class="mrow"><span class="k">Location</span><span class="v">22 Lockheed Close,<br>Beck Row, IP28 3AB</span></div>
+          </div>
+          <div class="mdiv"></div>
+          <h2 style="font-size:19px">Payment</h2>
+          <p>Payment is taken in cash directly after your treatment at the studio. We do not accept card or electronic payments at this time.</p>
+          <div class="mdiv"></div>
+          <p class="muted-note">Need to change it again? You can reschedule or cancel any time in your account.</p>
+          <div class="mcta"><span>Manage / Reschedule / Cancel</span></div>
+          <p style="font-style:italic;margin:18px 0 0">With warmth,<br>The Potter Sanctuary</p>
+        </div>
+        <div class="mail-foot">
+          The Potter Sanctuary, Beck Row, Suffolk<br>
+          Need help? Reply to this email or contact <a>hello@thepottersanctuary.co.uk</a><br>
+          <span style="opacity:.85"><a>Privacy Policy</a> · <a>Cancellation Policy</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 7 · OWNER COPY ============ -->
+  <div class="view hidden" id="view-owner">
+    <div class="mailwrap">
+      <div class="mailmeta">
+        <b>To:</b> hello@thepottersanctuary.co.uk &nbsp;·&nbsp; <b>Reply-to:</b> sarah.mills@example.com<br>
+        <b>Subject:</b> Treatment changed — Hot Stones Full Body — Sarah Mills
+      </div>
+      <div class="mail">
+        <div class="mail-head">
+          <img class="mail-logo" src="../public/sanctuary-logo.png" alt="The Potter Sanctuary" />
+          <h1>The Potter Sanctuary</h1>
+        </div>
+        <div class="mail-body">
+          <h2>Treatment changed</h2>
+          <p><b>Sarah Mills</b>’ booking has been amended.</p>
+          <div class="mail-card">
+            <div class="mrow"><span class="k">Was</span><span class="v">Back, Neck &amp; Scalp · 30 min · £25<small>Wed 12 Aug at 2:00pm</small></span></div>
+            <div class="mrow"><span class="k">Now</span><span class="v">Hot Stones Full Body · 60 min · £60<small>Wed 12 Aug at 4:15pm</small></span></div>
+          </div>
+          <div class="mdiv"></div>
+          <div style="border:1px solid rgba(28,28,28,.12);border-radius:8px;padding:14px 16px">
+            <p style="font-size:14px;color:var(--e-ink-soft);margin:0 0 6px"><b>Email:</b> sarah.mills@example.com</p>
+            <p style="font-size:14px;color:var(--e-ink-soft);margin:0"><b>Phone:</b> 07700 900123</p>
+          </div>
+          <p style="font-size:13px;color:var(--e-ink-soft);margin:16px 0 0">Changed by you · 9 Aug 2026, 9:41am</p>
+        </div>
+        <div class="mail-foot">
+          The Potter Sanctuary, Beck Row, Suffolk<br>
+          <span style="opacity:.85"><a>Privacy Policy</a> · <a>Cancellation Policy</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- tab bar -->
+  <div class="admin-tabbar" id="tabbar">
+    <div class="admin-tab is-active" data-tab="bookings"><div class="admin-tab-inner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      <span>Diary</span></div></div>
+    <div class="admin-tab" data-tab="clients"><div class="admin-tab-inner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.3-3.6 4-5.4 7.5-5.4S18.2 16.4 19.5 20"/></svg>
+      <span>Clients</span></div></div>
+    <div class="admin-tab" data-tab="availability"><div class="admin-tab-inner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      <span>Hours</span></div></div>
+    <div class="admin-tab" data-tab="dashboard"><div class="admin-tab-inner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 19V10M10 19V5M16 19v-6M22 19H2"/></svg>
+      <span>Stats</span></div></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+function showView(v,ev){
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  document.querySelectorAll('.view').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('view-'+v).classList.remove('hidden');
+  document.querySelectorAll('.demo-bar [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleDevice(btn){
+  const d=document.getElementById('device');
+  d.classList.toggle('phone');
+  btn.textContent=d.classList.contains('phone')?'🖥 Desktop view':'📱 PWA phone view';
+}
+showView('detail');
+</script>
+</body>
+</html>
