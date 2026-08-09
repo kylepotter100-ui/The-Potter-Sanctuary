@@ -2187,3 +2187,134 @@
   color: var(--admin-ink);
   word-break: break-word;
 }
+
+/* ===== Change treatment (admin) =====
+   Treatment option rows for /admin/bookings/[id]/change-treatment. The public
+   site's .svc-option lives in globals.css and isn't available inside
+   .admin-shell, so the picker gets its own admin-token styling here. */
+.ct-current {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ct-current-name,
+.ct-current-price {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 20px;
+}
+.ct-meta {
+  display: block;
+  font-size: 13px;
+  color: var(--admin-ink-soft);
+  margin-top: 2px;
+}
+
+.ct-opt {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ct-opt:hover:not(:disabled) { border-color: var(--admin-sage); }
+.ct-opt.on {
+  border-color: var(--admin-sage);
+  box-shadow: 0 0 0 2px rgba(138, 158, 133, 0.28);
+}
+.ct-opt.current {
+  background: var(--admin-cream-soft);
+  cursor: default;
+}
+.ct-num {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--admin-ink-soft);
+  padding-top: 5px;
+  min-width: 20px;
+}
+.ct-body { flex: 1; min-width: 0; }
+.ct-name {
+  display: block;
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 20px;
+  line-height: 1.2;
+}
+.ct-fit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+.ct-why { font-size: 12px; color: #7a5b1a; }
+.ct-price {
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 20px;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+.chip-cur { background: var(--admin-grey-soft); color: var(--admin-ink-soft); }
+
+.ct-notice {
+  background: var(--admin-amber-tint);
+  border: 1px solid #d9b87a;
+  color: #6b4d12;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.ct-linkbtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--admin-sage-deep);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ct-delta {
+  background: var(--admin-cream-soft);
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.ct-delta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  padding: 5px 0;
+}
+.ct-delta-k {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+  flex: none;
+  padding-top: 3px;
+}
+.ct-delta-row > span:last-child { text-align: right; }
+.ct-was {
+  color: var(--admin-ink-soft);
+  text-decoration: line-through;
+  margin-right: 6px;
+}
+.ct-arrow { color: var(--admin-sage-deep); }
+
+@media (max-width: 560px) {
+  .ct-opt { padding: 12px; }
+  .ct-name, .ct-price { font-size: 18px; }
+}

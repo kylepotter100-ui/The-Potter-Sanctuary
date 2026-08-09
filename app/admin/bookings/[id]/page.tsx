@@ -458,6 +458,12 @@ export default async function AdminBookingDetailPage({
               >
                 Reschedule
               </Link>
+              <Link
+                className="btn btn-ghost"
+                href={`/admin/bookings/${booking.id}/change-treatment`}
+              >
+                Change treatment
+              </Link>
             </div>
           </section>
         )}

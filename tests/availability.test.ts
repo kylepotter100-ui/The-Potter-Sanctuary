@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   BUFFER_MINUTES,
   candidateRejection,
+  fittingTreatments,
   isCandidateValid,
   minutesToTime,
   resolveOpenSet,
@@ -221,5 +222,107 @@ describe("candidateRejection — admin 'book anytime' mode", () => {
         adminMode: true,
       })
     ).toBeNull();
+  });
+});
+
+// ===========================================================================
+// Changing a booking's TREATMENT changes its duration, so the booking must be
+// re-checked against the day. The booking being edited is excluded from
+// `existing` (a booking can never clash with itself) — these tests pin the
+// growth/shrink rules that the admin change-treatment flow relies on.
+// ===========================================================================
+describe("treatment change — duration growth at a fixed start", () => {
+  // The booking under edit is at 14:00; another client is booked at 15:00/30,
+  // occupying [15:00, 15:45) once its buffer is counted.
+  const follower: ExistingBooking[] = [{ time: "15:00", duration_minutes: 30 }];
+
+  it("shrinking always still fits (60 -> 30 at the same start)", () => {
+    expect(
+      candidateRejection({
+        openSet: fullOpenSet(),
+        existing: follower,
+        start: "14:00",
+        duration: 30,
+      })
+    ).toBeNull();
+  });
+
+  it("growing into the following booking is rejected as an overlap", () => {
+    // 14:00 + 60 + 15 buffer = 15:15, which intersects [15:00, 15:45).
+    expect(
+      candidateRejection({
+        openSet: fullOpenSet(),
+        existing: follower,
+        start: "14:00",
+        duration: 60,
+      })
+    ).toBe("overlap");
+  });
+
+  it("growing is fine when the gap is big enough", () => {
+    expect(
+      candidateRejection({
+        openSet: fullOpenSet(),
+        existing: [{ time: "16:00", duration_minutes: 30 }],
+        start: "14:00",
+        duration: 60,
+      })
+    ).toBeNull();
+  });
+
+  it("growing past closing time is rejected (17:30 + 60 ends 18:30... 18:15 + 60 does not)", () => {
+    expect(
+      candidateRejection({
+        openSet: fullOpenSet(),
+        existing: [],
+        start: "18:15",
+        duration: 60,
+      })
+    ).toBe("closing");
+  });
+
+  it("the edited booking must be excluded or it blocks its own slot", () => {
+    const self: ExistingBooking[] = [{ time: "14:00", duration_minutes: 30 }];
+    // Included: the row overlaps itself and every change looks impossible.
+    expect(
+      candidateRejection({
+        openSet: fullOpenSet(),
+        existing: self,
+        start: "14:00",
+        duration: 30,
+      })
+    ).toBe("overlap");
+    // Excluded (what the feature actually does): the same change is valid.
+    expect(
+      candidateRejection({
+        openSet: fullOpenSet(),
+        existing: [],
+        start: "14:00",
+        duration: 30,
+      })
+    ).toBeNull();
+  });
+});
+
+describe("fittingTreatments — drives the change-treatment picker", () => {
+  it("offers only the 30-min treatments in a gap that can't hold 60 min", () => {
+    const fits = fittingTreatments(
+      fullOpenSet(),
+      [{ time: "15:00", duration_minutes: 30 }],
+      "14:00"
+    );
+    // 60-min treatments would run into the 15:00 booking; 30-min ones fit.
+    expect(fits).toContain("back-neck-scalp");
+    expect(fits).toContain("hot-stones-back");
+    expect(fits).not.toContain("full-body-aromatherapy");
+    expect(fits).not.toContain("hot-stones-full");
+  });
+
+  it("offers every treatment when the day is clear", () => {
+    expect(fittingTreatments(fullOpenSet(), [], "10:00")).toHaveLength(4);
+  });
+
+  it("offers nothing at a start time that is past closing for all durations", () => {
+    expect(fittingTreatments(fullOpenSet(), [], "18:45")).toHaveLength(0);
   });
 });
