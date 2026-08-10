@@ -16,8 +16,8 @@ Beck Row, Suffolk → hello@thepottersanctuary.co.uk, with the QR at the right.
 ## Files
 
 ```
-out/option-a.pdf        Option A, 2 pages (front, back) — RGB master  ← give this to the printer
-out/option-b.pdf        Option B, 2 pages (front, back) — RGB master
+out/option-b.pdf        Option B, 2 pages (front, back) — RGB master  ← SEND THIS TO THE PRINTER
+out/option-a.pdf        Option A, 2 pages (front, back) — RGB master (not chosen)
 out/option-a-CMYK.pdf   Option A converted to DeviceCMYK (see caveat below)
 out/option-b-CMYK.pdf   Option B converted to DeviceCMYK
 out/proof-guides.pdf    All three faces with trim + safe-area guides (NOT for print)
@@ -144,7 +144,7 @@ any risk of font substitution.
 
 1. **An ICC/press profile.** The CMYK conversion is **unmanaged** — Ghostscript's
    generic profile, not FOGRA39, GRACoL or your printer's own. **Recommended:
-   send `option-a.pdf` / `option-b.pdf` (the RGB masters) and let the printer
+   send `option-b.pdf` (the RGB master) and let the printer
    separate with their profile.** The `-CMYK.pdf` files are there for printers who
    require CMYK on delivery; if they use them, ask them to keep the QR at 100% K.
 2. **A printed proof.** Sage is a muted mid-tone and will shift depending on
