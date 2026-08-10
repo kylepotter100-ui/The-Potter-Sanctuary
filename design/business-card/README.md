@@ -3,12 +3,15 @@
 Print-ready business card artwork. **Standalone design asset — no application
 code, routes, components or data are involved.**
 
-Two options, both sharing the same front:
+**Option B is the approved design.** Both options share the same front.
 
 | Option | Front | Reverse |
 |---|---|---|
-| **A** | Sage, logo left, name, email, QR | Clean sage-on-cream inverse — logo + name + web address |
-| **B** | *(identical)* | Sage-on-cream inverse — logo + the four treatments |
+| **B — CHOSEN** | Sage, logo left, name, tagline, location, email, QR | Sage-on-cream inverse — logo + the four treatments |
+| A | *(identical front)* | Clean sage-on-cream inverse — logo + name + web address |
+
+Front reading order: **The Potter Sanctuary** → Massage & Wellbeing →
+Beck Row, Suffolk → hello@thepottersanctuary.co.uk, with the QR at the right.
 
 ## Files
 
@@ -157,3 +160,85 @@ any risk of font substitution.
 6. **A Pantone match**, if you ever want exact sage consistency across print
    runs and suppliers. Deliberately not guessed at here — it should be chosen
    against a physical Pantone book under controlled lighting.
+
+
+---
+
+# Ordering — and reordering without losing quality or breaking the QR
+
+## What to send the printer
+
+**`out/option-b.pdf`** — 2 pages: page 1 is the front, page 2 the reverse.
+That single file is the whole job.
+
+Specify:
+
+| | |
+|---|---|
+| Finished size | 85 × 55 mm |
+| Bleed | 3 mm, **already included** in the file (page is 91 × 61 mm) |
+| Sides | Double-sided, full colour both sides |
+| Orientation | Landscape both sides |
+| Colour | Send the **RGB master** and let them separate with their own profile |
+
+## The five rules that protect quality
+
+1. **Always upload the PDF.** Never a screenshot, JPEG or PNG of it, and never
+   rebuild the card inside a printer's online design tool. Rasterising the
+   artwork is what turns crisp type and a clean QR into something fuzzy — and a
+   fuzzy QR is a QR that stops scanning.
+2. **Ask for matt lamination, soft-touch or uncoated — not gloss.** Gloss throws
+   glare straight back at a phone camera and is the most common reason a
+   perfectly good printed QR won't scan. It also suits the brand better.
+3. **Don't let anyone regenerate or resize the QR.** It is sized so its modules
+   are 0.45 mm; shrinking the card or the QR pushes it under the reliable limit.
+   If a new QR is ever genuinely needed, regenerate it from this folder
+   (`build.py`), not from a random web QR generator.
+4. **If the printer insists on CMYK**, send `out/option-b-CMYK.pdf` and tell them
+   to **keep the QR at 100% K** (it is already set that way). A four-colour black
+   on modules this small risks misregistration blurring the edges.
+5. **Approve a physical proof before the full run** — and when it arrives,
+   **scan the QR from the actual printed card with two or three different phones**,
+   in normal indoor light. That is the only test that really counts.
+
+## Stock and quantity
+
+- **400 gsm or heavier** feels appropriate for a treatment studio; 350 gsm is the
+  usual budget floor.
+- **Digital printing** is right for anything up to roughly a thousand cards, and
+  is what online printers use by default. Litho only becomes worthwhile in the
+  thousands — there is no quality reason to ask for it at these volumes.
+- Beware "free" business card offers — they often print the supplier's own
+  branding on the reverse, which would overwrite the treatments side.
+
+UK online printers commonly used for this kind of job include instantprint,
+Solopress, Printed.com, MOO and Vistaprint. They all accept a print-ready PDF
+with bleed. Prices and quality vary over time, so compare current reviews rather
+than treating this as a recommendation.
+
+## Reordering identically
+
+- **Reorder by sending the exact same `option-b.pdf`.** Same file in means the
+  same cards out — the QR, colours and type are all locked into it.
+- **Ask the printer to keep the job on file** and note the job/order number; most
+  offer a one-click repeat order.
+- **Keep a copy of this folder somewhere outside the repo too** (cloud drive or
+  similar), so the artwork survives independently of the codebase.
+- **The QR needs no maintenance.** It encodes the plain apex domain
+  `https://thepottersanctuary.co.uk` with no tracking parameters or shortener,
+  so it keeps working for as long as that domain does — there is no third-party
+  QR service that could expire or start charging. The one thing that would kill
+  every printed card is **changing the domain**, so avoid that, or keep the old
+  domain redirecting permanently if it ever happens.
+
+## If something needs changing later
+
+Edit `src/`, then:
+
+```bash
+python3 design/business-card/build.py && python3 design/business-card/verify.py
+```
+
+`verify.py` re-checks the page geometry, decodes the QR from the rendered
+artwork, tests how far it can be degraded and still scan, and confirms the QR is
+still 100% K. Don't send a file to a printer that hasn't passed it.

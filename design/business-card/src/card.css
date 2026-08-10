@@ -122,6 +122,18 @@ html, body {
   opacity: 0.9;
 }
 
+/* Location sits between the tagline and the email. Deliberately a step down
+   from the email in weight/size so the reading order stays
+   name -> what -> where -> how to get in touch. */
+.location {
+  font-family: "Lora", Georgia, serif;
+  font-size: 6pt;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  color: var(--bone);
+  opacity: 0.9;
+}
+
 .email {
   font-family: "Lora", Georgia, serif;
   font-size: 6.6pt;
