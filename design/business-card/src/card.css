@@ -1,0 +1,247 @@
+/* ===========================================================================
+   The Potter Sanctuary — business card
+   Trim 85 x 55 mm (UK/ISO standard) + 3 mm bleed all round = 91 x 61 mm artboard.
+   Safe area = 4 mm inside trim, i.e. 7 mm from the artboard edge.
+
+   Colours are the canonical brand tokens (app/globals.css, app/admin/admin.css,
+   emails/_shared.tsx):
+     sage       #8A9E85   sage-deep #6E8068
+     cream      #F5F0E8   bone      #FBF7EC
+     ink        #1C1C1C
+   Fonts are the site's own: Cormorant Garamond (serif) + Lora (sans/body),
+   embedded as base64 by build.py so the output HTML is fully self-contained.
+   =========================================================================== */
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  src: url("{{FONT_CORMORANT}}") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("{{FONT_LORA}}") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  --sage: #8a9e85;
+  --sage-deep: #6e8068;
+  --cream: #f5f0e8;
+  --bone: #fbf7ec;
+  --ink: #1c1c1c;
+
+  --bleed: 3mm;
+  --safe: 7mm; /* 3mm bleed + 4mm safe margin inside trim */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@page {
+  size: 91mm 61mm;   /* artboard incl. bleed */
+  margin: 0;
+}
+
+html, body {
+  width: 91mm;
+  background: #ffffff;
+}
+
+/* Force background colours to render in print (Chromium). */
+* {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.card {
+  position: relative;
+  width: 91mm;
+  height: 61mm;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+}
+.card:last-child { page-break-after: auto; break-after: auto; }
+
+.card-front { background: var(--sage); }
+.card-back  { background: var(--cream); }
+
+/* Content is confined to the safe area — nothing important within 4mm of trim. */
+.safe {
+  position: absolute;
+  inset: var(--safe);
+}
+
+/* ---------- FRONT ---------- */
+.front-grid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 14mm 1fr 18mm;
+  column-gap: 4mm;
+  align-items: center;
+}
+
+.logo-col { display: flex; align-items: center; justify-content: center; }
+.logo-col img { width: 14mm; height: auto; display: block; }
+
+.text-col {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.6mm;
+}
+
+.brand-name {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 400;
+  font-size: 15pt;
+  line-height: 1.05;
+  letter-spacing: 0.012em;
+  color: var(--bone);
+}
+.brand-name .the { display: block; font-size: 9.5pt; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.6mm; }
+
+.rule {
+  width: 16mm;
+  height: 0.35mm;
+  background: var(--bone);
+  opacity: 0.55;
+}
+
+.tagline {
+  font-family: "Lora", Georgia, serif;
+  font-size: 5.2pt;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: var(--bone);
+  opacity: 0.9;
+}
+
+/* Location sits between the tagline and the email. Deliberately a step down
+   from the email in weight/size so the reading order stays
+   name -> what -> where -> how to get in touch. */
+.location {
+  font-family: "Lora", Georgia, serif;
+  font-size: 6pt;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  color: var(--bone);
+  opacity: 0.9;
+}
+
+.email {
+  font-family: "Lora", Georgia, serif;
+  font-size: 6.6pt;
+  white-space: nowrap;
+  letter-spacing: 0.005em;
+  color: var(--bone);
+}
+
+/* QR sits on a cream panel: ink-on-cream measures 15.02:1 contrast, versus
+   3.74:1 for sage-deep-on-cream. The panel padding doubles as the quiet zone
+   on top of the 4-module quiet zone baked into the SVG itself. */
+.qr-col { display: flex; align-items: center; justify-content: flex-end; }
+.qr-panel {
+  width: 18mm;
+  height: 18mm;
+  background: var(--cream);
+  border-radius: 0.8mm;
+  padding: 0.6mm;
+}
+.qr-panel img { width: 100%; height: 100%; display: block; }
+
+/* ---------- BACKS (sage on cream inverse) ---------- */
+.back-centre {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.4mm;
+  text-align: center;
+}
+.back-centre img { width: 15mm; height: auto; display: block; }
+.back-name {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 400;
+  font-size: 13pt;
+  line-height: 1.1;
+  color: var(--sage-deep);
+  letter-spacing: 0.015em;
+}
+.back-sub {
+  font-family: "Lora", Georgia, serif;
+  font-size: 5.4pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+/* Back B — treatments list */
+.back-grid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 15mm 1fr;
+  column-gap: 5mm;
+  align-items: center;
+}
+.back-grid .logo-col img { width: 15mm; }
+
+.treatments { display: flex; flex-direction: column; gap: 1.1mm; }
+.treat-head {
+  font-family: "Lora", Georgia, serif;
+  font-size: 5.2pt;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sage);
+  margin-bottom: 0.6mm;
+}
+.treat {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 10pt;
+  line-height: 1.15;
+  color: var(--sage-deep);
+  letter-spacing: 0.01em;
+}
+.back-foot {
+  font-family: "Lora", Georgia, serif;
+  font-size: 5.4pt;
+  letter-spacing: 0.14em;
+  color: var(--sage);
+  margin-top: 1.6mm;
+}
+
+/* ---------- Proof guides (never in the production PDF) ---------- */
+.guides .trim, .guides .safe-line {
+  position: absolute;
+  pointer-events: none;
+}
+.guides .trim {
+  inset: 3mm;
+  outline: 0.2mm dashed rgba(220, 40, 40, 0.85);
+}
+.guides .safe-line {
+  inset: 7mm;
+  outline: 0.2mm dashed rgba(30, 90, 200, 0.7);
+}
+.guides .glabel {
+  position: absolute;
+  bottom: 0.4mm;
+  right: 0.8mm;
+  font-family: monospace;
+  font-size: 4pt;
+  color: rgba(0,0,0,0.65);
+}
+
+/* Screen-only: separate the faces so raster proofs don't pick up a sliver of
+   the neighbouring card. Has no effect on the PDF (each .card is its own page). */
+@media screen {
+  body { background: #d9d3c6; padding: 4mm 0; }
+  .card + .card { margin-top: 6mm; }
+  .card { margin-left: auto; margin-right: auto; }
+}
