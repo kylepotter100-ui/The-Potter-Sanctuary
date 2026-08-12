@@ -16,10 +16,11 @@ Beck Row, Suffolk → hello@thepottersanctuary.co.uk, with the QR at the right.
 ## Files
 
 ```
-out/option-b.pdf        Option B, 2 pages (front, back) — RGB master  ← SEND THIS TO THE PRINTER
-out/option-a.pdf        Option A, 2 pages (front, back) — RGB master (not chosen)
-out/option-a-CMYK.pdf   Option A converted to DeviceCMYK (see caveat below)
-out/option-b-CMYK.pdf   Option B converted to DeviceCMYK
+out/option-b-front.pdf  Option B FRONT only, 1 page — RGB master  ← UPLOAD AS "FRONT"
+out/option-b-back.pdf   Option B BACK only,  1 page — RGB master  ← UPLOAD AS "BACK"
+out/option-b.pdf        Option B, both sides in one 2-page file — RGB master
+out/option-a*.pdf       Option A equivalents (not chosen)
+out/*-CMYK.pdf          DeviceCMYK conversions of each of the above (see caveat below)
 out/proof-guides.pdf    All three faces with trim + safe-area guides (NOT for print)
 out/*-p1.png,-p2.png    300 DPI raster proofs
 out/*.html              Self-contained HTML (fonts/logo/QR inlined) — what the PDFs were rendered from
@@ -168,8 +169,16 @@ any risk of font substitution.
 
 ## What to send the printer
 
-**`out/option-b.pdf`** — 2 pages: page 1 is the front, page 2 the reverse.
-That single file is the whole job.
+Most online printers ask for the two sides as **separate uploads**. Use:
+
+- **Front:** `out/option-b-front.pdf`
+- **Back:** `out/option-b-back.pdf`
+
+Each is a single page at the full 91 × 61 mm (85 × 55 mm trim + 3 mm bleed).
+
+If a printer instead wants **one file for both sides**, send `out/option-b.pdf`
+— page 1 is the front, page 2 the reverse. Same artwork either way; pick whichever
+the upload form expects and don't mix the two approaches in one order.
 
 Specify:
 

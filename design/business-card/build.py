@@ -36,6 +36,15 @@ ART_H_MM = TRIM_H_MM + 2 * BLEED_MM  # 61
 
 URL = "https://thepottersanctuary.co.uk"
 
+# Stems that also get a DeviceCMYK conversion. The single-face files exist
+# because most online printers take the front and the back as two separate
+# uploads rather than one two-page PDF.
+CMYK_STEMS = (
+    "option-a", "option-b",
+    "option-a-front", "option-a-back",
+    "option-b-front", "option-b-back",
+)
+
 
 def data_uri(path: pathlib.Path, mime: str) -> str:
     return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
@@ -143,7 +152,7 @@ def make_cmyk():
     profile; the CMYK file is provided for printers who require CMYK on delivery.
     """
     import subprocess
-    for stem in ("option-a", "option-b"):
+    for stem in CMYK_STEMS:
         src = OUT / f"{stem}.pdf"
         dst = OUT / f"{stem}-CMYK.pdf"
         cmd = [
@@ -199,7 +208,7 @@ def force_k_only_blacks():
                 make_repl(op), data)
         return data, n
 
-    for stem in ("option-a", "option-b"):
+    for stem in CMYK_STEMS:
         path = OUT / f"{stem}-CMYK.pdf"
         pdf = pikepdf.open(path, allow_overwriting_input=True)
         total = 0
@@ -221,8 +230,16 @@ def main():
     ensure_qr()
 
     jobs = [
+        # Two-page files (front + back in one document)
         ("option-a", ["front.html", "back-a.html"], False, 2),
         ("option-b", ["front.html", "back-b.html"], False, 2),
+        # Single-face files, for printers that want the sides uploaded separately.
+        # The front is identical across options; it is emitted under both names so
+        # there is no ambiguity about which pair belongs together.
+        ("option-a-front", ["front.html"], False, 1),
+        ("option-a-back", ["back-a.html"], False, 1),
+        ("option-b-front", ["front.html"], False, 1),
+        ("option-b-back", ["back-b.html"], False, 1),
         ("proof-guides", ["front.html", "back-a.html", "back-b.html"], True, 3),
     ]
     for stem, faces, guides, n in jobs:
