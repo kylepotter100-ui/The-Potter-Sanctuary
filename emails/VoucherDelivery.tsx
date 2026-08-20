@@ -12,6 +12,7 @@ import {
   CREAM,
   SAGE,
 } from "./_shared";
+import { isComplimentaryVoucher, voucherValueLabel } from "@/lib/vouchers";
 
 type Props = {
   purchaserName: string;
@@ -35,6 +36,10 @@ export default function VoucherDelivery({
   siteUrl,
 }: Props) {
   const firstName = purchaserName.split(" ")[0] || purchaserName;
+  // Complimentary vouchers are stored with value 0 (see lib/vouchers.ts). They
+  // read "Complimentary" rather than "£0", and drop the "thank you" framing —
+  // nobody paid for this one.
+  const complimentary = isComplimentaryVoucher(value);
 
   return (
     <EmailLayout
@@ -45,8 +50,11 @@ export default function VoucherDelivery({
         <SectionHeading>Your gift voucher</SectionHeading>
         <Paragraph>Dear {firstName},</Paragraph>
         <Paragraph>
-          Thank you — your gift voucher is ready. It&apos;s shown below; forward
-          or print this email and give it to {recipientName}.
+          {complimentary
+            ? "With our compliments — this gift voucher is ready to use."
+            : "Thank you — your gift voucher is ready."}{" "}
+          It&apos;s shown below; forward or print this email and give it to{" "}
+          {recipientName}.
         </Paragraph>
 
         {/* Email-safe e-card: a table (Outlook-friendly), solid sage bg, the real
@@ -112,8 +120,14 @@ export default function VoucherDelivery({
                   >
                     {treatmentName}
                   </div>
-                  <div style={{ fontFamily: SERIF, fontSize: 22, marginBottom: 12 }}>
-                    £{value}
+                  <div
+                    style={{
+                      fontFamily: SERIF,
+                      fontSize: complimentary ? 19 : 22,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {voucherValueLabel(value)}
                   </div>
                   <div
                     style={{

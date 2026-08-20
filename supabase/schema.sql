@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS public.vouchers (
   code                    text NOT NULL,
   treatment_id            text NOT NULL,
   treatment_name          text NOT NULL,
-  value                   int  NOT NULL,           -- pounds (matches bookings.treatment_price)
+  value                   int  NOT NULL,           -- pounds; 0 => complimentary
   purchaser_name          text NOT NULL,
   purchaser_email         text NOT NULL,
   recipient_name          text NOT NULL,

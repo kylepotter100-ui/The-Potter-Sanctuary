@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.vouchers (
   code                    text NOT NULL,
   treatment_id            text NOT NULL,
   treatment_name          text NOT NULL,
-  value                   int  NOT NULL,
+  value                   int  NOT NULL,   -- 0 => complimentary (given free)
   purchaser_name          text NOT NULL,
   purchaser_email         text NOT NULL,
   recipient_name          text NOT NULL,

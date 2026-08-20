@@ -268,6 +268,12 @@ export default async function DashboardPage({
   const vouchersRevenue = voucherRows.reduce((sum, r) => sum + (r.value ?? 0), 0);
   const prevVouchersRevenue = prevVoucherRows.reduce((sum, r) => sum + (r.value ?? 0), 0);
   const vouchersCount = voucherRows.length;
+  // Complimentary vouchers are stored at value 0 (lib/vouchers.ts). They add
+  // nothing to revenue above, but they were still issued — so show the split
+  // rather than letting them silently pad the issued count.
+  const complimentaryCount = voucherRows.filter(
+    (r) => (r.value ?? 0) === 0
+  ).length;
 
   // Headline revenue = confirmed bookings + vouchers issued.
   const revenueTotal = bookingsRevenue + vouchersRevenue;
@@ -481,6 +487,9 @@ export default async function DashboardPage({
                   <span className="rank-name">Vouchers</span>
                   <span className="rank-count">
                     <strong>{vouchersCount}</strong> issued
+                    {complimentaryCount > 0 && (
+                      <> · {complimentaryCount} complimentary</>
+                    )}
                   </span>
                 </div>
               )}

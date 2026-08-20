@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { supabaseAdmin } from "@/lib/supabase";
+import { voucherValueLabel } from "@/lib/vouchers";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -119,7 +120,7 @@ export default async function VoucherDetailPage({ params }: { params: Params }) 
         <section className="admin-card">
           <Row label="Voucher code" value={v.code} />
           <Row label="Treatment" value={v.treatment_name} />
-          <Row label="Value" value={`£${v.value}`} />
+          <Row label="Value" value={voucherValueLabel(v.value)} />
           <Row label="Status" value={redeemed ? "Redeemed" : "Active"} />
         </section>
 
