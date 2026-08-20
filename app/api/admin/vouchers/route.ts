@@ -27,6 +27,10 @@ type Body = {
   purchaserEmail?: string;
   recipientName?: string;
   giftMessage?: string;
+  // Owner-only: issue this voucher free of charge (value 0). Safe to take from
+  // the payload because this route is behind the admin session cookie — the
+  // treatment's identity, name and list price still come from the server.
+  complimentary?: boolean;
 };
 
 export async function POST(req: Request) {
@@ -69,7 +73,11 @@ export async function POST(req: Request) {
   }
 
   const treatmentName = `${service.name} ${service.nameEm}`.replace(/\s+/g, " ").trim();
-  const value = service.price; // pounds
+  // A complimentary voucher is stored as value 0 — see lib/vouchers.ts. That
+  // keeps it out of dashboard revenue (which sums `value`) while the voucher
+  // still issues, emails and redeems exactly like a paid one.
+  const isComplimentary = body.complimentary === true;
+  const value = isComplimentary ? 0 : service.price; // pounds
   const expiresAt = addDaysIso(ukTodayIso(), 365);
 
   // Insert with a unique code; on a 23505 collision, regenerate and retry.

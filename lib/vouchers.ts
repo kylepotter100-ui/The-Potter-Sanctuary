@@ -26,3 +26,23 @@ export function generateVoucherCode(): string {
 export function isValidVoucherCodeFormat(code: string): boolean {
   return /^PS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(code);
 }
+
+// ---------------------------------------------------------------------------
+// Complimentary vouchers
+//
+// The owner can give a treatment away free of charge. Rather than carry a
+// separate column, a complimentary voucher is simply stored with `value = 0`:
+// every treatment in lib/services.ts is priced above zero, so a zero value is
+// unambiguous. Keeping the rule in one place stops the five display sites
+// (create form, success e-card, issued list, redeem modal, detail page) and the
+// delivery email from drifting apart.
+
+export function isComplimentaryVoucher(value: number): boolean {
+  return value === 0;
+}
+
+// The amount as shown to a human. Complimentary vouchers read "Complimentary"
+// rather than "£0", which on a gift e-card looks like a pricing error.
+export function voucherValueLabel(value: number): string {
+  return isComplimentaryVoucher(value) ? "Complimentary" : `£${value}`;
+}

@@ -9,6 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { services } from "@/lib/services";
+import { voucherValueLabel } from "@/lib/vouchers";
 import VoucherCard from "./VoucherCard";
 
 export type VoucherListItem = {
@@ -46,6 +47,7 @@ export default function VouchersPanel({
   const [purchaserEmail, setPurchaserEmail] = useState("");
   const [recipient, setRecipient] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
+  const [complimentary, setComplimentary] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
@@ -73,6 +75,7 @@ export default function VouchersPanel({
           purchaserEmail: purchaserEmail.trim(),
           recipientName: recipient.trim(),
           giftMessage: giftMessage.trim() || undefined,
+          complimentary,
         }),
       });
       const body = (await res.json().catch(() => null)) as
@@ -96,6 +99,7 @@ export default function VouchersPanel({
     setPurchaserEmail("");
     setRecipient("");
     setGiftMessage("");
+    setComplimentary(false);
     setCreateError(null);
   }
 
@@ -141,8 +145,17 @@ export default function VouchersPanel({
       <section className="admin-card voucher-create">
         <h2>Create a voucher</h2>
         <p className="lede" style={{ marginTop: 0 }}>
-          You&apos;ve already been paid (bank transfer or cash). Create the
-          voucher, then it&apos;s emailed to the buyer.
+          {complimentary ? (
+            <>
+              This one&apos;s on the house — nothing to collect. Create the
+              voucher, then it&apos;s emailed to the recipient.
+            </>
+          ) : (
+            <>
+              You&apos;ve already been paid (bank transfer or cash). Create the
+              voucher, then it&apos;s emailed to the buyer.
+            </>
+          )}
         </p>
 
         {!created ? (
@@ -173,7 +186,29 @@ export default function VouchersPanel({
 
             <div className="voucher-price-line">
               <span>Voucher value</span>
-              <strong>{selected ? selected.priceLabel : "—"}</strong>
+              <strong>
+                {complimentary
+                  ? "Complimentary"
+                  : selected
+                    ? selected.priceLabel
+                    : "—"}
+              </strong>
+            </div>
+
+            <div className="voucher-group voucher-comp-group">
+              <div className="voucher-group-h">Complimentary</div>
+              <label className="voucher-comp">
+                <input
+                  type="checkbox"
+                  checked={complimentary}
+                  onChange={(e) => setComplimentary(e.target.checked)}
+                />
+                <span>Give this treatment free of charge</span>
+              </label>
+              <div className="voucher-group-sub">
+                The voucher is issued at £0, so it doesn&apos;t count towards
+                your revenue figures. It still emails and redeems as normal.
+              </div>
             </div>
 
             <div className="voucher-group">
@@ -255,7 +290,7 @@ export default function VouchersPanel({
             </div>
             <VoucherCard
               treatmentName={created.treatmentName}
-              price={`£${created.value}`}
+              price={voucherValueLabel(created.value)}
               code={created.code}
             />
             <p className="lede voucher-success-note">
@@ -300,7 +335,7 @@ export default function VouchersPanel({
                     </span>
                   </div>
                   <div className="voucher-row-treat">
-                    {v.treatment_name} · £{v.value}
+                    {v.treatment_name} · {voucherValueLabel(v.value)}
                   </div>
                   <div className="voucher-row-recipient">For {v.recipient_name}</div>
                 </Link>
@@ -342,8 +377,9 @@ export default function VouchersPanel({
           <div className="modal-card">
             <h3 className="modal-title">Mark voucher redeemed?</h3>
             <p style={{ fontSize: 13, color: "var(--admin-ink-soft)", margin: "0 0 8px" }}>
-              {redeemingVoucher.code} · {redeemingVoucher.treatment_name} · £
-              {redeemingVoucher.value} · for {redeemingVoucher.recipient_name}
+              {redeemingVoucher.code} · {redeemingVoucher.treatment_name} ·{" "}
+              {voucherValueLabel(redeemingVoucher.value)} · for{" "}
+              {redeemingVoucher.recipient_name}
             </p>
             <p style={{ fontSize: 13, color: "var(--admin-ink-soft)", margin: 0 }}>
               This marks the voucher as used and can&apos;t be undone.

@@ -1975,6 +1975,30 @@
   line-height: 1.5;
 }
 
+/* Complimentary toggle — sits under the voucher total. Native checkbox, same
+   shape as .mb-anytime elsewhere in admin; the sub-text below it carries the
+   group's usual 14px bottom margin so the card spacing stays consistent. */
+.admin-shell .voucher-comp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--admin-ink);
+  cursor: pointer;
+}
+.admin-shell .voucher-comp input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  cursor: pointer;
+}
+/* The total directly above already carries an 18px gap — close it up so the
+   toggle reads as belonging to the value it changes. */
+.admin-shell .voucher-comp-group {
+  margin-top: -6px;
+}
+
 /* --- Create success state --- */
 .admin-shell .voucher-success-head {
   display: flex;

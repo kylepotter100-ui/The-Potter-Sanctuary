@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { generateVoucherCode, isValidVoucherCodeFormat } from "@/lib/vouchers";
+import { services } from "@/lib/services";
+import {
+  generateVoucherCode,
+  isValidVoucherCodeFormat,
+  isComplimentaryVoucher,
+  voucherValueLabel,
+} from "@/lib/vouchers";
 
 describe("generateVoucherCode", () => {
   it("always produces PS-XXXX-XXXX in the unambiguous alphabet", () => {
@@ -39,5 +45,34 @@ describe("isValidVoucherCodeFormat", () => {
     ]) {
       expect(isValidVoucherCodeFormat(bad)).toBe(false);
     }
+  });
+});
+
+describe("isComplimentaryVoucher", () => {
+  it("treats only a zero value as complimentary", () => {
+    expect(isComplimentaryVoucher(0)).toBe(true);
+    for (const price of [25, 35, 50, 60]) {
+      expect(isComplimentaryVoucher(price)).toBe(false);
+    }
+  });
+
+  it("holds for every real treatment price", () => {
+    // The derived-from-zero rule is only unambiguous while every treatment
+    // costs something. If a £0 treatment is ever added, this fails loudly.
+    for (const s of services) {
+      expect(isComplimentaryVoucher(s.price)).toBe(false);
+    }
+  });
+});
+
+describe("voucherValueLabel", () => {
+  it("reads 'Complimentary' at zero, never '£0'", () => {
+    expect(voucherValueLabel(0)).toBe("Complimentary");
+    expect(voucherValueLabel(0)).not.toContain("0");
+  });
+
+  it("renders a plain pounds amount otherwise", () => {
+    expect(voucherValueLabel(50)).toBe("£50");
+    expect(voucherValueLabel(25)).toBe("£25");
   });
 });
