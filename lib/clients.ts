@@ -135,6 +135,8 @@ export type ClientBooking = {
   treatment_name: string;
   treatment_price: number;
   status: "pending" | "confirmed" | "cancelled";
+  /** Set when the booking was paid with a gift voucher — excluded from spend. */
+  voucher_id: string | null;
 };
 
 export type ClientReview = {
@@ -187,7 +189,7 @@ export async function getClientProfile(
       admin
         .from("bookings")
         .select(
-          "id, booking_date, booking_time, treatment_name, treatment_price, status"
+          "id, booking_date, booking_time, treatment_name, treatment_price, status, voucher_id"
         )
         .eq("customer_id", id)
         .order("booking_date", { ascending: false })
@@ -208,8 +210,12 @@ export async function getClientProfile(
 
   const bk = (bookings ?? []) as ClientBooking[];
   const visits = bk.filter((b) => b.status !== "cancelled").length;
+  // Voucher-funded bookings are excluded from SPEND but still count as VISITS:
+  // the client did come in, they just paid when the voucher was bought rather
+  // than on the day. Filtered here in the reduce rather than in the query above
+  // so the booking still appears in their history list.
   const lifetimeSpend = bk
-    .filter((b) => b.status === "confirmed")
+    .filter((b) => b.status === "confirmed" && !b.voucher_id)
     .reduce((sum, b) => sum + (b.treatment_price ?? 0), 0);
 
   return {

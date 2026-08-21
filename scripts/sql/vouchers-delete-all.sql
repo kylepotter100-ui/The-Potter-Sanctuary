@@ -1,4 +1,18 @@
 -- Delete ALL gift vouchers (every email). Run ONLY after reviewing the output of
--- vouchers-list-all.sql. Nothing references the vouchers table, so this affects
--- the vouchers table alone — bookings, customers, reviews etc. are untouched.
+-- vouchers-list-all.sql.
+--
+-- ⚠️ NO LONGER SELF-CONTAINED. bookings.voucher_id references this table with
+-- ON DELETE RESTRICT, so this DELETE will FAIL with a foreign-key violation if
+-- any booking was paid with a voucher. That is deliberate — silently nulling
+-- the link would turn a £0 voucher-funded booking back into countable revenue.
+--
+-- If it fails, find the offenders first:
+--
+--   SELECT b.id, b.booking_date, b.status, v.code
+--   FROM public.bookings b
+--   JOIN public.vouchers v ON v.id = b.voucher_id
+--   ORDER BY b.booking_date DESC;
+--
+-- ...then delete those bookings before re-running this. Do NOT work around the
+-- constraint by setting voucher_id to NULL.
 DELETE FROM public.vouchers;

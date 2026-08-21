@@ -77,6 +77,30 @@ export default async function VoucherDetailPage({ params }: { params: Params }) 
     .eq("id", id)
     .maybeSingle();
 
+  // The booking this voucher funded, if any. Prefer a live (pending/confirmed)
+  // one — the partial unique index guarantees at most a single live booking per
+  // voucher — else fall back to the most recent, so a cancelled booking still
+  // shows the history rather than the row vanishing.
+  let fundedBooking:
+    | { id: string; booking_date: string; status: string }
+    | null = null;
+  if (voucher) {
+    const { data: linked } = await supabaseAdmin
+      .from("bookings")
+      .select("id, booking_date, status")
+      .eq("voucher_id", id)
+      .order("booking_date", { ascending: false });
+    const rows = (linked ?? []) as {
+      id: string;
+      booking_date: string;
+      status: string;
+    }[];
+    fundedBooking =
+      rows.find((b) => b.status === "pending" || b.status === "confirmed") ??
+      rows[0] ??
+      null;
+  }
+
   if (!voucher) {
     return (
       <>
@@ -141,6 +165,19 @@ export default async function VoucherDetailPage({ params }: { params: Params }) 
             label="Redeemed"
             value={redeemed ? fmtDateTime(v.redeemed_at) : <span className="muted">Not yet</span>}
           />
+          {fundedBooking && (
+            <Row
+              label="Redeemed against"
+              value={
+                <Link href={`/admin/bookings/${fundedBooking.id}`}>
+                  {fmtDate(fundedBooking.booking_date)}
+                  {fundedBooking.status === "cancelled"
+                    ? " (cancelled)"
+                    : ""}
+                </Link>
+              }
+            />
+          )}
         </section>
       </main>
     </>

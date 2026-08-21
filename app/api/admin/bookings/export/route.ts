@@ -39,7 +39,9 @@ export async function GET(req: Request) {
   let query = supabaseAdmin
     .from("bookings")
     .select(
-      "id, booking_date, booking_time, customer_first_name, customer_last_name, customer_email, customer_phone, treatment_name, treatment_price, status, cancellation_reason, cancelled_by, created_at"
+      // `voucher:vouchers(code)` is a PostgREST FK embed via bookings.voucher_id
+      // — one query, no N+1. Null for every cash booking.
+      "id, booking_date, booking_time, customer_first_name, customer_last_name, customer_email, customer_phone, treatment_name, treatment_price, status, cancellation_reason, cancelled_by, created_at, voucher:vouchers(code)"
     )
     .order("booking_date", { ascending: true })
     .order("booking_time", { ascending: true });
@@ -67,6 +69,17 @@ export async function GET(req: Request) {
     }
   }
 
+  // PostgREST returns a to-one embed as an object, but can surface it as a
+  // one-element array depending on how the relationship is inferred. Accept
+  // both rather than silently printing "Cash" for a voucher booking.
+  function voucherCodeOf(b: unknown): string | null {
+    const v = (b as { voucher?: unknown }).voucher;
+    if (!v) return null;
+    const row = Array.isArray(v) ? v[0] : v;
+    const code = (row as { code?: unknown } | undefined)?.code;
+    return typeof code === "string" ? code : null;
+  }
+
   const header = [
     "Booking ID",
     "Date",
@@ -76,6 +89,7 @@ export async function GET(req: Request) {
     "Phone",
     "Treatment",
     "Cost",
+    "Paid With",
     "Status",
     "Cancellation Reason",
     "Cancelled By",
@@ -94,7 +108,11 @@ export async function GET(req: Request) {
         b.customer_email,
         b.customer_phone,
         b.treatment_name,
+        // Cost stays the LIST PRICE even for a voucher-funded booking, so the
+        // meaning of this column is unchanged for anyone with older exports.
+        // "Paid With" is the new key to filter/SUMIF on to get actual takings.
         `£${b.treatment_price}`,
+        voucherCodeOf(b) ? `Voucher ${voucherCodeOf(b)}` : "Cash",
         b.status,
         b.cancellation_reason ?? "",
         b.cancelled_by ?? "",

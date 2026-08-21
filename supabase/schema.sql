@@ -99,6 +99,15 @@ ALTER TABLE public.bookings
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS duration_minutes int;
 
+-- Voucher-funded bookings. BOTH the link to the voucher AND the revenue marker:
+-- revenue queries exclude rows where this is set, because that money was already
+-- counted once when the voucher was issued (paid offline).
+-- ON DELETE RESTRICT is deliberate, NOT the house SET NULL — nulling the link
+-- would silently turn a £0 voucher-funded booking back into countable revenue.
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS voucher_id uuid
+    REFERENCES public.vouchers(id) ON DELETE RESTRICT;
+
 -- Cancellation metadata (Phase 2). Captures who cancelled, when, and why.
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS cancellation_reason text;
@@ -253,6 +262,19 @@ CREATE INDEX IF NOT EXISTS slot_overrides_date_idx ON public.slot_overrides (ove
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.consultation_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_summaries_sent ENABLE ROW LEVEL SECURITY;
+
+-- ===== Voucher link =====
+CREATE INDEX IF NOT EXISTS bookings_voucher_id_idx
+  ON public.bookings (voucher_id);
+
+-- One voucher funds at most ONE LIVE booking. The partial predicate is
+-- load-bearing: cancelling a voucher-funded booking reverts the voucher to
+-- 'active' so the client can rebook, and that is only possible because the
+-- cancelled row drops out of this index. A plain unique index here would
+-- permanently burn the voucher on the first cancellation.
+CREATE UNIQUE INDEX IF NOT EXISTS bookings_voucher_active_unique
+  ON public.bookings (voucher_id)
+  WHERE voucher_id IS NOT NULL AND status IN ('pending', 'confirmed');
 
 -- ===== Active-slot uniqueness =====
 -- Cheap identical-start guard. Two simultaneous inserts for the same
