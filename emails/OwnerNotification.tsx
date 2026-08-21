@@ -24,6 +24,9 @@ type Props = {
   gender: string;
   message: string;
   timestamp: string;
+  // Set when the booking was paid with a gift voucher — do NOT take cash on the
+  // day. Absent for cash bookings.
+  voucherCode?: string | null;
   siteUrl: string;
 };
 
@@ -39,6 +42,7 @@ export default function OwnerNotification({
   gender,
   message,
   timestamp,
+  voucherCode = null,
   siteUrl,
 }: Props) {
   return (
@@ -68,7 +72,20 @@ export default function OwnerNotification({
           <DetailRow label="Treatment" value={treatmentName} />
           <DetailRow label="Date" value={bookingDate} />
           <DetailRow label="Time" value={bookingTime} />
-          <DetailRow label="Cost" value={`£${treatmentPrice}`} last />
+          {/* With a voucher the Cost row gives up `last` so the voucher row can
+              close the block — it is the line that says don't take payment. */}
+          <DetailRow
+            label="Cost"
+            value={`£${treatmentPrice}`}
+            last={!voucherCode}
+          />
+          {voucherCode ? (
+            <DetailRow
+              label="Voucher"
+              value={`${voucherCode} — paid by gift voucher, no cash to take`}
+              last
+            />
+          ) : null}
         </Section>
 
         {message && message.trim().length > 0 ? (

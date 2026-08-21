@@ -18,6 +18,9 @@ type Props = {
   bookingDate: string;
   bookingTime: string;
   siteUrl: string;
+  // Set when the booking was paid with a gift voucher. Absent for cash
+  // bookings, so those reminders are byte-identical to before.
+  voucherCode?: string | null;
 };
 
 export default function AppointmentReminder({
@@ -26,6 +29,7 @@ export default function AppointmentReminder({
   bookingDate,
   bookingTime,
   siteUrl,
+  voucherCode = null,
 }: Props) {
   return (
     <EmailLayout
@@ -69,7 +73,9 @@ export default function AppointmentReminder({
         <Divider />
         <SectionHeading>Payment</SectionHeading>
         <Paragraph>
-          Payment is taken in cash directly after your treatment.
+          {voucherCode
+            ? `Paid in full with gift voucher ${voucherCode} — there's nothing to pay on the day.`
+            : "Payment is taken in cash directly after your treatment."}
         </Paragraph>
 
         <Divider />

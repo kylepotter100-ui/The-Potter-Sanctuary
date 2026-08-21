@@ -27,6 +27,10 @@ type Props = {
   // Returning client (has a consultation on file): the form is pre-filled, so
   // the CTA asks them to review & confirm rather than complete from scratch.
   returningConsult?: boolean;
+  // Set when the booking was paid with a gift voucher. Swaps the cash-payment
+  // copy for "already paid" and adds a Paid-with row. Absent for cash bookings,
+  // so those emails are byte-identical to before.
+  voucherCode?: string | null;
 };
 
 export default function BookingConfirmation({
@@ -39,6 +43,7 @@ export default function BookingConfirmation({
   siteUrl,
   includeConsultationCTA = true,
   returningConsult = false,
+  voucherCode = null,
 }: Props) {
   const consultationUrl = `${siteUrl}/questionnaire?booking=${encodeURIComponent(
     bookingId
@@ -70,6 +75,11 @@ export default function BookingConfirmation({
           <DetailRow label="Date" value={bookingDate} />
           <DetailRow label="Time" value={bookingTime} />
           <DetailRow label="Cost" value={`£${treatmentPrice}`} />
+          {/* Cost above stays the LIST PRICE; this row is what says the money
+              was collected when the voucher was bought. */}
+          {voucherCode ? (
+            <DetailRow label="Paid with" value={`Gift voucher ${voucherCode}`} />
+          ) : null}
           <DetailRow
             label="Location"
             value="22 Lockheed Close, Beck Row, IP28 3AB"
@@ -81,8 +91,9 @@ export default function BookingConfirmation({
         <Divider />
         <SectionHeading>Payment</SectionHeading>
         <Paragraph>
-          Payment is taken in cash directly after your treatment at the studio.
-          We do not accept card or electronic payments at this time.
+          {voucherCode
+            ? `Paid in full with gift voucher ${voucherCode} — there's nothing to pay at the studio.`
+            : "Payment is taken in cash directly after your treatment at the studio. We do not accept card or electronic payments at this time."}
         </Paragraph>
 
         {/* Consultation CTA (or returning-customer note) */}
