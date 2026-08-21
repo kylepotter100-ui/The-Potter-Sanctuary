@@ -160,8 +160,9 @@ export default function VoucherDelivery({
 
         <Paragraph>
           <strong>How to use it:</strong> give this voucher to {recipientName}.
-          They book an appointment as normal and bring the voucher along — we&apos;ll
-          redeem it at the visit. There&apos;s nothing to pay on the day.
+          They can enter the code when booking online, or book as normal and
+          bring the voucher along — we&apos;ll redeem it at the visit. Either
+          way, there&apos;s nothing to pay on the day.
         </Paragraph>
         <MutedParagraph>Any questions? Just reply to this email.</MutedParagraph>
       </ContentSection>

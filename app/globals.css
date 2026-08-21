@@ -1096,6 +1096,52 @@
     font-family: var(--font-sans), 'Lora', serif;
     opacity: 0.7;
   }
+  /* Gift voucher: input + Apply button on one line. The button is sized to the
+     text so the input keeps as much room as possible for the code. */
+  .voucher-apply-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .voucher-apply-row input {
+    flex: 1;
+    min-width: 0;
+  }
+  .voucher-apply-btn {
+    flex: none;
+    background: transparent;
+    border: 1px solid rgba(58, 63, 49, 0.35);
+    border-radius: 4px;
+    padding: 9px 16px;
+    font-family: var(--font-sans), 'Lora', serif;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .voucher-apply-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .voucher-ok,
+  .voucher-bad,
+  .voucher-hint {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .voucher-ok {
+    color: #3f5d3a;
+  }
+  .voucher-bad {
+    color: #5b201d;
+  }
+  .voucher-hint {
+    color: var(--ink);
+    opacity: 0.6;
+  }
+
   .field input,
   .field select,
   .field textarea {

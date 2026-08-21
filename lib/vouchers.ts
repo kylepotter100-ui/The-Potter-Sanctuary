@@ -46,3 +46,58 @@ export function isComplimentaryVoucher(value: number): boolean {
 export function voucherValueLabel(value: number): string {
   return isComplimentaryVoucher(value) ? "Complimentary" : `£${value}`;
 }
+
+// ---------------------------------------------------------------------------
+// Redeeming a voucher at booking time
+//
+// Both the public check endpoint (app/api/voucher/check) and the booking route
+// (app/api/booking) run the SAME two functions below, so what the customer is
+// told when they press "Apply" can never disagree with what happens when they
+// actually submit. Keep them pure — they are the only voucher rules with test
+// coverage.
+
+/**
+ * Tidy up whatever the customer typed into the canonical `PS-XXXX-XXXX` shape.
+ * Accepts lowercase, stray spaces, missing or extra dashes — people copy these
+ * out of an email or read them off a printout. Anything that still doesn't fit
+ * the format is returned uppercased and left for `isValidVoucherCodeFormat` to
+ * reject; this function never decides validity.
+ */
+export function normalizeVoucherCode(raw: string): string {
+  const bare = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const match = /^PS([A-HJ-NP-Z2-9]{4})([A-HJ-NP-Z2-9]{4})$/.exec(bare);
+  return match ? `PS-${match[1]}-${match[2]}` : raw.trim().toUpperCase();
+}
+
+/** Why a voucher can't be used for this booking, or null if it can. */
+export type VoucherIssue = "not_active" | "expired" | "treatment_mismatch";
+
+export type VoucherForBooking = {
+  status: string;
+  expires_at: string | null;
+  treatment_id: string;
+};
+
+/**
+ * Decide whether a voucher may fund a booking of `treatmentId` today.
+ *
+ * PRECEDENCE IS DELIBERATE: `not_active` is checked first so an already-used
+ * code reveals nothing further about itself — no expiry date, no treatment
+ * name. Only a genuinely usable code gets a specific explanation.
+ *
+ * Expiry is INCLUSIVE of `expires_at` ("Valid until 3 May" means the 3rd still
+ * works), and a null `expires_at` never expires. `todayIso` is passed in rather
+ * than read here so the caller supplies UK today (lib/uk-time `ukTodayIso`) —
+ * the Worker clock is UTC, and CLAUDE.md rule 3 forbids deriving a UK date from
+ * it. Keeping it a parameter also keeps this function pure and testable.
+ */
+export function voucherBookingIssue(
+  voucher: VoucherForBooking,
+  treatmentId: string,
+  todayIso: string
+): VoucherIssue | null {
+  if (voucher.status !== "active") return "not_active";
+  if (voucher.expires_at && voucher.expires_at < todayIso) return "expired";
+  if (voucher.treatment_id !== treatmentId) return "treatment_mismatch";
+  return null;
+}

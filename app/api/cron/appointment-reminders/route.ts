@@ -53,13 +53,41 @@ export async function GET(req: Request) {
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_email, treatment_name, booking_date, booking_time, status, cancelled_at, appointment_reminder_sent_at"
+      "id, customer_first_name, customer_email, treatment_name, booking_date, booking_time, status, cancelled_at, appointment_reminder_sent_at, voucher_id"
     )
     .gte("booking_date", startIso)
     .lte("booking_date", endIso)
     .eq("status", "confirmed")
     .is("cancelled_at", null)
     .is("appointment_reminder_sent_at", null);
+
+  // Voucher-funded bookings must not be reminded to bring cash. Resolve every
+  // code in ONE query for the whole run rather than per-booking; usually the
+  // set is empty and this is skipped entirely.
+  const voucherCodes = new Map<string, string>();
+  const voucherIds = Array.from(
+    new Set(
+      ((candidates ?? []) as { voucher_id?: string | null }[])
+        .map((b) => b.voucher_id)
+        .filter((v): v is string => !!v)
+    )
+  );
+  if (voucherIds.length > 0 && supabaseAdmin) {
+    const { data: vs, error: vErr } = await supabaseAdmin
+      .from("vouchers")
+      .select("id, code")
+      .in("id", voucherIds);
+    if (vErr) {
+      // Non-fatal: the reminder still goes out, just with the cash wording.
+      console.error(
+        "[cron appointment-reminders] voucher code lookup failed",
+        JSON.stringify(vErr)
+      );
+    }
+    for (const v of vs ?? []) {
+      voucherCodes.set(v.id as string, v.code as string);
+    }
+  }
 
   if (error) {
     console.error(
@@ -110,6 +138,7 @@ export async function GET(req: Request) {
           bookingDate: formatLongDate(b.booking_date),
           bookingTime: formatTime12h(b.booking_time),
           siteUrl,
+          voucherCode: voucherCodes.get(b.voucher_id as string) ?? null,
         })
       );
       const result = await resend.emails.send({

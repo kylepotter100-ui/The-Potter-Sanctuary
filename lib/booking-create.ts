@@ -40,6 +40,10 @@ export type CreateBookingInput = {
   // Returning customers tell us whether their consultation details are still
   // current. true = no change, false = needs new questionnaire, null = first-time.
   detailsUnchanged?: boolean | null;
+  // Set by the public booking route when a valid gift-voucher code was applied
+  // and CLAIMED (status flipped active -> redeemed) BEFORE calling this. The
+  // caller owns releasing that claim if this function fails — see the route.
+  voucher?: { id: string; code: string } | null;
 };
 
 export type CreateBookingOptions = {
@@ -165,6 +169,10 @@ export async function createBooking(
       booking_date: input.date,
       booking_time: slotTime,
       duration_minutes: durationMinutes,
+      // Both the link to the voucher AND the revenue marker — dashboard and
+      // lifetime-spend queries exclude rows where this is set, because that
+      // money was counted once when the voucher was issued.
+      voucher_id: input.voucher?.id ?? null,
       message: input.message?.trim() || null,
       status: options.status,
     })
@@ -173,6 +181,30 @@ export async function createBooking(
 
   if (insertError) {
     console.error("[booking] supabase insert failed", JSON.stringify(insertError));
+    // Voucher conflict FIRST. bookings_voucher_active_unique is also a 23505,
+    // and the slot branch below matches on the generic text "duplicate key", so
+    // if these were the other way round a voucher clash would be reported to
+    // the customer as "that time slot was just taken" — sending them off to
+    // pick another time that would fail in exactly the same way.
+    //
+    // Do NOT release the voucher claim on this branch (the route honours that):
+    // hitting this index means a LIVE booking already links this voucher, so
+    // the voucher is legitimately redeemed. Releasing would leave an active
+    // voucher attached to a live booking — the very state the index prevents.
+    if (
+      /bookings_voucher_active_unique/i.test(insertError.message ?? "") ||
+      /bookings_voucher_active_unique/i.test(
+        (insertError as { details?: string }).details ?? ""
+      )
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        error: "voucher_conflict",
+        message:
+          "That gift voucher has just been used for another booking. Please get in touch and we'll sort it out.",
+      };
+    }
     // 23505 = unique_violation (bookings_active_slot_unique), 23P01 =
     // exclusion_violation (bookings_no_overlap) — both fire when two bookings
     // race for intersecting intervals; surface a friendly 409.
@@ -254,6 +286,7 @@ export async function createBooking(
   try {
     const customerHtml = await render(
       BookingConfirmation({
+        voucherCode: input.voucher?.code ?? null,
         firstName: input.fname,
         treatmentName,
         bookingDate: dateLong,
@@ -279,6 +312,7 @@ export async function createBooking(
     if (options.sendOwnerNotification) {
       const ownerHtml = await render(
         OwnerNotification({
+          voucherCode: input.voucher?.code ?? null,
           firstName: input.fname,
           lastName: input.lname,
           phone: input.phone,

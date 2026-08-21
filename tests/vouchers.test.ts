@@ -5,6 +5,8 @@ import {
   isValidVoucherCodeFormat,
   isComplimentaryVoucher,
   voucherValueLabel,
+  normalizeVoucherCode,
+  voucherBookingIssue,
 } from "@/lib/vouchers";
 
 describe("generateVoucherCode", () => {
@@ -74,5 +76,124 @@ describe("voucherValueLabel", () => {
   it("renders a plain pounds amount otherwise", () => {
     expect(voucherValueLabel(50)).toBe("£50");
     expect(voucherValueLabel(25)).toBe("£25");
+  });
+});
+
+describe("normalizeVoucherCode", () => {
+  it("accepts the ways people actually type a code", () => {
+    for (const input of [
+      "PS-7F2A-9K3D",
+      "ps-7f2a-9k3d",
+      "  PS-7F2A-9K3D  ",
+      "PS7F2A9K3D",
+      "ps 7f2a 9k3d",
+      "PS--7F2A--9K3D",
+    ]) {
+      expect(normalizeVoucherCode(input)).toBe("PS-7F2A-9K3D");
+    }
+  });
+
+  it("leaves unrecognisable input for the format check to reject", () => {
+    // Never decides validity itself — just uppercases and hands on.
+    expect(normalizeVoucherCode("hello")).toBe("HELLO");
+    expect(normalizeVoucherCode("")).toBe("");
+    expect(isValidVoucherCodeFormat(normalizeVoucherCode("hello"))).toBe(false);
+  });
+
+  it("does not invent a valid code from an ambiguous-character one", () => {
+    // I/O/0/1 are excluded from the alphabet, so this must stay rejected.
+    expect(isValidVoucherCodeFormat(normalizeVoucherCode("PS-0OI1-9K3D"))).toBe(
+      false
+    );
+  });
+});
+
+describe("voucherBookingIssue", () => {
+  const TODAY = "2026-08-21";
+  const active = {
+    status: "active",
+    expires_at: "2027-08-21",
+    treatment_id: "full-body-aromatherapy",
+  };
+
+  it("passes an active, in-date, matching voucher", () => {
+    expect(voucherBookingIssue(active, "full-body-aromatherapy", TODAY)).toBe(
+      null
+    );
+  });
+
+  it("never expires when expires_at is null", () => {
+    expect(
+      voucherBookingIssue(
+        { ...active, expires_at: null },
+        "full-body-aromatherapy",
+        TODAY
+      )
+    ).toBe(null);
+  });
+
+  it("is inclusive of the expiry date", () => {
+    // "Valid until 21 Aug" must still work ON the 21st.
+    expect(
+      voucherBookingIssue(
+        { ...active, expires_at: TODAY },
+        "full-body-aromatherapy",
+        TODAY
+      )
+    ).toBe(null);
+    expect(
+      voucherBookingIssue(
+        { ...active, expires_at: "2026-08-20" },
+        "full-body-aromatherapy",
+        TODAY
+      )
+    ).toBe("expired");
+  });
+
+  it("rejects a redeemed voucher", () => {
+    expect(
+      voucherBookingIssue(
+        { ...active, status: "redeemed" },
+        "full-body-aromatherapy",
+        TODAY
+      )
+    ).toBe("not_active");
+  });
+
+  it("rejects a treatment mismatch", () => {
+    expect(voucherBookingIssue(active, "hot-stones-full", TODAY)).toBe(
+      "treatment_mismatch"
+    );
+  });
+
+  it("reports not_active FIRST, leaking nothing about a used voucher", () => {
+    // A redeemed code must not reveal its expiry or its treatment — that
+    // ordering is the anti-enumeration guarantee.
+    expect(
+      voucherBookingIssue(
+        { status: "redeemed", expires_at: "2020-01-01", treatment_id: "x" },
+        "full-body-aromatherapy",
+        TODAY
+      )
+    ).toBe("not_active");
+  });
+
+  it("treats a complimentary (£0) voucher like any other", () => {
+    // Value plays no part here — a £0 voucher books exactly the same way.
+    expect(voucherBookingIssue(active, "full-body-aromatherapy", TODAY)).toBe(
+      null
+    );
+  });
+
+  it("accepts every real treatment id", () => {
+    for (const svc of services) {
+      expect(
+        voucherBookingIssue(
+          { ...active, treatment_id: svc.bookingId },
+          svc.bookingId,
+          TODAY
+        )
+      ).toBe(null);
+    }
   });
 });
