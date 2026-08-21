@@ -121,6 +121,18 @@ export default function Booking({ preselectId }: Props) {
   const [returningBanner, setReturningBanner] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
+  // Gift voucher (optional). `voucherStatus` gates submit: a typed-but-not-
+  // applied code must never be silently ignored, because the customer would
+  // arrive expecting to owe nothing and be asked for money.
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherStatus, setVoucherStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid"
+  >("idle");
+  const [voucherInfo, setVoucherInfo] = useState<{
+    treatmentName: string;
+    value: number;
+  } | null>(null);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
   const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Skip the step-change scroll on the very first render — otherwise the
   // homepage would auto-scroll down to the booking card (step 1) on mobile
@@ -374,7 +386,11 @@ export default function Booking({ preselectId }: Props) {
     !phone.trim() ||
     !/\S+@\S+\.\S+/.test(email) ||
     // Returning customers must answer the consultation-changed question.
-    (hasPriorConsultation && detailsUnchanged === null);
+    (hasPriorConsultation && detailsUnchanged === null) ||
+    // A code typed but not applied would be silently dropped, and the customer
+    // would turn up expecting to owe nothing.
+    voucherStatus === "checking" ||
+    (voucherCode.trim() !== "" && voucherStatus !== "valid");
 
   const dateLabel = date ? formatLongDate(date) : "";
 
@@ -575,6 +591,7 @@ export default function Booking({ preselectId }: Props) {
     setDetailsUnchanged(null);
     setSubmitError(null);
     setSlotClearedNotice(false);
+    resetVoucher();
     fetch("/api/availability", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: AvailabilityData | null) => {
@@ -586,6 +603,59 @@ export default function Booking({ preselectId }: Props) {
       const card = document.getElementById("bookingCard");
       if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }
+
+  function resetVoucher() {
+    setVoucherCode("");
+    setVoucherStatus("idle");
+    setVoucherInfo(null);
+    setVoucherError(null);
+  }
+
+  // A voucher is valid for ONE treatment. If the customer goes back and picks a
+  // different one, a previously applied code is no longer necessarily valid —
+  // clear it rather than submit a stale "valid" the server would reject.
+  useEffect(() => {
+    resetVoucher();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service?.svc]);
+
+  async function applyVoucher() {
+    const code = voucherCode.trim();
+    if (!code || !service) return;
+    setVoucherStatus("checking");
+    setVoucherError(null);
+    try {
+      const res = await fetch("/api/voucher/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, treatmentId: service.svc }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        valid?: boolean;
+        treatmentName?: string;
+        value?: number;
+        message?: string;
+      } | null;
+      if (body?.valid) {
+        setVoucherStatus("valid");
+        setVoucherInfo({
+          treatmentName: body.treatmentName ?? service.name,
+          value: body.value ?? 0,
+        });
+        setVoucherError(null);
+        return;
+      }
+      setVoucherStatus("invalid");
+      setVoucherInfo(null);
+      setVoucherError(
+        body?.message ?? "Couldn't check that code. Please try again."
+      );
+    } catch {
+      setVoucherStatus("invalid");
+      setVoucherInfo(null);
+      setVoucherError("Couldn't check that code. Please try again.");
+    }
   }
 
   async function submit() {
@@ -610,8 +680,38 @@ export default function Booking({ preselectId }: Props) {
           // Returning customers tell us whether their consultation details
           // are still current. Omitted for first-time bookings.
           detailsUnchanged: hasPriorConsultation ? detailsUnchanged : null,
+          // Only ever send an APPLIED code. The server re-validates from
+          // scratch regardless — this is a UX guard, not a security one.
+          voucherCode:
+            voucherStatus === "valid" ? voucherCode.trim() : undefined,
         }),
       });
+      // Voucher problems and throttling keep the customer on step 3 with their
+      // chosen time intact — bouncing them to the calendar (the slot flow
+      // below) would be actively misleading, since the slot is fine.
+      if (res.status === 429 || res.status === 409) {
+        const peek = (await res
+          .clone()
+          .json()
+          .catch(() => null)) as { error?: string; message?: string } | null;
+        if (peek?.error === "voucher_invalid" || peek?.error === "rate_limited") {
+          setVoucherStatus("invalid");
+          setVoucherInfo(null);
+          setVoucherError(
+            peek.message ?? "That voucher can't be used for this booking."
+          );
+          return;
+        }
+        if (peek?.error === "voucher_conflict") {
+          setVoucherStatus("invalid");
+          setVoucherInfo(null);
+          setVoucherError(
+            peek.message ?? "That voucher has already been used."
+          );
+          return;
+        }
+      }
+
       if (res.status === 409) {
         // The slot is no longer bookable — either taken in a race, the date
         // got blocked, or the slot was toggled off after the calendar loaded.
@@ -638,6 +738,13 @@ export default function Booking({ preselectId }: Props) {
         return;
       }
       if (!res.ok) {
+        // Prefer the server's friendly `message`; the raw-body fallback would
+        // otherwise render JSON at the customer.
+        const parsed = (await res
+          .clone()
+          .json()
+          .catch(() => null)) as { message?: string; error?: string } | null;
+        if (parsed?.message) throw new Error(parsed.message);
         const body = await res.text();
         throw new Error(body || "Booking failed");
       }
@@ -978,6 +1085,72 @@ export default function Booking({ preselectId }: Props) {
           </div>
         </div>
 
+        {/* Gift voucher — optional and quiet, since most bookings won't use
+            one. Deliberately an explicit Apply button rather than a debounce:
+            it keeps the rate-limit budget predictable, avoids firing lookups
+            on every keystroke (each one an enumeration attempt), and gives the
+            submit gate a clear "applied" state to check. */}
+        <div className="field">
+          <label htmlFor="voucher">Gift voucher code (optional)</label>
+          <div className="voucher-apply-row">
+            <input
+              id="voucher"
+              type="text"
+              placeholder="PS-XXXX-XXXX"
+              value={voucherCode}
+              autoComplete="off"
+              spellCheck={false}
+              style={{ textTransform: "uppercase" }}
+              onChange={(e) => {
+                setVoucherCode(e.target.value);
+                // Typing invalidates a previous Apply — otherwise an edited
+                // code could submit under the old code's "valid".
+                setVoucherStatus("idle");
+                setVoucherInfo(null);
+                setVoucherError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applyVoucher();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="voucher-apply-btn"
+              onClick={applyVoucher}
+              disabled={
+                !voucherCode.trim() ||
+                voucherStatus === "checking" ||
+                voucherStatus === "valid"
+              }
+            >
+              {voucherStatus === "checking"
+                ? "Checking…"
+                : voucherStatus === "valid"
+                  ? "Applied"
+                  : "Apply"}
+            </button>
+          </div>
+          {voucherStatus === "valid" && voucherInfo ? (
+            <p className="voucher-ok" role="status">
+              Voucher applied — covers {voucherInfo.treatmentName}. There&apos;s
+              nothing to pay on the day.
+            </p>
+          ) : null}
+          {voucherStatus === "invalid" && voucherError ? (
+            <p className="voucher-bad" role="alert">
+              {voucherError}
+            </p>
+          ) : null}
+          {voucherStatus === "idle" && voucherCode.trim() !== "" ? (
+            <p className="voucher-hint">
+              Press Apply to check this code, or clear it to book as normal.
+            </p>
+          ) : null}
+        </div>
+
         <div className="field">
           <label htmlFor="message">
             Message{" "}
@@ -1094,6 +1267,12 @@ export default function Booking({ preselectId }: Props) {
                 <span className="l">Price</span>
                 <span className="r">£{service.price}</span>
               </div>
+              {voucherStatus === "valid" ? (
+                <div className="row">
+                  <span className="l">Payment</span>
+                  <span className="r">Gift voucher — nothing to pay</span>
+                </div>
+              ) : null}
               <div className="row">
                 <span className="l">Name</span>
                 <span className="r">

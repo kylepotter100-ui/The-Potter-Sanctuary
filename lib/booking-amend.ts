@@ -51,7 +51,7 @@ export async function changeBookingTreatment(
   const { data: booking, error: bErr } = await admin
     .from("bookings")
     .select(
-      "id, customer_first_name, customer_last_name, customer_email, customer_phone, treatment_id, treatment_name, treatment_price, duration_minutes, booking_date, booking_time, status"
+      "id, customer_first_name, customer_last_name, customer_email, customer_phone, treatment_id, treatment_name, treatment_price, duration_minutes, booking_date, booking_time, status, voucher_id"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -180,6 +180,20 @@ export async function changeBookingTreatment(
     const newTimeNice = formatTime12h(targetTime);
 
     try {
+      // The voucher link survives an amend untouched, so a voucher-funded
+      // booking must not be emailed cash wording. The copy is deliberately
+      // hedged: changing to a dearer treatment leaves a real shortfall only the
+      // owner can settle.
+      let amendVoucherCode: string | null = null;
+      if (booking.voucher_id) {
+        const { data: v } = await admin
+          .from("vouchers")
+          .select("code")
+          .eq("id", booking.voucher_id)
+          .maybeSingle();
+        amendVoucherCode = (v?.code as string | undefined) ?? null;
+      }
+
       const customerHtml = await render(
         TreatmentChanged({
           firstName: booking.customer_first_name,
@@ -193,6 +207,7 @@ export async function changeBookingTreatment(
           previousTime: prevTimeNice,
           moved,
           siteUrl,
+          voucherCode: amendVoucherCode,
         })
       );
       const ownerHtml = await render(

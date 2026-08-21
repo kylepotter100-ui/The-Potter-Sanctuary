@@ -74,7 +74,7 @@ export async function POST(
   }
 
   const { data: rows, error } = await query.select(
-    "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, status"
+    "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, status, voucher_id"
   );
 
   if (error) {
@@ -98,6 +98,18 @@ export async function POST(
 
   // Send the customer a confirmation email when the admin moves a booking to
   // 'confirmed'. Best-effort — failures here don't fail the API call.
+  // Voucher-funded bookings must not be told to bring cash. One extra query,
+  // and only for those bookings.
+  let voucherCode: string | null = null;
+  if (status === "confirmed" && data?.voucher_id) {
+    const { data: v } = await supabaseAdmin
+      .from("vouchers")
+      .select("code")
+      .eq("id", data.voucher_id)
+      .maybeSingle();
+    voucherCode = (v?.code as string | undefined) ?? null;
+  }
+
   if (status === "confirmed" && data?.customer_email) {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
@@ -114,6 +126,7 @@ export async function POST(
             bookingTime: formatTime12h(data.booking_time),
             treatmentPrice: data.treatment_price,
             siteUrl,
+            voucherCode,
           })
         );
         const result = await resend.emails.send({

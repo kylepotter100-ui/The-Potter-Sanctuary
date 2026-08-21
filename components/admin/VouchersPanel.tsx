@@ -311,10 +311,11 @@ export default function VouchersPanel({
       <section className="admin-card">
         <h2>Issued vouchers</h2>
         <p className="voucher-flow-note">
-          The client books an appointment as normal and brings their voucher. At
-          the appointment, you find the voucher here and mark it redeemed —
-          confirming it&apos;s already paid. (Clients don&apos;t enter codes
-          online; you redeem on their behalf.)
+          Clients can now enter their code when booking online — that redeems
+          the voucher automatically and links it to the booking, so there&apos;s
+          nothing for you to do. Cancelling such a booking puts the voucher back
+          to Active so they can rebook. Use <strong>Mark redeemed</strong> below
+          for walk-ins and phone bookings, where no online booking exists.
         </p>
 
         {vouchers.length === 0 ? (
