@@ -7,7 +7,15 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
-const VALID = new Set(["pending", "confirmed", "cancelled"]);
+// Confirm / un-confirm only. Cancellation deliberately does NOT live here:
+// this route writes bare `status`, so a 'cancelled' written through it would
+// carry no cancellation_reason, no cancelled_at, no cancelled_by, and would
+// send no email — silently diverging from the two real cancel routes
+// (app/api/bookings/[id]/cancel and app/api/admin/bookings/[id]/cancel), which
+// record all of that and notify the customer. Keeping it out also means every
+// cancellation passes through those two routes alone, so hooks that must run
+// on cancellation can't be bypassed by a caller POSTing here.
+const VALID = new Set(["pending", "confirmed"]);
 const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
 const REPLY_TO = "hello@thepottersanctuary.co.uk";
 
@@ -40,14 +48,21 @@ export async function POST(
 
   const status = body.status;
   if (typeof status !== "string" || !VALID.has(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: "invalid_status",
+        message:
+          "Status must be 'pending' or 'confirmed'. To cancel a booking, use the cancel route so the reason and notification are recorded.",
+      },
+      { status: 400 }
+    );
   }
 
   // Conditional state transition to prevent races (e.g. admin confirms a
   // booking the customer is cancelling at the same moment):
   //  - confirm:  only from 'pending' (never resurrect a cancelled booking)
-  //  - cancel:   only when not already cancelled
-  //  - pending:  only when not already cancelled
+  //  - pending:  only when not already cancelled (un-confirm stays a no-op
+  //              on an already-cancelled booking)
   let query = supabaseAdmin
     .from("bookings")
     .update({ status })
