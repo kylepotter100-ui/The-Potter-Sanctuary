@@ -25,6 +25,9 @@ type Props = {
   /** True when the appointment also moved, not just the treatment. */
   moved: boolean;
   siteUrl: string;
+  // Set when the booking was paid with a gift voucher. Absent for cash
+  // bookings, so those emails are byte-identical to before.
+  voucherCode?: string | null;
 };
 
 export default function TreatmentChanged({
@@ -39,6 +42,7 @@ export default function TreatmentChanged({
   previousTime,
   moved,
   siteUrl,
+  voucherCode = null,
 }: Props) {
   const manageUrl = `${siteUrl}/login?next=/account`;
   // The old booking, shown so the change is unmistakable — the price moved, and
@@ -87,8 +91,12 @@ export default function TreatmentChanged({
         <Divider />
         <SectionHeading>Payment</SectionHeading>
         <Paragraph>
-          Payment is taken in cash directly after your treatment at the studio.
-          We do not accept card or electronic payments at this time.
+          {/* Deliberately hedged: moving a voucher-funded booking to a dearer
+              treatment means the voucher no longer covers it. Promising
+              "nothing to pay" would be wrong; demanding cash would be too. */}
+          {voucherCode
+            ? `This booking is paid with gift voucher ${voucherCode}. If the new treatment differs in price, we'll confirm anything outstanding with you directly.`
+            : "Payment is taken in cash directly after your treatment at the studio. We do not accept card or electronic payments at this time."}
         </Paragraph>
 
         <Divider />

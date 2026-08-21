@@ -19,6 +19,9 @@ type Props = {
   bookingTime: string;
   treatmentPrice: number;
   siteUrl: string;
+  // Set when the booking was paid with a gift voucher. Absent for cash
+  // bookings, so those emails are byte-identical to before.
+  voucherCode?: string | null;
 };
 
 export default function BookingConfirmed({
@@ -28,6 +31,7 @@ export default function BookingConfirmed({
   bookingTime,
   treatmentPrice,
   siteUrl,
+  voucherCode = null,
 }: Props) {
   return (
     <EmailLayout
@@ -55,6 +59,10 @@ export default function BookingConfirmed({
           <DetailRow label="Date" value={bookingDate} />
           <DetailRow label="Time" value={bookingTime} />
           <DetailRow label="Cost" value={`£${treatmentPrice}`} />
+          {/* Cost stays the LIST PRICE; this row says it is already paid. */}
+          {voucherCode ? (
+            <DetailRow label="Paid with" value={`Gift voucher ${voucherCode}`} />
+          ) : null}
           <DetailRow
             label="Location"
             value="22 Lockheed Close, Beck Row, IP28 3AB"
@@ -65,8 +73,9 @@ export default function BookingConfirmed({
         <Divider />
         <SectionHeading>Payment</SectionHeading>
         <Paragraph>
-          Payment is taken in cash directly after your treatment at the studio.
-          We do not accept card or electronic payments at this time.
+          {voucherCode
+            ? `Paid in full with gift voucher ${voucherCode} — there's nothing to pay at the studio.`
+            : "Payment is taken in cash directly after your treatment at the studio. We do not accept card or electronic payments at this time."}
         </Paragraph>
 
         <Divider />
