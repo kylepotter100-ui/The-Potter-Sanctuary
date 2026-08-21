@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import CustomerCancellationByOwner from "@/emails/CustomerCancellationByOwner";
 import { supabaseAdmin } from "@/lib/supabase";
+import { revertVoucherRedemption } from "@/lib/voucher-revert";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 
@@ -77,7 +78,7 @@ export async function POST(
     })
     .eq("id", id)
     .neq("status", "cancelled")
-    .select("id");
+    .select("id, voucher_id");
 
   if (updateError) {
     console.error("[admin cancel] update failed", JSON.stringify(updateError));
@@ -90,6 +91,19 @@ export async function POST(
   if (!updatedRows || updatedRows.length === 0) {
     // Already cancelled by a concurrent request — don't double-send emails.
     return NextResponse.json({ ok: true, alreadyCancelled: true });
+  }
+
+  // Voucher-funded booking: return the voucher to 'active' so the client can
+  // rebook with the same code. ORDERING IS LOAD-BEARING — the booking is
+  // already cancelled above; reverting first would leave an active voucher
+  // attached to a still-live booking, letting one code fund two bookings.
+  // `voucher_id` comes from the conditional update's own select, never from a
+  // pre-fetch, so it belongs to the row THIS request cancelled. Skipped
+  // entirely on the zero-rows path above, so a simultaneous customer + owner
+  // cancellation reverts exactly once. Best-effort (see lib/voucher-revert.ts).
+  const cancelledVoucherId = updatedRows[0]?.voucher_id as string | null;
+  if (cancelledVoucherId) {
+    await revertVoucherRedemption(supabaseAdmin, cancelledVoucherId);
   }
 
   const apiKey = process.env.RESEND_API_KEY;

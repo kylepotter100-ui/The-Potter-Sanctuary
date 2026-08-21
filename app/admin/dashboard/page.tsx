@@ -156,7 +156,6 @@ export default async function DashboardPage({
     total,
     revenueRes,
     popularityRes,
-    prevConfirmed,
     prevRevenueRes,
     reviewsRes,
     vouchersRes,
@@ -187,10 +186,14 @@ export default async function DashboardPage({
       .lte("booking_date", periodEnd),
     // Revenue: confirmed bookings' list prices over the period. Summed in JS
     // (low volume); booking_date is also used to bucket per-month in year mode.
+    // Voucher-funded bookings are EXCLUDED: that money was already counted once
+    // when the voucher was issued (see the vouchers query below), so counting
+    // the booking too would bill the same payment twice.
     supabaseAdmin
       .from("bookings")
       .select("treatment_price, booking_date")
       .eq("status", "confirmed")
+      .is("voucher_id", null)
       .gte("booking_date", periodStart)
       .lte("booking_date", periodEnd),
     // Most-booked: all non-cancelled bookings (real demand) grouped in JS.
@@ -200,17 +203,15 @@ export default async function DashboardPage({
       .neq("status", "cancelled")
       .gte("booking_date", periodStart)
       .lte("booking_date", periodEnd),
-    // Previous period — just what the deltas need.
-    supabaseAdmin
-      .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "confirmed")
-      .gte("booking_date", prevStart)
-      .lte("booking_date", prevEnd),
+    // Previous period — just what the deltas need. Same voucher exclusion, so
+    // the comparison is like-for-like. (The old confirmed-count query here is
+    // gone: Avg booking now divides by the number of PAID bookings, which is
+    // exactly this result set's length.)
     supabaseAdmin
       .from("bookings")
       .select("treatment_price")
       .eq("status", "confirmed")
+      .is("voucher_id", null)
       .gte("booking_date", prevStart)
       .lte("booking_date", prevEnd),
     // Reviews in-period (rating only). Behind REVIEWS_ENABLED — empty at launch;
@@ -242,6 +243,19 @@ export default async function DashboardPage({
   const voucherRows = (vouchersRes.error ? [] : vouchersRes.data ?? []) as VoucherRevenueRow[];
   const prevVoucherRows = (prevVouchersRes.error ? [] : prevVouchersRes.data ?? []) as { value: number }[];
 
+  // Revenue reads fall back to [] on error, which renders as £0 — a silently
+  // wrong number rather than a visible failure. Log it so a £0 headline can be
+  // told apart from a genuinely quiet month. The likeliest cause is the
+  // voucher_id column not existing yet (migration not applied before deploy).
+  if (revenueRes.error) {
+    console.error("[admin dashboard] revenue read failed", revenueRes.error);
+  }
+  if (prevRevenueRes.error) {
+    console.error(
+      "[admin dashboard] previous-period revenue read failed",
+      prevRevenueRes.error
+    );
+  }
   if (reviewsRes.error) {
     console.error("[admin dashboard] reviews read failed", reviewsRes.error);
   }
@@ -253,9 +267,9 @@ export default async function DashboardPage({
   const pendingCount = pending.count ?? 0;
   const cancelledCount = cancelled.count ?? 0;
   const totalCount = total.count ?? 0;
-  const prevConfirmedCount = prevConfirmed.count ?? 0;
 
-  // Booking revenue (confirmed list prices) — drives Avg booking.
+  // Booking revenue (confirmed list prices, voucher-funded excluded) — drives
+  // Avg booking.
   const bookingsRevenue = revenueRows.reduce(
     (sum, r) => sum + (r.treatment_price ?? 0),
     0
@@ -279,11 +293,20 @@ export default async function DashboardPage({
   const revenueTotal = bookingsRevenue + vouchersRevenue;
   const prevRevenueTotal = prevBookingsRevenue + prevVouchersRevenue;
 
-  // Divide-by-zero guarded — null renders as "—", never NaN/Infinity. Avg booking
-  // uses bookings-only revenue (vouchers aren't bookings).
-  const avgBookingValue = confirmedCount ? bookingsRevenue / confirmedCount : null;
-  const prevAvgBooking = prevConfirmedCount
-    ? prevBookingsRevenue / prevConfirmedCount
+  // Divide-by-zero guarded — null renders as "—", never NaN/Infinity. Avg PAID
+  // booking: bookings-only revenue (vouchers aren't bookings) over the count of
+  // the bookings that produced it. The denominator is the revenue result set's
+  // own length, NOT confirmedCount — those diverge once a booking is
+  // voucher-funded, and dividing paid revenue by all-confirmed would understate
+  // the average. confirmedCount still drives the Confirmed tile and the
+  // confirmation rate, which should count every booking however it was paid.
+  const paidBookingCount = revenueRows.length;
+  const prevPaidBookingCount = prevRevenueRows.length;
+  const avgBookingValue = paidBookingCount
+    ? bookingsRevenue / paidBookingCount
+    : null;
+  const prevAvgBooking = prevPaidBookingCount
+    ? prevBookingsRevenue / prevPaidBookingCount
     : null;
   const confirmationRate = totalCount ? confirmedCount / totalCount : null;
   const cancellationRate = totalCount ? cancelledCount / totalCount : null;

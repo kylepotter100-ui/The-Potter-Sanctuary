@@ -5,6 +5,7 @@ import CustomerCancellationConfirmation from "@/emails/CustomerCancellationConfi
 import OwnerCancellationByCustomer from "@/emails/OwnerCancellationByCustomer";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { revertVoucherRedemption } from "@/lib/voucher-revert";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate, formatTime12h } from "@/lib/format";
 import { minutesUntilUk } from "@/lib/uk-time";
@@ -102,7 +103,7 @@ export async function POST(
     .eq("id", id)
     .eq("customer_id", customer.id)
     .neq("status", "cancelled")
-    .select("id");
+    .select("id, voucher_id");
 
   if (updateError) {
     console.error("[cancel] update failed", JSON.stringify(updateError));
@@ -121,6 +122,19 @@ export async function POST(
       },
       { status: 409 }
     );
+  }
+
+  // Voucher-funded booking: return the voucher to 'active' so the client can
+  // rebook with the same code. ORDERING IS LOAD-BEARING — the booking is
+  // already cancelled above; reverting first would leave an active voucher
+  // attached to a still-live booking, letting one code fund two bookings.
+  // `voucher_id` comes from the conditional update's own select, never from a
+  // pre-fetch, so it belongs to the row THIS request cancelled. Best-effort:
+  // a failure here must not fail a cancellation the customer has been told
+  // succeeded (see lib/voucher-revert.ts).
+  const cancelledVoucherId = updatedRows[0]?.voucher_id as string | null;
+  if (cancelledVoucherId) {
+    await revertVoucherRedemption(supabaseAdmin, cancelledVoucherId);
   }
 
   // Fire-and-forget emails. Failures are logged but don't fail the request,

@@ -124,6 +124,19 @@ export default async function AdminBookingDetailPage({
     );
   }
 
+  // Voucher-funded bookings carry voucher_id (the select("*") above already
+  // returns it); resolve the human-readable code for the row below. No query at
+  // all for ordinary cash bookings.
+  let voucherCode: string | null = null;
+  if (booking?.voucher_id) {
+    const { data: v } = await supabaseAdmin
+      .from("vouchers")
+      .select("code")
+      .eq("id", booking.voucher_id)
+      .maybeSingle();
+    voucherCode = (v?.code as string | undefined) ?? null;
+  }
+
   if (!booking) {
     return (
       <>
@@ -233,6 +246,18 @@ export default async function AdminBookingDetailPage({
           <p>
             <strong>Price:</strong> £{booking.treatment_price}
           </p>
+          {/* Voucher-funded bookings only. Price above stays the list price —
+              this row is what says the money was collected when the voucher
+              was bought, so nothing is owed on the day. */}
+          {voucherCode && (
+            <p>
+              <strong>Paid with:</strong>{" "}
+              <Link href={`/admin/vouchers/${booking.voucher_id}`}>
+                Gift voucher {voucherCode}
+              </Link>{" "}
+              <span style={{ opacity: 0.65 }}>— nothing to collect</span>
+            </p>
+          )}
           <p>
             <strong>Customer:</strong> {booking.customer_first_name}{" "}
             {booking.customer_last_name}
