@@ -174,6 +174,24 @@ CREATE TABLE IF NOT EXISTS public.daily_summaries_sent (
   sent_at      timestamptz NOT NULL DEFAULT now()
 );
 
+-- ===== throttle_events =====
+-- Storage behind lib/rate-limit.ts — a sliding-window per-IP throttle for public,
+-- unauthenticated endpoints. `ip_hash` is a PEPPERED SHA-256 of the caller IP,
+-- never the raw address (a plain hash of the IPv4 space is reversible).
+-- The Worker has no KV/DO/D1 binding and isolates are per-PoP and ephemeral,
+-- so a DB table is the only durable primitive available. Rows are pruned
+-- (~24h) opportunistically by the helper itself; there is no cron.
+CREATE TABLE IF NOT EXISTS public.throttle_events (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  scope      text NOT NULL,
+  ip_hash    text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS throttle_events_lookup_idx
+  ON public.throttle_events (scope, ip_hash, created_at);
+ALTER TABLE public.throttle_events ENABLE ROW LEVEL SECURITY;
+-- No policies on purpose -> deny-by-default; the service role bypasses RLS.
+
 CREATE INDEX IF NOT EXISTS bookings_date_idx        ON public.bookings (booking_date);
 CREATE INDEX IF NOT EXISTS bookings_status_idx      ON public.bookings (status);
 CREATE INDEX IF NOT EXISTS bookings_customer_id_idx ON public.bookings (customer_id);
