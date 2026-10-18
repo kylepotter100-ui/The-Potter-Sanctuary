@@ -81,17 +81,23 @@ export function ribbon(ctx, pts, o = {}) {
   return { head: pb, tail: pa, length: L };
 }
 
-/** Draw something into a scratch layer, then add it back blurred (bloom). */
+/**
+ * Draw something into a scratch layer, then add it back blurred (bloom).
+ * The bloom follows the caller's transform and opacity, so a glowing stroke
+ * inside a moving, scaling or fading group blooms where it is drawn.
+ */
 export function glow(ctx, scratch, blur, strength, draw) {
   const sc = scratch.getContext("2d");
   wipe(sc);
   const k = scratch.width / ctx.canvas.width;
-  sc.setTransform(k, 0, 0, k, 0, 0);
+  const m = ctx.getTransform();
+  sc.setTransform(k * m.a, k * m.b, k * m.c, k * m.d, k * m.e, k * m.f);
   draw(sc);
+  const a = ctx.globalAlpha;
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = strength;
+  ctx.globalAlpha = strength * a;
   ctx.filter = `blur(${blur * k}px)`;
   ctx.drawImage(scratch, 0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.restore();

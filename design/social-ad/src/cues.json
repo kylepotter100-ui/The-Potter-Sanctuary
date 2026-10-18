@@ -1,14 +1,15 @@
 {
-  "duration": 25.0,
-  "hook": { "draw": [0.12, 1.05], "text": 0.38, "release": 1.55, "exit": 2.3, "breathe": 2.86, "breatheExit": 3.62 },
-  "morph": [3.2, 4.3],
-  "stones": { "eyebrow": 4.08, "land": [4.42, 4.64, 4.86, 5.08], "develop": [5.08, 6.15], "headline": 5.32, "zoomIn": [6.55, 7.0], "zoomOut": [7.0, 7.55], "exit": 8.3 },
-  "steam": { "wisp": [8.35, 9.0], "dissolve": [8.62, 9.62] },
-  "aroma": { "eyebrow": 9.3, "headline": 9.5, "exit": 12.1 },
-  "drop": { "thread": [12.28, 12.56], "form": [12.5, 12.76], "fall": [12.76, 13.16] },
-  "scalp": { "impact": 13.16, "eyebrow": 13.55, "headline": 13.72, "exit": 15.72 },
-  "split": { "blade": [15.94, 16.3], "open": [16.26, 16.98] },
-  "studio": { "eyebrow": 16.7, "lines": [16.86, 17.42, 17.98], "exit": 19.12 },
-  "portal": { "trace": [19.28, 19.86], "fill": [19.7, 20.0], "push": [19.74, 20.56] },
-  "end": { "connect": [20.3, 20.72], "grow": [20.5, 21.95], "wordmark": 21.5, "eyebrow": 22.05, "cta": 22.42, "glint": 23.35 }
+  "duration": 30.0,
+  "bpm": 72,
+  "barOffset": 1.6667,
+  "logo": { "draw": [0.25, 2.55], "wordmark": 2.25, "eyebrow": 2.95 },
+  "arch": { "draw": [3.55, 4.45], "fill": [4.15, 5.0] },
+  "glow": { "eyebrow": 5.0, "words": [5.0, 5.8333, 6.6667], "loop": [7.35, 7.9] },
+  "push": [7.9, 8.4],
+  "menu": { "header": 8.35, "cards": 8.45, "tapIn": 9.3, "tap": 10.0, "expand": [10.25, 11.1] },
+  "stones": { "drop": 11.6667, "card": 11.85, "out": 13.7, "circle": [13.9, 14.45], "iris": [14.35, 15.0] },
+  "jar": { "words": [15.4167, 16.25, 17.0833], "pill": 17.5, "shrink": [17.9, 18.4] },
+  "trust": { "ring": [18.3333, 18.85], "stars": 18.75, "headline": 19.1667, "chips": [20.0, 20.4167], "out": [21.1, 21.6] },
+  "book": { "outline": [21.2, 21.75], "fill": [21.55, 21.85], "dateTap": 22.5, "chips": 22.7, "timeTap": 23.3333, "button": 23.55, "confirmTap": 24.1667, "morph": [24.25, 24.55], "check": [24.55, 24.85], "booked": 24.7, "out": [24.95, 25.35] },
+  "end": { "connect": [25.0, 25.35], "grow": [25.2, 26.6], "wordmark": 26.3, "eyebrow": 26.75, "cta": 26.6667, "trace": [27.0, 27.6], "tapIn": 27.55, "tap": 28.3333, "url": 28.5, "pulse": 29.1667 }
 }

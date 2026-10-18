@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Rebuild the film end to end:
-#   plates → logo strokes → score → 60 fps frames → mastered 30 fps MP4
+#   logo strokes → score → 60 fps frames → mastered 30 fps MP4
 #
 #   design/social-ad/build.sh            full build
 #   SKIP_FRAMES=1 design/social-ad/build.sh   re-encode existing frames
 #
-# Frames (~1,500 PNGs, several GB) and the intermediate audio go to $FRAMES,
+# Frames (1,800 PNGs, ~5 GB) and the intermediate audio go to $FRAMES,
 # outside the repo; out/ keeps only the deliverables.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -14,8 +14,6 @@ OUT=out
 NAME=the-potter-sanctuary-reel-9x16
 mkdir -p "$OUT" "$FRAMES"
 
-python3 tools/prep_photos.py
-python3 tools/depth_layers.py
 python3 tools/vectorize_logo.py >/dev/null
 python3 tools/score.py "$FRAMES/score.wav"
 
@@ -42,7 +40,7 @@ ffmpeg -hide_banner -loglevel error -stats -y \
   "$OUT/$NAME.mp4"
 
 # Cover frame for the post (the end card) and a storyboard of the key beats.
-ffmpeg -hide_banner -loglevel error -y -ss 24.4 -i "$OUT/$NAME.mp4" -frames:v 1 -q:v 2 "$OUT/$NAME-cover.jpg"
+ffmpeg -hide_banner -loglevel error -y -ss 29.6 -i "$OUT/$NAME.mp4" -frames:v 1 -q:v 2 "$OUT/$NAME-cover.jpg"
 python3 tools/storyboard.py "$OUT/$NAME.mp4" "$OUT/storyboard.jpg"
 
 ffmpeg -hide_banner -nostats -i "$OUT/$NAME.mp4" -af ebur128=peak=true -f null - 2>&1 \

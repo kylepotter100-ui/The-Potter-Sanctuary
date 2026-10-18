@@ -24,6 +24,7 @@ uniform vec4 uHeat;         // shimmer rect x0 y0 x1 y1 (px)
 uniform float uHeatAmt;
 uniform float uSeedX;       // smoke dissolve starts in this column
 uniform float uGrain, uVig, uFade;
+uniform vec2 uDir;          // directional motion blur on A (px), for pushes
 
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vnoise(vec2 p) {
@@ -41,6 +42,12 @@ vec2 toPx(vec2 uv) { return vec2(uv.x, 1.0 - uv.y) * uRes; }
 vec2 toUv(vec2 px) { return vec2(px.x / uRes.x, 1.0 - px.y / uRes.y); }
 
 vec3 sampleA(vec2 px) {
+  if (length(uDir) > 0.5) {
+    vec3 acc = vec3(0.0);
+    float j = hash(px + uFrame * 1.3);
+    for (int i = 0; i < 16; i++) acc += texture(uA, toUv(px + uDir * ((float(i) + j) / 16.0 - 0.5))).rgb;
+    return acc / 16.0;
+  }
   if (uZoom < 0.002) return texture(uA, toUv(px)).rgb;
   vec3 acc = vec3(0.0);
   float ws = 0.0;

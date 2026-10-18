@@ -10,10 +10,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 BEATS = [
-    (0.9, "Shoulders up to the ears"), (2.2, "…and drop"), (3.7, "The line lies her down"), (4.75, "Four hot stones"),
-    (6.2, "The photograph develops"), (6.95, "Into the stone"), (7.9, "Out of the stack"), (9.1, "Steam dissolves the frame"),
-    (11.0, "Aromatherapy"), (13.4, "A drop of oil, a ripple"), (14.9, "Back, neck & scalp"), (16.5, "The frame opens"),
-    (18.7, "The real studio"), (20.1, "Through the mirror"), (21.25, "The daffodil grows"), (24.5, "Book your quiet hour"),
+    (1.3, "The logo draws itself"), (3.3, "The Potter Sanctuary"), (4.55, "An arch fills with cream"), (7.6, "Relax. Restore. Glow."),
+    (9.2, "The treatment menu"), (9.97, "A tap on Hot Stones"), (10.75, "The card opens"), (13.0, "Hot stones, rendered"),
+    (14.6, "The line closes the room"), (17.4, "Whipped, plant-based"), (20.6, "Clarins-trained"), (23.4, "Date and time"),
+    (24.95, "Booked"), (26.0, "The daffodil regrows"), (28.5, "Book your quiet hour"), (29.6, "End card"),
 ]
 
 src, out = Path(sys.argv[1]), Path(sys.argv[2])

@@ -1,237 +1,123 @@
-// "Drop your shoulders." — a 25-second film for The Potter Sanctuary.
+// The Potter Sanctuary — a 30-second social film.
 //
-// One cream line runs through the whole film, the way the logo is one hand-
-// drawn line: it draws a figure with tense shoulders and lets them drop, lays
-// her down for hot stones, rises as steam, falls as a drop of oil, opens the
-// frame onto the real studio, traces its arched mirror, and finally grows
-// into the daffodil. Every value below is a pure function of time t.
+// The daffodil is drawn by one luminous line, and that line carries the whole
+// film: it opens on the logo drawing itself on sage, then draws the arch,
+// the loop, the card outline, the circle and the check that each new screen
+// opens from — and finally grows the daffodil again above a CTA that gets
+// tapped. Every screen is designed (no photography), the imagery is rendered
+// in code (src/beauty3d.js), and every value here is a pure function of time.
 
-import {
-  clamp, lerp, prog, smooth, env, spring, luxe, silk, glide, lift, gravity,
-  inCubic, outCubic, inOutSine, outQuart, noise1, fbm1, rng,
-} from "./lib/math.js";
-import { spline, cumlen, lerpPts } from "./lib/geom.js";
+import { clamp, lerp, prog, smooth, env, spring, bezier, luxe, silk, glide, lift, inOutSine, outCubic, noise1, rng } from "./lib/math.js";
+import { spline, cumlen } from "./lib/geom.js";
 import { ribbon, ribbonPts, glow, penTip, wipe } from "./lib/stroke.js";
 import { TypeLine } from "./lib/type.js";
-import * as S from "./shapes.js";
+import { COL, card, pill, tap, ripple, starPath, orb, circleText, archPts, archPath, roundRectPts, circlePts, loopPts, checkPts } from "./kit.js";
 
-const CREAM = "#EFE8D6";
-const SAGE = "#8A9E85";
-const SAGE_DEEP = "#6E8068";
-const INK = "#3A3F31";
-const LINE_W = 6.4;
+const LINE_W = 6.2;
+// the logo's growth: the stem shoots up, the petals take their time
+const grow = bezier(0.5, 0, 0.22, 1);
+const STACK = [
+  { c: [0.0, 0.94, -0.45], r: [0.44, 0.15, 0.35], yaw: 0.2 },
+  { c: [0.03, 1.215, -0.45], r: [0.34, 0.125, 0.28], yaw: -0.35 },
+  { c: [-0.02, 1.44, -0.45], r: [0.25, 0.1, 0.205], yaw: 0.5 },
+  { c: [0.78, 0.29, 0.12], r: [0.16, 0.06, 0.13], yaw: 0.9 },
+  { c: [-0.7, 0.285, 0.22], r: [0.13, 0.055, 0.11], yaw: -0.4 },
+];
 
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-const mix = (a, b, t) => {
-  const A = hex(a), B = hex(b);
-  return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(",")})`;
-};
-
-export function createFilm({ W, H, photos, logo, cues: C, layers }) {
+export function createFilm({ W, H, logo, cues: C, layers, b3, gobo, scale3d }) {
   const A = layers.A.getContext("2d");
-  const B = layers.B.getContext("2d");
   const O = layers.O.getContext("2d");
-  const T = layers.tmp.getContext("2d");
-  const M = layers.mask.getContext("2d");
-  let t = 0; // current time, shared by the helpers below
+  let t = 0;
   let U = {};
 
-  // ---------------------------------------------------------------- type
+  // ------------------------------------------------------------------ type
   const SERIF = "Cormorant Garamond", SANS = "Lora";
   const F = (size, style = "normal", weight = 300, family = SERIF) => ({ family, size, style, weight });
   const L = (text, f) => new TypeLine(O, text, f);
   const TX = {
-    drop: L("Drop your", F(104)),
-    shoulders: L("shoulders.", F(176, "italic")),
-    breathe: L("Breathe", F(150)),
-    out: L("out.", F(150, "italic")),
-    ebStones: L("HOT STONES", F(28, "normal", 500, SANS)),
-    h1: [L("Heat travels", F(98)), L("where pressure alone", F(98)), L("cannot reach.", F(98, "italic"))],
-    ebAroma: L("AROMATHERAPY", F(28, "normal", 500, SANS)),
-    h2: [L("Oils blended", F(98)), L("on the day,", F(98)), L("for you.", F(98, "italic"))],
-    ebScalp: L("BACK, NECK & SCALP", F(28, "normal", 500, SANS)),
-    h3: [L("A trained hand,", F(98)), L("a natural touch.", F(98, "italic"))],
-    ebStudio: L("THE STUDIO · BECK ROW", F(26, "normal", 500, SANS)),
-    triad: [L("Clarins-trained.", F(92)), L("Plant-based.", F(92)), L("One guest", F(92)), L("at a time.", F(92, "italic"))],
-    wm1: L("The Potter", F(128)),
-    wm2: L("Sanctuary", F(144, "italic")),
-    ebEnd: L("BODY THERAPY · BECK ROW, SUFFOLK", F(25, "normal", 500, SANS)),
+    wm1: L("The Potter", F(132)),
+    wm2: L("Sanctuary", F(150, "italic")),
+    ebLogo: L("BODY THERAPY · BECK ROW, SUFFOLK", F(26, "normal", 500, SANS)),
+    ebGlow: L("BODY THERAPIES TO", F(28, "normal", 500, SANS)),
+    relax: L("Relax.", F(156)),
+    restore: L("Restore.", F(156)),
+    glowW: L("Glow.", F(168, "italic")),
+    ebMenu: L("THE TREATMENT MENU", F(28, "normal", 500, SANS)),
+    menuTitle: [L("Four", F(118)), L("rituals.", F(118, "italic"))],
+    cards: [
+      { name: L("Full Body Aromatherapy", F(50, "normal", 400)), meta: L("60 MIN · LIGHT – MEDIUM", F(22, "normal", 500, SANS)), price: L("£50", F(60, "normal", 400)), orb: ["#E9E4F0", "#A79BB8"] },
+      { name: L("Back, Neck & Scalp", F(50, "normal", 400)), meta: L("30 MIN · MEDIUM – FIRM", F(22, "normal", 500, SANS)), price: L("£25", F(60, "normal", 400)), orb: ["#F4E7CF", "#C9A46A"] },
+      { name: L("Hot Stones Full Body", F(50, "normal", 400)), meta: L("60 MIN · DEEP RELEASE", F(22, "normal", 500, SANS)), price: L("£60", F(60, "normal", 400)), orb: ["#6B6E68", "#121411"] },
+      { name: L("Hot Stones Back", F(50, "normal", 400)), meta: L("30 MIN · BACK TENSION", F(22, "normal", 500, SANS)), price: L("£35", F(60, "normal", 400)), orb: ["#8F928B", "#2A2C28"] },
+    ],
+    ebStones: L("HOT STONES · 60 MIN", F(25, "normal", 500, SANS)),
+    stonesLines: [L("Heat travels where", F(64)), L("pressure alone cannot reach.", F(64, "italic"))],
+    price60: L("£60", F(40, "normal", 500)),
+    jarWords: [L("Whipped.", F(110)), L("Plant-based.", F(110)), L("Small-batch.", F(110, "italic"))],
+    jarPill: L("MADE BY PRECYSE BY NATURE", F(24, "normal", 500, SANS)),
+    badgeA: L("Clarins", F(92, "italic", 400)),
+    badgeB: L("TRAINED", F(26, "normal", 500, SANS)),
+    trust: [L("A trained hand,", F(104)), L("a natural touch.", F(104, "italic"))],
+    chips: [L("1:1 PRIVATE STUDIO", F(24, "normal", 500, SANS)), L("BY APPOINTMENT", F(24, "normal", 500, SANS))],
+    ebBook: L("BOOK ONLINE", F(24, "normal", 500, SANS)),
+    bookTitle: L("Choose a time.", F(76)),
+    days: "MTWTFSS".split("").map((d) => L(d, F(22, "normal", 500, SANS))),
+    dates: ["12", "13", "14", "15", "16", "17", "18"].map((d) => L(d, F(40, "normal", 400))),
+    times: ["10:00", "11:30", "14:00", "16:30"].map((s) => L(s, F(30, "normal", 500, SANS))),
+    sumName: L("Hot Stones Full Body", F(46, "normal", 400)),
+    sumPrice: L("£60", F(46, "normal", 400)),
+    sumMeta: L("60 MIN · FRI 16 · 11:30", F(22, "normal", 500, SANS)),
+    confirm: L("Confirm booking", F(34, "normal", 500, SANS)),
+    booked: L("You’re booked.", F(68, "italic")),
     cta: L("BOOK YOUR QUIET HOUR", F(30, "normal", 500, SANS)),
     url: L("thepottersanctuary.co.uk", F(34, "normal", 400, SANS)),
-    bug: L("THE POTTER SANCTUARY", F(20, "normal", 500, SANS)),
   };
-  const SHADOW = { color: "rgba(14,16,12,0.45)", blur: 28, oy: 2 };
 
-  // ------------------------------------------------------------- helpers
-  const clear = wipe;
-
-  function leak(ctx, x, y, r, a, rgb = "255,214,160") {
-    if (a <= 0.001) return;
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(${rgb},${a})`);
-    g.addColorStop(0.45, `rgba(${rgb},${a * 0.4})`);
-    g.addColorStop(1, `rgba(${rgb},0)`);
-    ctx.fillStyle = g;
-    ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
-    ctx.restore();
-  }
-
-  /** Legibility gradient; canvas gradients pad their end colours beyond y0..y1. */
-  function scrim(ctx, y0, y1, a0, a1, rgb = "20,23,18") {
-    const g = ctx.createLinearGradient(0, y0, 0, y1);
-    g.addColorStop(0, `rgba(${rgb},${a0})`);
-    g.addColorStop(1, `rgba(${rgb},${a1})`);
+  // --------------------------------------------------------------- helpers
+  /** Sage screen with depth: soft key light, darker floor, drifting leaves. */
+  function sage(ctx, leaf = 0.13) {
+    ctx.fillStyle = COL.sage;
+    ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(600, 620, 0, 600, 620, 1250);
+    g.addColorStop(0, "rgba(222,228,208,0.32)");
+    g.addColorStop(1, "rgba(222,228,208,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
+    const v = ctx.createLinearGradient(0, 1150, 0, H);
+    v.addColorStop(0, "rgba(52,62,48,0)");
+    v.addColorStop(1, "rgba(52,62,48,0.28)");
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, W, H);
+    leaves(ctx, leaf);
   }
-
-  /**
-   * A plate in two depth layers. Each camera maps plate point P to screen
-   * point c at scale s; the layers share P and c, so they agree at the focal
-   * point and separate with distance from it — parallax.
-   */
-  function plate(ctx, name, bg, fg, decorate = null) {
-    for (const [layer, cam] of [["bg", bg], ["fg", fg]]) {
-      ctx.save();
-      ctx.translate(cam.c[0], cam.c[1]);
-      ctx.scale(cam.s, cam.s);
-      ctx.translate(-cam.P[0], -cam.P[1]);
-      ctx.drawImage(photos[`${name}-${layer}`], 0, 0);
-      if (decorate) decorate(ctx, layer);
-      ctx.restore();
-    }
-  }
-  const cam = (s, c, P = c) => ({ s, c, P });
-
-  /**
-   * Shallow depth of field behind type: re-draw what's on ctx blurred, faded
-   * out by a vertical gradient, so the headline sits on soft bokeh while the
-   * subject below stays sharp.
-   */
-  function dof(ctx, y0, y1, blur) {
-    wipe(T);
-    T.filter = `blur(${blur}px)`;
-    T.drawImage(ctx.canvas, 0, 0);
-    T.filter = "none";
-    T.globalCompositeOperation = "destination-in";
-    const g = T.createLinearGradient(0, y0, 0, y1);
-    g.addColorStop(0, "rgba(0,0,0,1)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    T.fillStyle = g;
-    T.fillRect(0, 0, W, H);
-    T.globalCompositeOperation = "source-over";
+  /** Leaf shadows drifting across whatever is underneath (multiply). */
+  function leaves(ctx, alpha) {
+    if (alpha <= 0) return;
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(layers.tmp, 0, 0);
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha *= alpha;
+    ctx.translate(540, 760);
+    ctx.rotate(-0.42 + 0.02 * Math.sin(t * 0.5));
+    ctx.scale(1.75, 1.75);
+    const ox = (t * 6) % 1024;
+    const oy = noise1(t * 0.35, 8) * 6;
+    for (const dx of [-1024, 0]) for (const dy of [-1024, 0]) ctx.drawImage(gobo, dx + ox - 300, dy + oy - 300);
     ctx.restore();
-  }
-
-  const DUST = Array.from({ length: 56 }, (_, i) => {
-    const r = rng(7919 * (i + 1));
-    return { x: r() * W, y: r() * H, z: r(), ph: r() * 6.283, big: r() > 0.86 };
-  });
-  function dust(ctx, a, rgb = "239,232,214", rise = 1) {
-    if (a <= 0.001) return;
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    for (const d of DUST) {
-      const z = 0.3 + d.z * 0.7;
-      const y = (((d.y - t * (9 + 24 * z) * rise) % H) + H) % H;
-      const x = d.x + Math.sin(t * 0.35 + d.ph) * 22 * z;
-      const r = d.big ? 8 + 10 * z : 1.2 + 2.4 * z;
-      const al = a * (d.big ? 0.06 : 0.14 + 0.28 * z) * (0.65 + 0.35 * Math.sin(t * 1.1 + d.ph * 3));
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(${rgb},${al})`);
-      g.addColorStop(1, `rgba(${rgb},0)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
-    }
-    ctx.restore();
-  }
-
-  function flame(ctx, x, y, a = 1) {
-    // candlelight breathing on its surroundings
-    const f = 0.82 + 0.12 * noise1(t * 7.3, 3) + 0.06 * noise1(t * 17.1, 4);
-    leak(ctx, x, y - 8, 230 * f, 0.30 * f * a, "255,190,120");
-    leak(ctx, x, y, 70 * f, 0.35 * f * a, "255,236,200");
   }
 
   /** The Line, with its bloom. */
   function line(ctx, pts, o = {}) {
-    const { a = 0, b = 1, w = LINE_W, alpha = 1, glowAmt = 0.5, tip = 0, taper = [70, 26], wf = null, color = CREAM } = o;
+    const { a = 0, b = 1, w = LINE_W, alpha = 1, glowAmt = 0.55, tip = 0, taper = [60, 26], color = COL.cream, glowColor = "rgb(255,242,218)" } = o;
     if (alpha <= 0.001 || b - a <= 0.0005) return null;
     const s = cumlen(pts);
-    if (glowAmt > 0) {
-      glow(ctx, layers.scratch, 12, glowAmt * alpha, (g) =>
-        ribbon(g, pts, { a, b, w: w * 2.2, taper, s, wf, color: "rgb(255,240,214)" }));
-    }
-    const r = ribbon(ctx, pts, { a, b, w, taper, s, wf, alpha, color });
+    if (glowAmt > 0) glow(ctx, layers.scratch, 12, glowAmt * alpha, (g) => ribbon(g, pts, { a, b, w: w * 2.2, taper, s, color: glowColor }));
+    const r = ribbon(ctx, pts, { a, b, w, taper, s, alpha, color });
     if (tip > 0 && r) penTip(ctx, r.head.x, r.head.y, 46, tip * alpha);
     return r;
   }
 
-  // per-word rise, per-glyph vapour exit
-  function headline(ctx, lines, x, y0, lh, t0, t1, o = {}) {
-    const { align = "center", color = CREAM, stagger = 0.085, shadow = SHADOW, dur = 0.95 } = o;
-    if (t < t0 - 0.01 || t > t1 + 1.6) return;
-    let wordBase = 0;
-    lines.forEach((tl, li) => {
-      const y = y0 + li * lh;
-      const exiting = t >= t1;
-      const base = wordBase;
-      tl.draw(ctx, x, y, {
-        align, color, shadow,
-        clip: exiting ? null : [tl.f.size * 1.08, tl.f.size * 0.42],
-        fx: (i) => {
-          const d = t0 + (base + tl.word[i]) * stagger;
-          const pe = lift(prog(t, d, d + dur));
-          const xd = t1 + li * 0.07 + i * 0.011;
-          const px = inOutSine(prog(t, xd, xd + 0.6));
-          return {
-            dy: (1 - pe) * tl.f.size * 0.92 - px * tl.f.size * 0.3,
-            a: Math.min(1, pe * 1.6) * (1 - px),
-            blur: px * 7,
-          };
-        },
-      });
-      wordBase += tl.words;
-    });
-  }
-
-  // —— EYEBROW —— small caps flanked by hairlines that draw outward
-  function eyebrow(ctx, tl, x, y, t0, t1, o = {}) {
-    const { color = CREAM, alpha = 0.92, align = "center" } = o;
-    const pin = prog(t, t0, t0 + 1.0), pout = prog(t, t1, t1 + 0.5);
-    if (pin <= 0 || pout >= 1) return;
-    const tr = lerp(0.62, 0.36, glide(pin));
-    const a = alpha * smooth(Math.min(1, pin * 1.8)) * (1 - smooth(pout));
-    const rl = tl.f.size * 1.6 * outCubic(prog(pin, 0.15, 0.85));
-    const yy = y - tl.f.size * 0.36;
-    ctx.save();
-    ctx.globalAlpha = a;
-    const st = 0.45 / Math.max(1, tl.text.length - 1);
-    const fx = (i) => ({ a: smooth(prog(pin, i * st, i * st + 0.5)) });
-    ctx.fillStyle = color;
-    if (align === "center") {
-      const r = tl.draw(ctx, x, y, { align, tracking: tr, color, fx });
-      ctx.globalAlpha = a * 0.7;
-      ctx.fillRect(r.x0 - 24 - rl, yy, rl, 1.5);
-      // trailing tracking adds air after the last glyph; keep the rules symmetric
-      ctx.fillRect(r.x0 + r.width + 24, yy, rl, 1.5);
-    } else {
-      // left-aligned: the rule leads, as on the website's hero eyebrow
-      tl.draw(ctx, x + 58, y, { align: "left", tracking: tr, color, fx });
-      ctx.globalAlpha = a * 0.7;
-      ctx.fillRect(x, yy, rl, 1.5);
-    }
-    ctx.restore();
-  }
-
-  // ----------------------------------------------------- the daffodil
-  const LOGO = logo;
-  function daffodil(ctx, ox, oy, k, D, { alpha = 1, color = CREAM, taperPx = 14, wmul = 1 } = {}) {
+  /** The logo, grown along geodesic distance from the stem tip. */
+  function daffodil(ctx, ox, oy, k, D, { alpha = 1, color = COL.cream, taperPx = 14, wmul = 1 } = {}) {
     if (alpha <= 0.001 || D <= 0) return;
     ctx.save();
     ctx.globalAlpha *= alpha;
@@ -246,18 +132,14 @@ export function createFilm({ W, H, photos, logo, cues: C, layers }) {
       P.push([ox + x * k, oy + y * k]);
       Wd.push(w * k * wmul * (0.25 + 0.75 * smooth(clamp((D - bt) / taperPx))));
     };
-    for (const e of LOGO.edges) {
+    for (const e of logo.edges) {
       for (let i = 0; i < e.length; i++) {
-        const p = e[i];
-        const inside = p[3] <= D;
-        const prev = i > 0 ? e[i - 1] : null;
-        if (prev) {
-          const pin = prev[3] <= D;
-          if (inside !== pin) {
-            // the growth front lies between prev and p
-            const u = (D - prev[3]) / (p[3] - prev[3]);
-            const x = lerp(prev[0], p[0], u), y = lerp(prev[1], p[1], u), w = lerp(prev[2], p[2], u);
-            push(x, y, w, D);
+        const p = e[i], inside = p[3] <= D;
+        if (i > 0) {
+          const q = e[i - 1];
+          if (inside !== q[3] <= D) {
+            const u = (D - q[3]) / (p[3] - q[3]);
+            push(lerp(q[0], p[0], u), lerp(q[1], p[1], u), lerp(q[2], p[2], u), D);
             if (!inside) flush();
           }
         }
@@ -267,633 +149,775 @@ export function createFilm({ W, H, photos, logo, cues: C, layers }) {
     }
     ctx.restore();
   }
+  function logoGlow(ctx, lg, D, strength) {
+    glow(ctx, layers.scratch, 14, strength, (g) => daffodil(g, lg.ox, lg.oy, lg.k, D, { color: "rgb(255,244,222)", wmul: 2.1 }));
+    daffodil(ctx, lg.ox, lg.oy, lg.k, D);
+  }
+  /** Logo placement for a scale and centre-top (art bbox 21–227 × 34–366). */
+  const logoAt = (k, cx, top) => ({ k, ox: cx - 124 * k, oy: top - 34 * k, root: [cx - 124 * k + 148.6 * k, top - 34 * k + 363 * k] });
+  /** The highest point on the growth front — where the pen light rides. */
+  function frontPoint(D) {
+    let best = null;
+    for (const e of logo.edges) {
+      for (let i = 1; i < e.length; i++) {
+        const q = e[i - 1], p = e[i];
+        if ((q[3] <= D) !== (p[3] <= D)) {
+          const u = (D - q[3]) / (p[3] - q[3]);
+          const pt = [lerp(q[0], p[0], u), lerp(q[1], p[1], u)];
+          if (!best || pt[1] < best[1]) best = pt;
+        }
+      }
+    }
+    return best;
+  }
 
-  const LINK = spline(S.SNAKE_LINK, 12);
-  const PRONE = spline(S.FIG_PRONE, 14);
-  const LINK_LEN = cumlen(LINK).at(-1);
-  const PRONE_LEN = cumlen(PRONE).at(-1);
+  // masked rise: glyphs come up from behind their own baseline
+  function rise(ctx, tl, x, y, t0, o = {}) {
+    const { align = "center", color = COL.cream, stagger = 0.028, dur = 0.85, t1 = 1e9, word = false, tracking = 0 } = o;
+    if (t < t0 || t > t1 + 1.2) return;
+    const exiting = t >= t1;
+    tl.draw(ctx, x, y, {
+      align, color, tracking,
+      clip: exiting ? null : [tl.f.size * 1.1, tl.f.size * 0.32],
+      fx: (i) => {
+        const d = t0 + (word ? tl.word[i] * 0.09 : i * stagger);
+        const pe = lift(prog(t, d, d + dur));
+        const px = inOutSine(prog(t, t1 + i * 0.012, t1 + i * 0.012 + 0.5));
+        return { dy: (1 - pe) * tl.f.size * 1.02 - px * tl.f.size * 0.3, a: Math.min(1, pe * 1.8) * (1 - px), blur: px * 6 };
+      },
+    });
+  }
+
+  // elastic pop: each glyph springs up from nothing, overshoots, settles
+  function elastic(ctx, tl, x, y, t0, o = {}) {
+    const { align = "center", color = COL.cream, stagger = 0.035, freq = 1.9, damp = 0.36, t1 = 1e9, tracking = 0 } = o;
+    if (t < t0 || t > t1 + 1) return;
+    tl.draw(ctx, x, y, {
+      align, color, tracking,
+      fx: (i) => {
+        const s = spring(t - t0 - i * stagger, freq, damp);
+        if (s <= 0.001) return null;
+        const px = inOutSine(prog(t, t1 + i * 0.012, t1 + i * 0.012 + 0.45));
+        return { sc: Math.max(0.001, s * (1 - px * 0.3)), dy: (1 - Math.min(s, 1)) * tl.f.size * 0.28 - px * 30, rot: (1 - s) * 0.25, a: clamp(s * 4) * (1 - px) };
+      },
+    });
+  }
+
+  // small caps that settle their tracking as they fade in, letter by letter
+  function eyebrow(ctx, tl, x, y, t0, o = {}) {
+    const { color = COL.cream, alpha = 0.9, t1 = 1e9, align = "center", rules = true } = o;
+    const pin = prog(t, t0, t0 + 1.0), pout = prog(t, t1, t1 + 0.45);
+    if (pin <= 0 || pout >= 1) return;
+    const tr = lerp(0.62, 0.36, glide(pin));
+    const a = alpha * smooth(Math.min(1, pin * 1.8)) * (1 - smooth(pout));
+    const st = 0.45 / Math.max(1, tl.text.length - 1);
+    ctx.save();
+    ctx.globalAlpha *= a;
+    const r = tl.draw(ctx, x, y, { align, tracking: tr, color, fx: (i) => ({ a: smooth(prog(pin, i * st, i * st + 0.5)) }) });
+    if (rules) {
+      const rl = tl.f.size * 1.5 * outCubic(prog(pin, 0.15, 0.85)), yy = y - tl.f.size * 0.36;
+      ctx.fillStyle = color;
+      ctx.globalAlpha *= 0.7;
+      ctx.fillRect(r.x0 - 24 - rl, yy, rl, 1.6);
+      ctx.fillRect(r.x0 + r.width + 24 - tl.f.size * tr, yy, rl, 1.6);
+    }
+    ctx.restore();
+  }
+
+  /** Fingertip choreography: glides between keys [{t,x,y}] in arcs, dips on taps,
+   *  then lifts away down-right after the last key so it never hides the result. */
+  function finger(ctx, keys, taps, tIn, tOut) {
+    const a = env(t, tIn, tIn + 0.25, tOut - 0.25, tOut);
+    if (a <= 0) return;
+    let x = keys[0].x, y = keys[0].y;
+    const last = keys[keys.length - 1], away = glide(prog(t, taps[taps.length - 1] + 0.12, tOut));
+    for (let i = 0; i < keys.length - 1; i++) {
+      const k0 = keys[i], k1 = keys[i + 1];
+      if (t >= k0.t && t <= k1.t) {
+        const u = silk(prog(t, k0.t, k1.t));
+        x = lerp(k0.x, k1.x, u);
+        y = lerp(k0.y, k1.y, u) - Math.sin(Math.PI * u) * 60;
+      } else if (t > k1.t) {
+        x = k1.x;
+        y = k1.y;
+      }
+    }
+    if (t > last.t) {
+      x += 150 * away;
+      y += 230 * away;
+    }
+    let press = 0;
+    for (const tp of taps) press = Math.max(press, env(t, tp - 0.1, tp, tp + 0.04, tp + 0.22));
+    tap(ctx, x, y, { alpha: a, press });
+  }
+  /** Spring squish of a pressed element: 1 → dips → overshoots → settles. */
+  const squish = (tp, depth = 0.05) => (t < tp - 0.1 ? 1 : t < tp ? 1 - depth * smooth(prog(t, tp - 0.1, tp)) : 1 - depth + depth * spring(t - tp, 2.2, 0.38));
+
+  // ------------------------------------------------- rendered imagery (3D)
+  // Rendered at 30 fps (the camera moves slowly) and kept between frames.
+  const mkCache = () => ({ key: null, c: Object.assign(document.createElement("canvas"), { width: b3.W, height: b3.H }) });
+  const cache = { stones: mkCache(), swirl: mkCache() };
+  const keep = (slot, key, render) => {
+    const s = cache[slot];
+    if (s.key !== key) {
+      const g = s.c.getContext("2d", { willReadFrequently: true });
+      g.clearRect(0, 0, s.c.width, s.c.height);
+      g.drawImage(render(), 0, 0);
+      s.key = key;
+    }
+    return s.c;
+  };
+  function stonesImage() {
+    const tq = Math.round(t * 30) / 30;
+    return keep("stones", tq, () => {
+      const p = silk(prog(tq, C.menu.expand[0], C.stones.iris[1]));
+      const cam = [lerp(-0.42, 0.28, p), lerp(1.45, 1.72, p), lerp(4.25, 5.15, p)];
+      // the top stone drops onto the stack on the downbeat, with a small bounce
+      const td = C.stones.drop;
+      let dy;
+      if (tq < td - 0.32) dy = 9;
+      else if (tq < td) dy = 1.6 * (1 - ((tq - (td - 0.32)) / 0.32) ** 2);
+      else dy = 0.05 * Math.abs(Math.sin(Math.PI * Math.min(1, (tq - td) / 0.2))) * (tq - td < 0.2 ? 1 : 0);
+      const stones = STACK.map((s, i) => (i === 2 ? { ...s, c: [s.c[0], s.c[1] + dy, s.c[2]] } : s));
+      return b3.stones({ time: tq, cam, target: [0, 1.28, -0.6], fov: 0.6, stones, leafOff: [0.1 + tq * 0.004, 0.2] });
+    });
+  }
+  const JAR = { c: [540, 640], r: 280 };
+  function swirlImage() {
+    const tq = Math.round(t * 30) / 30;
+    return keep("swirl", tq, () => b3.swirl({ time: tq, c: [JAR.c[0] * scale3d, JAR.c[1] * scale3d], r: JAR.r * scale3d, rot: 0.6 + tq * 0.22 }));
+  }
 
   // ================================================================ SCENES
-  // ---- 1. night: the hook's dark room, warming as the shoulders drop
-  function night(ctx) {
-    const warm = smooth(prog(t, C.hook.release - 0.05, C.hook.release + 1.5));
-    const g = ctx.createRadialGradient(540, 1060, 40, 540, 1060, 1300);
-    g.addColorStop(0, mix("#353D31", "#55624F", warm));
-    g.addColorStop(0.5, mix("#242A21", "#37412F", warm));
-    g.addColorStop(1, mix("#151813", "#20261D", warm));
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    leak(ctx, 540, 1000, 700, 0.05 + 0.08 * warm, "239,232,214");
-    dust(ctx, 0.55 + 0.45 * warm);
-  }
-
-  // ---- 2. the band: hot stones photo developing behind the drawing
-  function band(ctx) {
-    const d = prog(t, C.stones.develop[0], C.stones.develop[1]);
-    if (d <= 0) return;
-    const zi = prog(t, C.stones.zoomIn[0], C.stones.zoomIn[1]);
-    const st = S.STONES[1];
-    const push = 1 + 0.035 * smooth(prog(t, C.stones.develop[0], C.stones.zoomIn[0]));
-    const zs = push * Math.exp(Math.log(18) * inCubic(zi));
-    const { y: by, h: bh } = S.BAND;
+  // ---- S1: the logo draws itself on sage --------------------------------
+  const LOGO1 = logoAt(1.72, 540, 400);
+  function sceneLogo(ctx) {
+    sage(ctx);
+    const push = 1 + 0.035 * smooth(prog(t, 0, C.arch.fill[1]));
     ctx.save();
-    ctx.translate(st.x, st.y);
-    ctx.scale(zs, zs);
-    ctx.translate(-st.x, -st.y);
-    if (d < 1) {
-      clear(T);
-      T.drawImage(photos["band-stones"], 0, by, W, bh);
-      clear(M);
-      M.globalCompositeOperation = "lighter";
-      const R = 1200 * outCubic(d);
-      for (const s of S.STONES) {
-        const g = M.createRadialGradient(s.x / 2, s.y / 2, 0, s.x / 2, s.y / 2, R / 2);
-        g.addColorStop(0, "rgba(255,255,255,1)");
-        g.addColorStop(0.5, "rgba(255,255,255,0.9)");
-        g.addColorStop(1, "rgba(255,255,255,0)");
-        M.fillStyle = g;
-        M.fillRect(0, 0, W / 2, H / 2);
-      }
-      T.globalCompositeOperation = "destination-in";
-      T.drawImage(layers.mask, 0, 0, W, H);
-      T.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = smooth(Math.min(1, d * 2.2));
-      ctx.drawImage(layers.tmp, 0, 0);
-      ctx.globalAlpha = 1;
-    } else {
-      ctx.drawImage(photos["band-stones"], 0, by, W, bh);
+    ctx.translate(540, 900);
+    ctx.scale(push, push);
+    ctx.translate(-540, -900);
+    const D = logo.maxBirth * grow(prog(t, C.logo.draw[0], C.logo.draw[1]));
+    const bloom = 0.42 + 0.55 * env(t, C.logo.draw[1] - 0.15, C.logo.draw[1] + 0.12, C.logo.draw[1] + 0.25, C.logo.draw[1] + 1.1);
+    if (D > 0) logoGlow(ctx, LOGO1, D, bloom);
+    if (D > 0 && t < C.logo.draw[1]) {
+      const f = frontPoint(D);
+      if (f) penTip(ctx, LOGO1.ox + f[0] * LOGO1.k, LOGO1.oy + f[1] * LOGO1.k, 42, 0.9);
     }
-    // hairlines along the band edges, drawn out from the centre
-    const hl = outCubic(prog(d, 0.25, 1)) * W * 0.5;
-    ctx.fillStyle = `rgba(239,232,214,${0.4 * (1 - zi)})`;
-    ctx.fillRect(540 - hl, by - 1, hl * 2, 1.5);
-    ctx.fillRect(540 - hl, by + bh - 0.5, hl * 2, 1.5);
+    rise(ctx, TX.wm1, 540, 1185, C.logo.wordmark, { stagger: 0.03 });
+    rise(ctx, TX.wm2, 540, 1320, C.logo.wordmark + 0.18, { stagger: 0.03 });
+    eyebrow(ctx, TX.ebLogo, 540, 1420, C.logo.eyebrow);
     ctx.restore();
-    if (zi > 0) {
-      U.uZoom = inCubic(zi) * 0.95;
-      U.uZC = [st.x, st.y];
-    }
   }
 
-  // ---- 3. the stack: pull back out of a stone, candle breathing
-  function stack(ctx) {
-    const zo = prog(t, C.stones.zoomOut[0], C.stones.zoomOut[1]);
-    const e = outQuart(zo);
-    const slow = 1 + 0.06 * silk(prog(t, C.stones.zoomOut[1], C.steam.dissolve[1]));
-    const P = S.STACK.topStone, st = S.STONES[1];
-    const cx = lerp(st.x, P[0], e), cy = lerp(st.y, P[1], e);
-    // stones and candle are nearer than the wall: they shrink faster on the
-    // pull-back and grow faster on the slow push
-    const pull = Math.exp(Math.log(7.5) * (1 - e));
-    plate(ctx, "stack",
-      cam(pull ** 0.9 * slow ** 0.55, [cx, cy], P),
-      cam(pull ** 1.07 * slow ** 1.35, [cx, cy], P),
-      (g, layer) => layer === "fg" && flame(g, S.STACK.flame[0], S.STACK.flame[1]));
-    if (e > 0.6) dof(ctx, 560, 860, 9 * smooth(prog(e, 0.6, 1)));
-    scrim(ctx, 0, 900, 0.42, 0);
-    U.uZoom = (1 - e) * 0.9;
-    U.uZC = [cx, cy];
-    U.uHeat = [90, 560, 1040, 1180];
-    U.uHeatAmt = smooth(prog(t, C.stones.zoomOut[1] - 0.2, C.stones.zoomOut[1] + 0.6));
-  }
-
-  // ---- 4. aromatherapy: a slow drift across lavender and oils
-  function aroma(ctx) {
-    const p = silk(prog(t, C.steam.dissolve[0], C.scalp.impact + 0.4));
-    // the still life drifts past faster than the wall behind it
-    plate(ctx, "aroma",
-      cam(1 + 0.02 * p, [540, 960], [540 + 205 * p, 960]),
-      cam(1 + 0.05 * p, [540, 960], [540 + 300 * p, 960]),
-      (g, layer) => layer === "fg" && flame(g, S.AROMA.flame[0], S.AROMA.flame[1]));
-    dof(ctx, 640, 900, 12);
-    scrim(ctx, 0, 1000, 0.5, 0);
-    dust(ctx, 0.7, "255,226,180", 0.7);
-  }
-
-  // ---- 5. back, neck & scalp: the face, upright, cradled
-  function scalp(ctx) {
-    const p = prog(t, C.scalp.impact, C.split.open[1]);
-    const k = silk(p);
-    // she comes towards us; the bokeh behind barely moves
-    plate(ctx, "scalp", cam(1 + 0.028 * k, [520, 700], [520 + 14 * k, 700]), cam(1 + 0.072 * k, [520, 700]));
-    scrim(ctx, 860, 1920, 0, 0.74);
-    dust(ctx, 0.8, "255,224,170", 0.6);
-  }
-
-  // ---- 6. the studio, then the portal into its arched mirror
-  const GLASS = spline(S.GLASS, 8);
-  /** screen = c + (p - P) * s, with P the centre of the mirror glass. */
-  function studioCam() {
-    const P = S.GLASS_CENTER;
-    const slow = prog(t, C.split.open[1], C.portal.push[0]);
-    const open = prog(t, C.split.open[0], C.split.open[1]);
-    const pp = prog(t, C.portal.push[0], C.portal.push[1]);
-    const e = inCubic(pp);
-    const s0 = (1 + 0.09 * silk(slow)) * (1.1 - 0.1 * outCubic(open));
-    const s = s0 * Math.exp(Math.log(6.4 / 1.09) * e);
-    const k = silk(pp);
-    return { s, P, c: [lerp(P[0], 540, k), lerp(P[1], 980, k)], pp, e };
-  }
-  const camPt = (cam, [x, y]) => [cam.c[0] + (x - cam.P[0]) * cam.s, cam.c[1] + (y - cam.P[1]) * cam.s];
-  function studio(ctx) {
-    const sc = studioCam();
-    // the massage table is nearest: it slides past as we push to the mirror
-    plate(ctx, "studio", cam(sc.s, sc.c, sc.P), cam(sc.s ** 1.14, sc.c, sc.P), (g, layer) => layer === "bg" && portalFill(g, sc));
-    if (sc.pp > 0) {
-      U.uZoom = sc.e * 0.75;
-      U.uZC = sc.c;
-    }
-    leak(ctx, 860, 420, 700, 0.10 + 0.12 * smooth(prog(t, C.split.open[0], C.split.open[1])), "255,226,186");
-  }
-  function portalFill(ctx, cam) {
-    const fill = smooth(prog(t, C.portal.fill[0], C.portal.fill[1]));
-    if (fill > 0) {
-      ctx.beginPath();
-      GLASS.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-      ctx.closePath();
-      ctx.fillStyle = SAGE;
-      ctx.globalAlpha = fill;
-      ctx.fill();
-      // the end card's soft light, already glowing inside the mirror
-      const g = ctx.createRadialGradient(cam.P[0], cam.P[1] - 40, 0, cam.P[0], cam.P[1] - 40, 320);
-      g.addColorStop(0, "rgba(216,222,201,0.35)");
-      g.addColorStop(1, "rgba(216,222,201,0)");
-      ctx.fillStyle = g;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  // ---- split: the line opens the frame like a pair of doors
-  function split(ctx) {
-    studio(ctx);
-    const p = luxe(prog(t, C.split.open[0], C.split.open[1]));
-    const dy = p * (H / 2 + 80);
-    for (const dir of [-1, 1]) {
+  // ---- T1: the line draws an arch around the logo, which fills cream ----
+  const ARCH = { x0: 110, x1: 970, top: 300, bottom: 1760 };
+  const ARCH_PTS = archPts(ARCH.x0, ARCH.x1, ARCH.top, ARCH.bottom);
+  function archPanel(ctx, fillLevel, outline, lineAlpha = 1, rimAlpha = 0) {
+    if (fillLevel > 0) {
       ctx.save();
-      ctx.translate(0, dir * dy);
-      ctx.beginPath();
-      ctx.rect(0, dir < 0 ? 0 : H / 2, W, H / 2);
+      archPath(ctx, ARCH.x0, ARCH.x1, ARCH.top, ARCH.bottom);
       ctx.clip();
-      scalp(ctx);
+      const y = lerp(ARCH.bottom + 40, ARCH.top - 60, fillLevel);
+      const wave = fillLevel < 1 ? 18 * (1 - fillLevel) : 0;
+      ctx.fillStyle = COL.creamSoft;
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      ctx.lineTo(0, y);
+      for (let x = 0; x <= W; x += 30) ctx.lineTo(x, y + Math.sin(x * 0.012 + t * 7) * wave);
+      ctx.lineTo(W, H);
+      ctx.closePath();
+      ctx.fill();
+      ctx.clip(); // the same leaf light falls on the cream
+      leaves(ctx, 0.07);
       ctx.restore();
-      // soft shadow cast on the studio by each leaf
-      const edge = H / 2 + dir * dy;
-      const g = ctx.createLinearGradient(0, edge, 0, edge - dir * 120);
-      g.addColorStop(0, `rgba(10,12,9,${0.4 * (1 - p * 0.5)})`);
-      g.addColorStop(1, "rgba(10,12,9,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, Math.min(edge, edge - dir * 120), W, 120);
     }
-  }
-
-  // ---- 7. the end card
-  function endCard(ctx) {
-    ctx.fillStyle = SAGE;
-    ctx.fillRect(0, 0, W, H);
-    const g = ctx.createRadialGradient(540, 640, 0, 540, 640, 1000);
-    g.addColorStop(0, "rgba(216,222,201,0.30)");
-    g.addColorStop(1, "rgba(216,222,201,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    dust(ctx, 0.5, "245,239,224", 0.5);
-  }
-
-  // ============================================================== OVERLAY
-  function figureAnchors() {
-    const r = spring(t - C.hook.release, 1.25, 0.55);
-    let an = lerpPts(S.FIG_TENSE, S.FIG_RELAX, r);
-    const tense = 1 - clamp(r * 1.3);
-    if (tense > 0) {
-      an = an.map((p, i) => [
-        p[0] + noise1(t * 15 + i * 0.37, 1) * 1.9 * tense * S.TREMOR[i],
-        p[1] + noise1(t * 17 + i * 0.41, 2) * 2.3 * tense * S.TREMOR[i],
-      ]);
-    }
-    // a long exhale after the drop
-    const ex = smooth(prog(t, C.hook.breathe, C.hook.breathe + 1.2)) * 9;
-    if (ex > 0) an = an.map((p, i) => [p[0], p[1] + ex * S.TREMOR[i]]);
-    return an;
-  }
-
-  function stoneShape(ctx, s, sx, sy, alpha, outline) {
-    ctx.save();
-    ctx.translate(s.x, s.y);
-    ctx.rotate(s.rot);
-    ctx.scale(sx, sy);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, s.rx, s.ry, 0, 0, Math.PI * 2);
-    const g = ctx.createRadialGradient(-s.rx * 0.35, -s.ry * 0.45, 2, 0, 0, s.rx * 1.1);
-    g.addColorStop(0, "#5A5C55");
-    g.addColorStop(0.35, "#2A2C27");
-    g.addColorStop(1, "#121410");
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = g;
-    ctx.fill();
-    if (outline > 0) {
-      ctx.globalAlpha = alpha * outline;
-      ctx.lineWidth = 3 / Math.max(sx, sy);
-      ctx.strokeStyle = CREAM;
+    if (rimAlpha > 0) {
+      ctx.save();
+      ctx.globalAlpha *= rimAlpha;
+      archPath(ctx, ARCH.x0, ARCH.x1, ARCH.top, ARCH.bottom);
+      ctx.strokeStyle = COL.sageDeep;
+      ctx.lineWidth = 2;
       ctx.stroke();
+      ctx.restore();
     }
-    // specular
-    ctx.globalAlpha = alpha * 0.55;
-    ctx.beginPath();
-    ctx.ellipse(-s.rx * 0.32, -s.ry * 0.42, s.rx * 0.32, s.ry * 0.14, -0.1, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,250,236,0.55)";
-    ctx.filter = "blur(3px)";
-    ctx.fill();
+    if (outline > 0) line(ctx, ARCH_PTS, { a: 0.5 - 0.5 * outline, b: 0.5 + 0.5 * outline, alpha: lineAlpha, glowAmt: 0.6, taper: [40, 40], tip: outline < 1 ? 0.8 : 0 });
+  }
+
+  // ---- S2: Relax. Restore. Glow. -----------------------------------------
+  const MINI = logoAt(0.36, 540, 360);
+  function sceneGlow(ctx) {
+    sage(ctx);
+    archPanel(ctx, 1, 0, 0, 0.35);
+    const D = logo.maxBirth * grow(prog(t, C.glow.eyebrow - 0.1, C.glow.eyebrow + 0.9));
+    daffodil(ctx, MINI.ox, MINI.oy, MINI.k, D, { color: COL.sageDeep, wmul: 1.3 });
+    eyebrow(ctx, TX.ebGlow, 540, 560, C.glow.eyebrow + 0.2, { color: COL.sageDeep, alpha: 1 });
+    const [w1, w2, w3] = C.glow.words;
+    elastic(ctx, TX.relax, 540, 830, w1, { color: COL.sageDeep });
+    elastic(ctx, TX.restore, 540, 1060, w2, { color: COL.sageDeep });
+    elastic(ctx, TX.glowW, 540, 1300, w3, { color: COL.sageDeep });
+    // the line circles "Glow." like a hand-drawn note
+    const lp = luxe(prog(t, C.glow.loop[0], C.glow.loop[1]));
+    if (lp > 0) line(ctx, loopPts(545, 1252, 230, 108), { b: lp, color: COL.sageDeep, glowAmt: 0, w: 5, taper: [30, 50] });
+  }
+
+  // ---- S3: the treatment menu ---------------------------------------------
+  const CARD = (i) => ({ x: 80, y: 600 + i * 196, w: 920, h: 172 });
+  const PICK = 2;
+  function menuCard(ctx, cd, r, flash = 0) {
+    card(ctx, r.x, r.y, r.w, r.h, { r: 34, fill: COL.creamSoft });
+    if (flash > 0) card(ctx, r.x, r.y, r.w, r.h, { r: 34, fill: `rgba(255,255,255,${0.55 * flash})`, shadow: 0 });
+    const cy = r.y + r.h / 2;
+    orb(ctx, r.x + 88, cy, 46, cd.orb[0], cd.orb[1]);
+    cd.name.draw(ctx, r.x + 168, cy + 2, { align: "left", color: COL.ink });
+    cd.meta.draw(ctx, r.x + 170, cy + 46, { align: "left", tracking: 0.2, color: COL.sageDeep });
+    cd.price.draw(ctx, r.x + r.w - 72, cy + 20, { align: "right", color: COL.sageDeep });
+  }
+  function sceneMenu(ctx, expandP = 0) {
+    sage(ctx);
+    const head = 1 - smooth(prog(expandP, 0, 0.4));
+    if (head > 0) {
+      ctx.save();
+      ctx.globalAlpha = head;
+      eyebrow(ctx, TX.ebMenu, 540, 345, C.menu.header);
+      const [w0, w1] = [TX.menuTitle[0].width(), TX.menuTitle[1].width()], gap = 34;
+      const x0 = 540 - (w0 + gap + w1) / 2;
+      rise(ctx, TX.menuTitle[0], x0, 490, C.menu.header + 0.1, { align: "left" });
+      rise(ctx, TX.menuTitle[1], x0 + w0 + gap, 490, C.menu.header + 0.22, { align: "left" });
+      ctx.restore();
+    }
+    TX.cards.forEach((cd, i) => {
+      if (i === PICK && expandP > 0) return;
+      const s = spring(t - C.menu.cards - i * 0.09, 1.5, 0.62);
+      if (s <= 0.001) return;
+      const r = CARD(i);
+      const recede = smooth(prog(expandP, 0, 0.6));
+      const sc = (i === PICK ? squish(C.menu.tap, 0.045) : 1) * (1 - 0.06 * recede);
+      ctx.save();
+      ctx.globalAlpha = clamp(s * 2) * (1 - recede);
+      ctx.translate(540, r.y + r.h / 2 + (1 - s) * 300);
+      ctx.scale(sc, sc);
+      ctx.translate(-540, -(r.y + r.h / 2));
+      menuCard(ctx, cd, r, i === PICK ? env(t, C.menu.tap - 0.05, C.menu.tap + 0.05, C.menu.tap + 0.3, C.menu.tap + 0.7) : 0);
+      ctx.restore();
+    });
+    // the tapped card is traced by the line before it opens
+    if (t >= C.menu.tap && expandP <= 0) {
+      const r = CARD(PICK), tb = traced();
+      line(ctx, roundRectPts(r.x - 6, r.y - 6, r.w + 12, r.h + 12, 40), { b: tb, glowAmt: 0.7, w: 4.5, taper: [20 * (1 - tb), 40 * (1 - tb)] });
+    }
+  }
+
+  const traced = () => luxe(prog(t, C.menu.tap, C.menu.tap + 0.42));
+
+  // ---- T3 + S4: the card opens into the hot-stones set --------------------
+  function sceneStones(ctx, expandP) {
+    const r0 = CARD(PICK);
+    const e = luxe(expandP);
+    const rx = lerp(r0.x, 0, e), ry = lerp(r0.y, 0, e), rw = lerp(r0.w, W, e), rh = lerp(r0.h, H, e), rr = lerp(34, 0, e);
+    ctx.save();
+    if (expandP < 1) {
+      card(ctx, rx, ry, rw, rh, { r: rr, fill: COL.creamSoft, shadow: 0.25 * (1 - e) });
+      ctx.beginPath();
+      ctx.roundRect(rx, ry, rw, rh, rr);
+      ctx.clip();
+    }
+    // the image is revealed through the growing window, not scaled with it
+    ctx.globalAlpha = smooth(prog(expandP, 0.15, 0.75));
+    ctx.drawImage(stonesImage(), 0, 0, W, H);
+    ctx.restore();
+    if (expandP < 1) {
+      if (expandP > 0) {
+        ctx.save();
+        ctx.globalAlpha = 1 - smooth(prog(expandP, 0, 0.3));
+        menuCard(ctx, TX.cards[PICK], { x: rx, y: ry, w: rw, h: r0.h });
+        ctx.restore();
+        const tb = traced();
+        line(ctx, roundRectPts(rx - 6, ry - 6, rw + 12, rh + 12, rr + 6), { b: tb, glowAmt: 0.7, w: 4.5, alpha: 1 - smooth(prog(expandP, 0.6, 1)), taper: [20 * (1 - tb), 40 * (1 - tb)] });
+      }
+      return;
+    }
+    // the caption card, readable on cream
+    const s = spring(t - C.stones.card, 1.4, 0.66);
+    const out = smooth(prog(t, C.stones.out, C.stones.out + 0.4));
+    if (s <= 0.001 || out >= 1) return;
+    ctx.save();
+    ctx.globalAlpha = clamp(s * 2) * (1 - out);
+    ctx.translate(0, (1 - s) * 220 + out * 160);
+    card(ctx, 70, 1120, 940, 310, { r: 38, fill: COL.creamSoft, shadow: 0.25 });
+    eyebrow(ctx, TX.ebStones, 120, 1192, C.stones.card + 0.15, { color: COL.sageDeep, alpha: 1, align: "left", rules: false });
+    rise(ctx, TX.stonesLines[0], 118, 1290, C.stones.card + 0.3, { align: "left", color: COL.ink, word: true });
+    rise(ctx, TX.stonesLines[1], 118, 1372, C.stones.card + 0.45, { align: "left", color: COL.ink, word: true });
+    const ps = spring(t - (C.stones.card + 0.7), 2.0, 0.4);
+    if (ps > 0.001) {
+      ctx.translate(868, 1182);
+      ctx.scale(ps, ps);
+      pill(ctx, 0, 0, 130, 64, { fill: COL.sageDeep });
+      TX.price60.draw(ctx, 0, 14, { color: COL.cream });
+    }
     ctx.restore();
   }
 
-  function overlay(ctx) {
-    const H0 = C.hook;
-    // ---------------- hook: figure + type
-    const devEnd = C.stones.develop[1];
-    if (t >= H0.draw[0] && t < devEnd + 0.3) {
-      // One path: seated figure → off-screen link → reclining figure. The
-      // pen keeps drawing her lying down while the tail erases her sitting.
-      // a slow push on the seated figure while she lets go
-      const push = 1 + 0.03 * smooth(prog(t, 0.1, C.morph[0] + 0.1));
-      const fig = spline(figureAnchors(), 14).map(([x, y]) => [540 + (x - 540) * push, 1150 + (y - 1150) * push]);
-      const pts = fig.concat(LINK.slice(1), PRONE.slice(1));
-      const L1 = cumlen(fig).at(-1), L2 = LINK_LEN, Lt = L1 + L2 + PRONE_LEN;
-      const dp = luxe(prog(t, H0.draw[0], H0.draw[1]));
-      const sp = prog(t, C.morph[0], C.morph[1]);
-      const head = (dp * L1 + (L2 + PRONE_LEN) * luxe(sp)) / Lt;
-      const tail = ((L1 + L2) * luxe(clamp(sp * 1.1 - 0.06))) / Lt;
-      const fade = 1 - smooth(prog(t, C.stones.develop[0] + 0.45, devEnd + 0.1));
-      const drawing = dp < 1 || (sp > 0 && sp < 1);
-      line(ctx, pts, { a: tail, b: head, tip: drawing ? 1 : 0, alpha: fade, glowAmt: 0.55 });
-      // the spine lengthens as she lets go
-      const spn = luxe(prog(t, H0.release + 0.15, H0.release + 0.95));
-      const spOut = smooth(prog(t, C.morph[0] - 0.1, C.morph[0] + 0.35));
-      if (spn > 0 && spOut < 1) {
-        const ex = smooth(prog(t, H0.breathe, H0.breathe + 1.2)) * 9;
-        const push = 1 + 0.03 * smooth(prog(t, 0.1, C.morph[0] + 0.1));
-        const sp = spline(S.SPINE.map(([x, y]) => [540 + (x - 540) * push, 1150 + (y + ex - 1150) * push]), 12);
-        line(ctx, sp, { a: 0, b: spn, w: 3.4, alpha: 0.55 * (1 - spOut), glowAmt: 0.3, taper: [30, 120] });
-      }
-      // eye + brow once she has settled
-      const ep = luxe(prog(t, C.morph[1] - 0.05, C.morph[1] + 0.35));
-      if (ep > 0) {
-        line(ctx, spline(S.PRONE_EYE, 10), { b: ep, w: 4.2, alpha: fade, glowAmt: 0.3, taper: [12, 12] });
-        line(ctx, spline(S.PRONE_BROW, 10), { b: luxe(prog(t, C.morph[1] + 0.08, C.morph[1] + 0.45)), w: 3.6, alpha: fade * 0.9, glowAmt: 0.3, taper: [12, 12] });
-      }
-    }
-    // "Drop your / shoulders."
-    if (t < H0.exit + 1.2) {
-      const rel = t - H0.release;
-      ["drop", "shoulders"].forEach((k, li) => {
-        const tl = TX[k];
-        const y = li === 0 ? 520 : 690;
-        const t0 = H0.text + (li === 0 ? 0 : 0.2);
-        // mask only while rising, so the later drop isn't cropped
-        const rising = t < t0 + 1.05;
-        tl.draw(ctx, 540, y, {
-          shadow: null,
-          clip: rising ? [tl.f.size * 1.1, tl.f.size * 0.3] : null,
-          fx: (i) => {
-            const d = t0 + (li === 0 ? tl.word[i] * 0.1 : i * 0.016);
-            const pe = lift(prog(t, d, d + 0.9));
-            // the drop: each letter falls and settles on its own spring
-            const dropY = li === 1 ? 50 * spring(rel - i * 0.022, 1.15, 0.5) : 12 * spring(rel, 1.0, 0.7);
-            const wob = li === 1 ? (1 - spring(rel - i * 0.022, 1.15, 0.5)) * (rel > i * 0.022 ? 1 : 0) : 0;
-            const xd = H0.exit + li * 0.08 + i * 0.014;
-            const px = inOutSine(prog(t, xd, xd + 0.55));
-            // held tension: the word shivers with the shoulders until it drops
-            const tense = li === 1 ? 1 - clamp(spring(rel, 1.25, 0.55) * 1.3) : 0;
-            const shiver = tense * noise1(t * 16 + i * 1.7, 5) * 1.6;
-            return {
-              dx: tense * noise1(t * 14 + i * 2.3, 6) * 1.2,
-              dy: (1 - pe) * tl.f.size * 0.95 + dropY - px * 40 + shiver,
-              rot: wob * 0.06 * (i % 2 ? 1 : -1),
-              a: Math.min(1, pe * 1.6) * (1 - px),
-              blur: px * 8,
-            };
-          },
-        });
-      });
-    }
-    // "Breathe out." — the letters exhale apart
-    if (t >= H0.breathe && t < H0.breatheExit + 1) {
-      const pin = prog(t, H0.breathe, H0.breathe + 0.7);
-      const pout = prog(t, H0.breatheExit, H0.breatheExit + 0.6);
-      const tr = lerp(-0.03, 0.09, inOutSine(prog(t, H0.breathe, H0.breatheExit + 0.6)));
-      const wB = TX.breathe.width(tr), wO = TX.out.width(tr), gap = 150 * (0.26 + tr);
-      const x0 = 540 - (wB + gap + wO) / 2;
-      const fx = (off) => (i) => ({
-        a: smooth(prog(pin, (i + off) * 0.05, (i + off) * 0.05 + 0.55)) * (1 - smooth(prog(pout, (i + off) * 0.03, (i + off) * 0.03 + 0.7))),
-        dy: -pout * 36,
-        blur: (1 - smooth(pin)) * 10 + pout * 9,
-      });
-      TX.breathe.draw(ctx, x0, 660, { align: "left", tracking: tr, fx: fx(0) });
-      TX.out.draw(ctx, x0 + wB + gap, 660, { align: "left", tracking: tr, fx: fx(8) });
-    }
-
-    // ---------------- hot stones
-    for (let i = 0; i < S.STONES.length; i++) {
-      const s = S.STONES[i], tl = C.stones.land[i];
-      const fall = prog(t, tl - 0.3, tl);
-      if (fall <= 0) continue;
-      const vanish = smooth(prog(t, C.stones.develop[0] + 0.35, devEnd));
-      if (vanish >= 1) continue;
-      const y = -360 * (1 - gravity(fall));
-      const sq = Math.sin(Math.PI * prog(t, tl, tl + 0.16)) * (1 - prog(t, tl, tl + 0.16) * 0.3);
+  // ---- T4: the line draws a circle; the room closes to it; the jar opens --
+  const CIRCLE = circlePts(JAR.c[0], JAR.c[1], JAR.r * 1.17 + 4);
+  function jar(ctx, scale = 1, swirlAlpha = 1) {
+    const { c, r } = JAR;
+    ctx.save();
+    ctx.translate(c[0], c[1]);
+    ctx.scale(scale, scale);
+    ctx.translate(-c[0], -c[1]);
+    const sh = ctx.createRadialGradient(c[0] + 26, c[1] + 40, r * 0.6, c[0] + 26, c[1] + 40, r * 1.5);
+    sh.addColorStop(0, `rgba(38,46,34,${0.42 * swirlAlpha})`);
+    sh.addColorStop(1, "rgba(38,46,34,0)");
+    ctx.fillStyle = sh;
+    ctx.fillRect(c[0] - r * 2, c[1] - r * 2, r * 4, r * 4);
+    ctx.globalAlpha *= swirlAlpha;
+    ctx.drawImage(swirlImage(), 0, 0, W, H);
+    ctx.restore();
+  }
+  function iris(ctx) {
+    const ip = luxe(prog(t, C.stones.iris[0], C.stones.iris[1]));
+    const xf = smooth(prog(t, C.stones.iris[0] + 0.2, C.stones.iris[1]));
+    if (xf > 0) {
       ctx.save();
-      ctx.translate(0, y);
-      stoneShape(ctx, s, 1 + 0.07 * sq, 1 - 0.13 * sq, smooth(Math.min(1, fall * 3)) * (1 - vanish), 1);
+      ctx.beginPath();
+      ctx.arc(JAR.c[0], JAR.c[1], JAR.r * 1.2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.globalAlpha = xf;
+      sage(ctx, 0);
+      jar(ctx, 1);
       ctx.restore();
-      // impact ring
-      const rp = prog(t, tl, tl + 0.5);
-      if (rp > 0 && rp < 1) {
+    }
+    if (ip > 0) {
+      const R = lerp(1500, JAR.r * 1.19, ip);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, W, H);
+      ctx.arc(JAR.c[0], JAR.c[1], R, 0, Math.PI * 2, true);
+      ctx.clip("evenodd");
+      sage(ctx);
+      ctx.restore();
+    }
+    const cp = luxe(prog(t, C.stones.circle[0], C.stones.circle[1]));
+    const fade = 1 - smooth(prog(t, C.stones.iris[1] - 0.4, C.stones.iris[1]));
+    if (cp > 0) line(ctx, CIRCLE, { b: cp, alpha: fade, glowAmt: 0.7, taper: [30, 30], tip: cp < 1 ? 0.9 : 0 });
+  }
+
+  // ---- S5: whipped, plant-based, small-batch ------------------------------
+  function sceneJar(ctx) {
+    sage(ctx);
+    const sp = prog(t, C.jar.shrink[0], C.jar.shrink[1]);
+    const e = luxe(sp);
+    jar(ctx, lerp(1, BADGE.r / (JAR.r * 1.17), e), 1 - smooth(prog(sp, 0.35, 0.9)));
+    if (sp > 0) badgeDisc(ctx, smooth(prog(sp, 0.3, 1)));
+    const out = C.jar.shrink[0] - 0.2;
+    TX.jarWords.forEach((tl, i) => elastic(ctx, tl, 540, 1085 + i * 112, C.jar.words[i], { t1: out + i * 0.04 }));
+    const ps = spring(t - C.jar.pill, 1.8, 0.42);
+    const pOut = smooth(prog(t, out, out + 0.35));
+    if (ps > 0.001 && pOut < 1) {
+      ctx.save();
+      ctx.globalAlpha = clamp(ps * 3) * (1 - pOut);
+      ctx.translate(540 + (1 - Math.min(ps, 1.2)) * 300, 1400);
+      const w = TX.jarPill.width(0.2) + 72;
+      pill(ctx, 0, 0, w, 66, { stroke: COL.cream, lw: 2 });
+      TX.jarPill.draw(ctx, 0, 9, { tracking: 0.2, color: COL.cream });
+      ctx.restore();
+    }
+  }
+
+  // ---- S6: Clarins-trained, five-star care --------------------------------
+  const BADGE = { c: [540, 640], r: 205 };
+  function badgeDisc(ctx, a) {
+    if (a <= 0.001) return;
+    const { c, r } = BADGE;
+    ctx.save();
+    ctx.globalAlpha *= a;
+    const g = ctx.createRadialGradient(c[0] - 60, c[1] - 80, 20, c[0], c[1], r);
+    g.addColorStop(0, "#7E9278");
+    g.addColorStop(1, COL.sageDeep);
+    ctx.shadowColor = "rgba(30,38,28,0.35)";
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 20;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(c[0], c[1], r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function sceneTrust(ctx) {
+    sage(ctx);
+    const out = prog(t, C.trust.out[0], C.trust.out[1]);
+    const eo = luxe(out);
+    ctx.save();
+    ctx.translate(BADGE.c[0], BADGE.c[1] - eo * 340);
+    ctx.scale(1 - 0.75 * eo, 1 - 0.75 * eo);
+    ctx.rotate(-eo * 0.6);
+    ctx.translate(-BADGE.c[0], -BADGE.c[1]);
+    ctx.globalAlpha = 1 - smooth(prog(out, 0.5, 1));
+    badgeDisc(ctx, 1);
+    line(ctx, circlePts(BADGE.c[0], BADGE.c[1], BADGE.r + 16), { b: luxe(prog(t, C.trust.ring[0], C.trust.ring[1])), glowAmt: 0.5, w: 3.6, taper: [20, 20] });
+    line(ctx, circlePts(BADGE.c[0], BADGE.c[1], BADGE.r + 66, Math.PI / 2), { b: luxe(prog(t, C.trust.ring[0] + 0.12, C.trust.ring[1] + 0.12)), glowAmt: 0.35, w: 2.4, taper: [20, 20] });
+    const ra = smooth(prog(t, C.trust.ring[0] + 0.3, C.trust.ring[1] + 0.4));
+    if (ra > 0) {
+      ctx.save();
+      ctx.globalAlpha *= ra * 0.95;
+      circleText(ctx, "FIVE-STAR CARE · PLANT-BASED · ONE GUEST AT A TIME · ", BADGE.c[0], BADGE.c[1], BADGE.r + 41, -Math.PI / 2 + t * 0.16, `500 21px "Lora"`, COL.cream, 3.2);
+      ctx.restore();
+    }
+    for (let i = 0; i < 5; i++) {
+      const s = spring(t - C.trust.stars - i * 0.1, 2.1, 0.38);
+      if (s <= 0.001) continue;
+      const a = -Math.PI / 2 + (i - 2) * 0.32;
+      ctx.save();
+      ctx.translate(BADGE.c[0] + Math.cos(a) * (BADGE.r - 58), BADGE.c[1] + Math.sin(a) * (BADGE.r - 58) + 6);
+      ctx.scale(s, s);
+      ctx.rotate((1 - s) * 0.8);
+      ctx.fillStyle = COL.cream;
+      starPath(ctx, 0, 0, 17, 7.5);
+      ctx.fill();
+      ctx.restore();
+    }
+    rise(ctx, TX.badgeA, BADGE.c[0], BADGE.c[1] + 36, C.trust.ring[0] + 0.25);
+    eyebrow(ctx, TX.badgeB, BADGE.c[0], BADGE.c[1] + 104, C.trust.ring[0] + 0.45, { rules: false, alpha: 0.95 });
+    ctx.restore();
+    const ho = C.trust.out[0];
+    rise(ctx, TX.trust[0], 540, 1050, C.trust.headline, { word: true, t1: ho });
+    rise(ctx, TX.trust[1], 540, 1162, C.trust.headline + 0.18, { word: true, t1: ho + 0.05 });
+    // the line underscores "a natural touch."
+    const up = luxe(prog(t, C.trust.headline + 0.7, C.trust.headline + 1.2));
+    const uo = 1 - smooth(prog(t, ho, ho + 0.4));
+    if (up > 0) line(ctx, spline([[300, 1196], [420, 1188], [560, 1194], [700, 1186], [790, 1192]], 10), { b: up, alpha: uo, w: 4, glowAmt: 0.5, taper: [30, 60] });
+    TX.chips.forEach((tl, i) => {
+      const s = spring(t - C.trust.chips[i], 2.0, 0.42);
+      if (s <= 0.001) return;
+      const w = tl.width(0.2) + 70;
+      ctx.save();
+      ctx.globalAlpha = clamp(s * 3) * uo;
+      ctx.translate(i === 0 ? 312 : 786, 1300);
+      ctx.scale(s, s);
+      pill(ctx, 0, 0, w, 68, { fill: "rgba(239,232,214,0.16)", stroke: COL.cream, lw: 1.8 });
+      tl.draw(ctx, 0, 9, { tracking: 0.2, color: COL.cream });
+      ctx.restore();
+    });
+  }
+
+  // ---- S7: booking in three taps ------------------------------------------
+  const BOOK = { x: 90, y: 400, w: 900, h: 1030 };
+  const DATE_X = (i) => 192 + i * 116, DATE_Y = 760, PICK_DATE = 4;
+  const TIME_X = (i) => 240 + i * 200, TIME_Y = 905, PICK_TIME = 1;
+  const BTN = { cx: 540, cy: 1240, w: 760, h: 112 };
+  const BOOK_OUTLINE = roundRectPts(BOOK.x, BOOK.y, BOOK.w, BOOK.h, 42);
+  function sceneBook(ctx) {
+    const out = luxe(prog(t, C.book.out[0], C.book.out[1]));
+    const fill = smooth(prog(t, C.book.fill[0], C.book.fill[1]));
+    const op = luxe(prog(t, C.book.outline[0], C.book.outline[1]));
+    ctx.save();
+    ctx.translate(0, out * 120);
+    ctx.globalAlpha = 1 - out;
+    if (fill > 0) {
+      ctx.save();
+      const s = 0.97 + 0.03 * fill;
+      ctx.translate(540, BOOK.y + BOOK.h / 2);
+      ctx.scale(s, s);
+      ctx.translate(-540, -(BOOK.y + BOOK.h / 2));
+      card(ctx, BOOK.x, BOOK.y, BOOK.w, BOOK.h, { r: 42, fill: COL.creamSoft, alpha: fill });
+      ctx.restore();
+    }
+    if (op > 0) {
+      // two strokes from the top centre, meeting at the bottom
+      const o = { alpha: 1 - fill * 0.85, glowAmt: 0.6, taper: [30, 30] };
+      line(ctx, BOOK_OUTLINE, { ...o, a: 0, b: op / 2 });
+      line(ctx, BOOK_OUTLINE, { ...o, a: 1 - op / 2, b: 1 });
+    }
+    if (fill > 0.3) {
+      const c0 = C.book.fill[1];
+      eyebrow(ctx, TX.ebBook, 540, 495, c0 - 0.1, { color: COL.sageDeep, alpha: 1 });
+      rise(ctx, TX.bookTitle, 540, 600, c0, { color: COL.ink, word: true });
+      TX.days.forEach((tl, i) => {
         ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.rot);
-        ctx.strokeStyle = CREAM;
-        ctx.globalAlpha = 0.5 * (1 - rp) ** 2;
-        ctx.lineWidth = 2;
+        ctx.globalAlpha *= smooth(prog(t, c0 + 0.1 + i * 0.03, c0 + 0.4 + i * 0.03));
+        tl.draw(ctx, DATE_X(i), 690, { color: COL.inkSoft });
+        ctx.restore();
+      });
+      TX.dates.forEach((tl, i) => {
+        const s = spring(t - c0 - 0.15 - i * 0.035, 2.0, 0.5);
+        if (s <= 0.001) return;
+        const isPick = i === PICK_DATE;
+        const picked = isPick ? spring(t - C.book.dateTap, 2.2, 0.45) : 0;
+        const sq = isPick ? squish(C.book.dateTap, 0.08) : 1;
+        ctx.save();
+        ctx.translate(DATE_X(i), DATE_Y);
+        ctx.scale(s * sq, s * sq);
+        ctx.globalAlpha *= clamp(s * 3);
+        if (picked > 0) {
+          ctx.fillStyle = COL.sageDeep;
+          ctx.beginPath();
+          ctx.arc(0, 0, 46 * Math.min(picked, 1.15), 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = "rgba(110,128,104,0.35)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 46, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        tl.draw(ctx, 0, 14, { color: picked > 0.5 ? COL.cream : COL.ink });
+        ctx.restore();
+      });
+      ripple(ctx, DATE_X(PICK_DATE), DATE_Y, prog(t, C.book.dateTap, C.book.dateTap + 0.6), { rgb: "110,128,104", r0: 46, r1: 120 });
+      TX.times.forEach((tl, i) => {
+        const s = spring(t - C.book.chips - i * 0.08, 2.0, 0.42);
+        if (s <= 0.001) return;
+        const isPick = i === PICK_TIME;
+        const picked = isPick ? smooth(prog(t, C.book.timeTap, C.book.timeTap + 0.18)) : 0;
+        const sq = isPick ? squish(C.book.timeTap, 0.07) : 1;
+        ctx.save();
+        ctx.translate(TIME_X(i), TIME_Y);
+        ctx.scale(s * sq, s * sq);
+        ctx.globalAlpha *= clamp(s * 3);
+        pill(ctx, 0, 0, 168, 78, { fill: picked > 0 ? `rgba(110,128,104,${picked})` : null, stroke: COL.sageDeep, lw: 1.8 });
+        tl.draw(ctx, 0, 11, { color: picked > 0.5 ? COL.cream : COL.sageDeep });
+        ctx.restore();
+      });
+      ripple(ctx, TIME_X(PICK_TIME), TIME_Y, prog(t, C.book.timeTap, C.book.timeTap + 0.6), { rgb: "110,128,104", r0: 40, r1: 130 });
+      const hp = luxe(prog(t, C.book.timeTap + 0.15, C.book.timeTap + 0.55));
+      if (hp > 0) {
+        ctx.fillStyle = "rgba(110,128,104,0.35)";
+        ctx.fillRect(170, 1010, 740 * hp, 1.6);
+      }
+      rise(ctx, TX.sumName, 170, 1085, C.book.timeTap + 0.25, { align: "left", color: COL.ink, word: true });
+      rise(ctx, TX.sumPrice, 910, 1085, C.book.timeTap + 0.32, { align: "right", color: COL.sageDeep });
+      eyebrow(ctx, TX.sumMeta, 172, 1132, C.book.timeTap + 0.35, { color: COL.sageDeep, alpha: 1, align: "left", rules: false });
+      confirmButton(ctx);
+    }
+    ctx.restore();
+  }
+  function confirmButton(ctx) {
+    const s = spring(t - C.book.button, 1.6, 0.6);
+    if (s <= 0.001) return;
+    const tp = C.book.confirmTap;
+    const m = luxe(prog(t, C.book.morph[0], C.book.morph[1]));
+    const w = lerp(BTN.w, BTN.h, m);
+    const pop = 1 + 0.08 * Math.sin(Math.PI * prog(t, C.book.check[1], C.book.check[1] + 0.3));
+    ctx.save();
+    ctx.translate(BTN.cx, BTN.cy + (1 - s) * 200);
+    ctx.scale(squish(tp, 0.05) * pop, squish(tp, 0.05) * pop);
+    ctx.globalAlpha *= clamp(s * 2);
+    pill(ctx, 0, 0, w, BTN.h, { fill: COL.sageDeep, shadow: 0.25 });
+    const rp = prog(t, tp, tp + 0.55);
+    if (rp > 0 && rp < 1) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -BTN.h / 2, w, BTN.h, BTN.h / 2);
+      ctx.clip();
+      ctx.fillStyle = `rgba(255,255,255,${0.28 * (1 - rp)})`;
+      ctx.beginPath();
+      ctx.arc(80, 0, 40 + 600 * outCubic(rp), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    const la = 1 - smooth(prog(m, 0, 0.45));
+    if (la > 0) {
+      ctx.save();
+      ctx.globalAlpha *= la;
+      TX.confirm.draw(ctx, 0, 12, { tracking: 0.04, color: COL.cream });
+      ctx.restore();
+    }
+    const cp = luxe(prog(t, C.book.check[0], C.book.check[1]));
+    if (cp > 0) line(ctx, spline(checkPts(0, 2, 62), 10), { b: cp, w: 6, glowAmt: 0.4, taper: [8, 8] });
+    ctx.restore();
+    rise(ctx, TX.booked, 540, 1382, C.book.booked, { color: COL.sageDeep });
+  }
+
+  // ---- S8: the logo again, and the button that gets pressed ---------------
+  const LOGO2 = logoAt(1.42, 540, 330);
+  const CTA = { cx: 540, cy: 1318, h: 122 };
+  const PETALS = Array.from({ length: 24 }, (_, i) => {
+    const r = rng(500 + i * 13);
+    return { a: -Math.PI / 2 + (r() - 0.5) * 3.0, v: 650 + r() * 750, s: 17 + r() * 17, spin: (r() - 0.5) * 9, flip: 5 + r() * 7, ph: r() * 6.28, hue: r() };
+  });
+  function sceneEnd(ctx) {
+    sage(ctx);
+    // the check's stroke carries on, up into the stem
+    const cp = silk(prog(t, C.end.connect[0], C.end.connect[1] + 0.25));
+    const ret = smooth(prog(t, C.end.grow[0] + 0.2, C.end.grow[0] + 0.8));
+    if (cp > 0 && ret < 1) line(ctx, spline([[540, 1240], [610, 1180], [596, 1060], LOGO2.root], 16), { a: ret, b: cp, w: LINE_W * 0.85, tip: cp < 1 ? 1 : 0, taper: [40, 10] });
+    const D = logo.maxBirth * grow(prog(t, C.end.grow[0], C.end.grow[1]));
+    const breathe = 1 + 0.008 * Math.sin((t - C.end.grow[1]) * 1.7) * smooth(prog(t, C.end.grow[1], C.end.grow[1] + 1));
+    ctx.save();
+    ctx.translate(540, 560);
+    ctx.scale(breathe, breathe);
+    ctx.translate(-540, -560);
+    if (D > 0) logoGlow(ctx, LOGO2, D, 0.42 + 0.5 * env(t, C.end.grow[1] - 0.2, C.end.grow[1] + 0.1, C.end.grow[1] + 0.2, C.end.grow[1] + 1.2));
+    ctx.restore();
+    rise(ctx, TX.wm1, 540, 975, C.end.wordmark, { stagger: 0.03 });
+    rise(ctx, TX.wm2, 540, 1108, C.end.wordmark + 0.18, { stagger: 0.03 });
+    eyebrow(ctx, TX.ebLogo, 540, 1196, C.end.eyebrow);
+    ctaButton(ctx);
+    const ua = smooth(prog(t, C.end.url, C.end.url + 0.7));
+    if (ua > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.9 * ua;
+      TX.url.draw(ctx, 540, 1448 + 14 * (1 - lift(ua)), { tracking: 0.05, color: COL.cream });
+      ctx.restore();
+    }
+  }
+  function ctaButton(ctx) {
+    const s = spring(t - C.end.cta, 1.7, 0.45);
+    if (s <= 0.001) return;
+    const tp = C.end.tap;
+    const w = TX.cta.width(0.24) + 160;
+    const sq = squish(tp, 0.07) * (1 + 0.035 * Math.sin(Math.PI * prog(t, C.end.pulse, C.end.pulse + 0.5)));
+    const sc = sq * Math.min(1.2, s);
+    ctx.save();
+    ctx.translate(CTA.cx, CTA.cy + (1 - Math.min(s, 1)) * 160);
+    ctx.scale(sc, sc);
+    ctx.globalAlpha *= clamp(s * 3);
+    // a halo released by the press
+    const hp = prog(t, tp, tp + 0.9);
+    if (hp > 0 && hp < 1) {
+      ctx.save();
+      ctx.globalAlpha *= (1 - hp) ** 1.6 * 0.8;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = COL.cream;
+      const g = 26 * outCubic(hp) + 4;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2 - g, -CTA.h / 2 - g, w + 2 * g, CTA.h + 2 * g, CTA.h / 2 + g);
+      ctx.stroke();
+      ctx.restore();
+    }
+    pill(ctx, 0, 0, w, CTA.h, { fill: COL.creamSoft, shadow: 0.28 });
+    // the line runs once around the button, inviting the tap
+    const tr = luxe(prog(t, C.end.trace[0], C.end.trace[1]));
+    const ta = 1 - smooth(prog(t, C.end.trace[1] + 0.05, C.end.trace[1] + 0.55));
+    if (tr > 0 && ta > 0) {
+      const g = 14;
+      line(ctx, roundRectPts(-w / 2 - g, -CTA.h / 2 - g, w + 2 * g, CTA.h + 2 * g, CTA.h / 2 + g), { b: tr, alpha: ta, w: 3.4, glowAmt: 0.6, taper: [24 * (1 - tr), 36 * (1 - tr)], tip: tr < 1 ? 0.75 : 0 });
+    }
+    const rp = prog(t, tp, tp + 0.6);
+    if (rp > 0 && rp < 1) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -CTA.h / 2, w, CTA.h, CTA.h / 2);
+      ctx.clip();
+      ctx.fillStyle = `rgba(110,128,104,${0.3 * (1 - rp)})`;
+      ctx.beginPath();
+      ctx.arc(150, 8, 30 + 520 * outCubic(rp), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    const r = TX.cta.draw(ctx, -24, 11, { tracking: 0.24, color: COL.sageDeep });
+    const nudge = 10 * Math.sin(Math.PI * prog(t, tp, tp + 0.4)) + 3 * Math.sin(Math.PI * 2 * prog(t, C.end.pulse, C.end.pulse + 0.6));
+    const ax = r.x0 + r.width + 22 + nudge;
+    ctx.strokeStyle = COL.sageDeep;
+    ctx.lineWidth = 2.8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(ax, 0);
+    ctx.lineTo(ax + 32, 0);
+    ctx.moveTo(ax + 22, -9);
+    ctx.lineTo(ax + 32, 0);
+    ctx.lineTo(ax + 22, 9);
+    ctx.stroke();
+    ctx.restore();
+    // petals burst from the button
+    const pp = prog(t, tp, tp + 1.55);
+    if (pp > 0 && pp < 1) {
+      const tt = pp * 1.55;
+      // air drag: a quick burst, then a slow drifting fall
+      const d = (1 - Math.exp(-2.4 * tt)) / 2.4;
+      for (const p of PETALS) {
+        ctx.save();
+        ctx.globalAlpha = (1 - pp) ** 1.2;
+        ctx.translate(CTA.cx + Math.cos(p.a) * p.v * d + Math.sin(p.ph + tt * 4) * 14 * tt, CTA.cy + Math.sin(p.a) * p.v * d + 260 * (tt - d));
+        ctx.rotate(p.a + p.spin * tt);
+        ctx.scale(1, 0.25 + 0.75 * Math.abs(Math.cos(p.ph + p.flip * tt)));
+        ctx.shadowColor = "rgba(30,38,28,0.22)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = p.hue > 0.45 ? COL.bone : COL.sagePale;
+        // a petal: pointed tip, rounded base
         ctx.beginPath();
-        ctx.ellipse(0, 0, s.rx * (1.05 + 1.3 * outCubic(rp)), s.ry * (1.05 + 1.3 * outCubic(rp)), 0, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.moveTo(-p.s, 0);
+        ctx.quadraticCurveTo(-p.s * 0.2, -p.s * 0.62, p.s, 0);
+        ctx.quadraticCurveTo(-p.s * 0.2, p.s * 0.62, -p.s, 0);
+        ctx.fill();
         ctx.restore();
       }
     }
-    eyebrow(ctx, TX.ebStones, 540, 430, C.stones.eyebrow, C.stones.exit);
-    headline(ctx, TX.h1, 540, 560, 100, C.stones.headline, C.stones.exit);
-
-    // ---------------- steam: the line rises off the hot stone
-    const sw = C.steam.wisp;
-    if (t >= sw[0] && t < C.steam.dissolve[1] + 0.2) {
-      const P = S.STACK.topStone;
-      const an = [];
-      for (let k = 0; k <= 9; k++) {
-        const u = k / 9;
-        const y = lerp(P[1] - 70, 400, u);
-        const amp = 10 + 60 * u;
-        an.push([lerp(P[0], 590, u) + Math.sin(u * 7.5 - t * 3.2) * amp + fbm1(u * 3 + t * 0.8, 9) * 30 * u, y - smooth(prog(t, sw[1], C.steam.dissolve[1])) * 110]);
-      }
-      const pts = spline(an, 12);
-      const dp = outCubic(prog(t, sw[0], sw[1]));
-      const fade = 1 - smooth(prog(t, C.steam.dissolve[0] + 0.25, C.steam.dissolve[1]));
-      line(ctx, pts, { b: dp, alpha: fade * 0.95, w: 5.5, glowAmt: 0.7, tip: dp < 1 ? 0.8 : 0, taper: [30, 120], wf: (u) => 1 - 0.65 * u });
-    }
-
-    // ---------------- aromatherapy
-    eyebrow(ctx, TX.ebAroma, 540, 430, C.aroma.eyebrow, C.aroma.exit);
-    headline(ctx, TX.h2, 540, 560, 100, C.aroma.headline, C.aroma.exit);
-
-    // ---------------- the drop of oil
-    const D0 = C.drop;
-    if (t >= D0.thread[0] && t < C.scalp.impact + 0.6) {
-      const thread = outCubic(prog(t, D0.thread[0], D0.thread[1]));
-      const retract = inCubic(prog(t, D0.form[1] - 0.06, D0.form[1] + 0.2));
-      const yTop = -40, yEnd = lerp(yTop, 430, thread);
-      const ya = lerp(yTop, yEnd, retract);
-      if (yEnd - ya > 2) line(ctx, [[540, ya], [540, yEnd]], { w: 4, glowAmt: 0.5, taper: [40, 4] });
-      const form = smooth(prog(t, D0.form[0], D0.form[1]));
-      const fall = prog(t, D0.fall[0], D0.fall[1]);
-      if (form > 0 && t < C.scalp.impact) {
-        const g = gravity(fall);
-        const y = lerp(yEnd + 14, 1150, g);
-        const r = 7 + 21 * form;
-        const stretch = 1 + 0.35 * Math.sin(Math.PI * fall) * fall;
-        drop(ctx, 540, y, r, stretch);
-      }
-      // splash beads
-      const sp = prog(t, C.scalp.impact, C.scalp.impact + 0.55);
-      if (sp > 0 && sp < 1) {
-        const R = rng(42);
-        for (let k = 0; k < 11; k++) {
-          const ang = -Math.PI / 2 + (R() - 0.5) * 2.2;
-          const v = 520 + R() * 480;
-          const x = 540 + Math.cos(ang) * v * sp;
-          const y = 1150 + Math.sin(ang) * v * sp + 1900 * sp * sp;
-          ctx.globalAlpha = (1 - sp) * 0.9;
-          ctx.fillStyle = "rgb(255,236,196)";
-          ctx.beginPath();
-          ctx.arc(x, y, 2 + R() * 3.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
-    }
-
-    // ---------------- back, neck & scalp
-    eyebrow(ctx, TX.ebScalp, 540, 1112, C.scalp.eyebrow, C.scalp.exit);
-    headline(ctx, TX.h3, 540, 1240, 104, C.scalp.headline, C.scalp.exit);
-
-    // ---------------- the blade that opens the frame
-    const SB = C.split;
-    if (t >= SB.blade[0] && t < SB.open[1]) {
-      const bp = luxe(prog(t, SB.blade[0], SB.blade[1]));
-      const op = luxe(prog(t, SB.open[0], SB.open[1]));
-      const dy = op * (H / 2 + 80);
-      const fade = 1 - smooth(prog(t, SB.open[0] + 0.15, SB.open[1]));
-      for (const dir of op > 0 ? [-1, 1] : [0]) {
-        const y = H / 2 + dir * dy;
-        line(ctx, [[-20, y], [W + 20, y]], { b: bp, w: 4.6, glowAmt: 1.0, alpha: fade, tip: bp < 1 ? 1 : 0, taper: [200, 30] });
-      }
-    }
-
-    // ---------------- the studio
-    eyebrow(ctx, TX.ebStudio, 92, 372, C.studio.eyebrow, C.studio.exit, { color: SAGE_DEEP, align: "left", alpha: 1 });
-    {
-      const L4 = TX.triad;
-      const beats = [C.studio.lines[0], C.studio.lines[1], C.studio.lines[2], C.studio.lines[2] + 0.12];
-      L4.forEach((tl, i) => {
-        headline(ctx, [tl], 88, 492 + i * 98, 0, beats[i], C.studio.exit + i * 0.05, { align: "left", color: INK, shadow: null, stagger: 0.07 });
-      });
-    }
-
-    // ---------------- the portal: the line finds the real mirror's arch
-    const PT = C.portal;
-    if (t >= PT.trace[0] && t < PT.push[1] + 0.1) {
-      const cam = studioCam();
-      const pts = GLASS.map((p) => camPt(cam, p));
-      const tp = luxe(prog(t, PT.trace[0], PT.trace[1]));
-      // on the pale wall the line draws in sage ink, then brightens as the
-      // mirror turns to sage behind it
-      const lit = smooth(prog(t, PT.fill[0], PT.fill[1] + 0.2));
-      line(ctx, pts, { a: 0.5 - 0.5 * tp, b: 0.5 + 0.5 * tp, w: 5.5 * Math.min(cam.s, 2.5), glowAmt: 0.6 * lit, taper: [30, 30], color: mix(SAGE_DEEP, CREAM, lit) });
-    }
-
-    // ---------------- end card
-    const E = C.end;
-    if (t >= E.connect[0]) {
-      const k = 1.38, ox = 540 - 124 * k, oy = 286 - 34 * k;
-      const root = [ox + 148.6 * k, oy + 363 * k];
-      // the line arrives from below and becomes the stem
-      const cp = silk(prog(t, E.connect[0], E.connect[1]));
-      const ret = smooth(prog(t, E.grow[0] + 0.25, E.grow[0] + 0.9));
-      const cpts = [[540, H + 30], [548, 1500], [570, 1080], root];
-      const cs = spline(cpts, 16);
-      if (ret < 1) line(ctx, cs, { a: ret, b: cp, w: LINE_W * 0.85, tip: cp < 1 ? 1 : 0, glowAmt: 0.5, taper: [40, 10] });
-      const D = LOGO.maxBirth * silk(prog(t, E.grow[0], E.grow[1]));
-      const breathe = 1 + 0.008 * Math.sin((t - E.grow[1]) * 1.6) * smooth(prog(t, E.grow[1], E.grow[1] + 1));
-      ctx.save();
-      ctx.translate(540, 520);
-      ctx.scale(breathe, breathe);
-      ctx.translate(-540, -520);
-      if (D > 0) {
-        glow(ctx, layers.scratch, 14, 0.45 + 0.5 * env(t, E.grow[1] - 0.2, E.grow[1] + 0.1, E.grow[1] + 0.2, E.grow[1] + 1.2), (g) =>
-          daffodil(g, ox, oy, k, D, { color: "rgb(255,244,222)", wmul: 2 }));
-        daffodil(ctx, ox, oy, k, D);
-      }
-      ctx.restore();
-      headline(ctx, [TX.wm1, TX.wm2], 540, 920, 132, E.wordmark, 99, { stagger: 0.12, shadow: null, dur: 1.1 });
-      eyebrow(ctx, TX.ebEnd, 540, 1150, E.eyebrow, 99, { alpha: 0.9 });
-      cta(ctx);
-    }
-
-    bug(ctx);
   }
 
-  function drop(ctx, x, y, r, stretch) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(1 / Math.sqrt(stretch), stretch);
-    ctx.beginPath();
-    ctx.moveTo(0, -r * 2.1);
-    ctx.bezierCurveTo(r * 0.5, -r * 1.2, r, -r * 0.5, r, 0);
-    ctx.arc(0, 0, r, 0, Math.PI);
-    ctx.bezierCurveTo(-r, -r * 0.5, -r * 0.5, -r * 1.2, 0, -r * 2.1);
-    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.4, 1, 0, 0, r * 1.4);
-    g.addColorStop(0, "rgba(255,248,226,0.98)");
-    g.addColorStop(0.35, "rgba(240,206,140,0.95)");
-    g.addColorStop(1, "rgba(170,120,52,0.92)");
-    ctx.fillStyle = g;
-    ctx.shadowColor = "rgba(255,214,150,0.65)";
-    ctx.shadowBlur = 24;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "rgba(255,255,250,0.95)";
-    ctx.beginPath();
-    ctx.ellipse(-r * 0.36, -r * 0.3, r * 0.2, r * 0.32, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function cta(ctx) {
-    const E = C.end;
-    const p = prog(t, E.cta, E.cta + 0.9);
-    if (p <= 0) return;
-    const tr = 0.24, tw = TX.cta.width(tr) + 44; // + arrow
-    const pw = tw + 112, ph = 112, x = 540 - pw / 2, y = 1214;
-    const e = lift(p), sc = 0.94 + 0.06 * e;
-    ctx.save();
-    ctx.globalAlpha = smooth(Math.min(1, p * 1.5));
-    ctx.translate(540, y + ph / 2);
-    ctx.scale(sc, sc);
-    ctx.translate(-540, -(y + ph / 2));
-    ctx.beginPath();
-    ctx.roundRect(x, y, pw, ph, ph / 2);
-    ctx.fillStyle = CREAM;
-    ctx.fill();
-    // a slow glint across the pill
-    const gp = prog(t, E.glint, E.glint + 1.1);
-    if (gp > 0 && gp < 1) {
-      ctx.save();
-      ctx.clip();
-      const gx = lerp(x - 200, x + pw + 200, inOutSine(gp));
-      const g = ctx.createLinearGradient(gx - 120, 0, gx + 120, 0);
-      g.addColorStop(0, "rgba(255,255,255,0)");
-      g.addColorStop(0.5, "rgba(255,255,255,0.75)");
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(x, y, pw, ph);
-      ctx.restore();
-    }
-    const r = TX.cta.draw(ctx, 540 - 22, y + ph / 2 + 10.5, { tracking: tr, color: SAGE_DEEP });
-    // arrow
-    const ax = r.x0 + r.width + 20, ay = y + ph / 2 - 0.5;
-    const ap = outCubic(prog(t, E.cta + 0.35, E.cta + 1.1));
-    ctx.strokeStyle = SAGE_DEEP;
-    ctx.lineWidth = 2.6;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(ax, ay);
-    ctx.lineTo(ax + 30 * ap, ay);
-    ctx.moveTo(ax + 30 * ap - 9, ay - 8 * ap);
-    ctx.lineTo(ax + 30 * ap, ay);
-    ctx.lineTo(ax + 30 * ap - 9, ay + 8 * ap);
-    ctx.stroke();
-    ctx.restore();
-    const up = prog(t, E.cta + 0.3, E.cta + 1.2);
-    ctx.save();
-    ctx.globalAlpha = 0.86 * smooth(up);
-    TX.url.draw(ctx, 540, 1408 + 14 * (1 - lift(up)), { tracking: 0.05, color: CREAM });
-    ctx.restore();
-  }
-
-  function bug(ctx) {
-    const a = env(t, C.stones.eyebrow - 0.2, C.stones.eyebrow + 0.8, C.portal.push[0], C.portal.push[0] + 0.4) * 0.78;
-    if (a <= 0) return;
-    const onLight = env(t, C.split.open[0] + 0.3, C.split.open[1], C.portal.fill[0], C.portal.fill[1]);
-    const col = mix("#EFE8D6", "#5A6149", onLight);
-    const tr = 0.42, tw = TX.bug.width(tr), k = 0.13;
-    const gw = 208 * k, total = gw + 16 + tw, x0 = 540 - total / 2, y = 244;
-    ctx.save();
-    ctx.globalAlpha = a;
-    daffodil(ctx, x0 - 21 * k, y - 26 - 34 * k - 4, k, 1e9, { color: col, wmul: 1.25 });
-    TX.bug.draw(ctx, x0 + gw + 16, y - 6, { align: "left", tracking: tr, color: col });
-    ctx.restore();
-  }
-
-  // ================================================================ FRAME
+  // =================================================================== FRAME
   function render(time) {
     t = time;
-    U = { uMode: 0, uProg: 0, uZoom: 0, uZC: [540, 960], uHeatAmt: 0, uHeat: [0, 0, 0, 0], uC: [540, 1150], uRT: 0, uSeedX: 590, uGrain: 0.022, uVig: 0.24, uFade: 0 };
-    let useB = false;
-    clear(A);
-    clear(O);
-    if (t < C.stones.zoomOut[0]) {
-      night(A);
-      band(A);
-    } else if (t < C.steam.dissolve[1]) {
-      stack(A);
-      if (t >= C.steam.dissolve[0]) {
-        clear(B);
-        aroma(B);
-        useB = true;
-        U.uMode = 1;
-        U.uProg = inOutSine(prog(t, C.steam.dissolve[0], C.steam.dissolve[1]));
-        leak(A, 590, 700, 800, 0.25 * env(t, C.steam.dissolve[0], C.steam.dissolve[0] + 0.4, C.steam.dissolve[1] - 0.3, C.steam.dissolve[1]));
-      }
-    } else if (t < C.scalp.impact) {
-      aroma(A);
-    } else if (t < C.scalp.impact + 0.95) {
-      aroma(A);
-      clear(B);
-      scalp(B);
-      useB = true;
-      U.uMode = 2;
-      U.uRT = t - C.scalp.impact;
-      U.uC = [540, 1150];
-    } else if (t < C.split.open[0]) {
-      scalp(A);
-    } else if (t < C.split.open[1]) {
-      split(A);
-    } else if (t < C.portal.push[1]) {
-      studio(A);
-      // the last instant of the push dissolves into the end card, so the
-      // blurred mirror frame never pops at the cut
-      const x = smooth(prog(t, C.portal.push[1] - 0.18, C.portal.push[1]));
-      if (x > 0) {
-        A.save();
-        A.globalAlpha = x;
-        endCard(A);
-        A.restore();
-      }
+    U = { uGrain: 0.02, uVig: 0.2, uFade: 1 - smooth(prog(t, 0, 0.3)), uDir: [0, 0] };
+    wipe(A);
+    wipe(O);
+    const ar = C.arch, pu = C.push, mx = C.menu.expand;
+    if (t < ar.fill[1]) {
+      sceneLogo(A);
+      const hand = smooth(prog(t, ar.fill[1] - 0.4, ar.fill[1]));
+      archPanel(A, smooth(prog(t, ar.fill[0], ar.fill[1])), luxe(prog(t, ar.draw[0], ar.draw[1])), 1 - hand, 0.35 * hand);
+    } else if (t < pu[0]) {
+      sceneGlow(A);
+    } else if (t < pu[1]) {
+      // push: S2 leaves left as S3 arrives; the frame streaks with speed
+      const p = luxe(prog(t, pu[0], pu[1]));
+      A.save();
+      A.translate(-W * p, 0);
+      sceneGlow(A);
+      A.restore();
+      A.save();
+      A.translate(W * (1 - p), 0);
+      sceneMenu(A);
+      A.restore();
+      U.uDir = [70 * Math.sin(Math.PI * prog(t, pu[0], pu[1])), 0];
+    } else if (t < mx[0]) {
+      sceneMenu(A);
+    } else if (t < mx[1]) {
+      const p = prog(t, mx[0], mx[1]);
+      sceneMenu(A, p);
+      sceneStones(A, p);
+    } else if (t < C.stones.iris[1]) {
+      sceneStones(A, 1);
+      if (t >= C.stones.circle[0]) iris(A);
+    } else if (t < C.jar.shrink[1]) {
+      sceneJar(A);
+    } else if (t < C.book.outline[0]) {
+      sceneTrust(A);
+    } else if (t < C.trust.out[1] + 0.3) {
+      sceneTrust(A);
+      sceneBook(A);
+    } else if (t < C.end.connect[0]) {
+      sage(A);
+      sceneBook(A);
+    } else if (t < C.book.out[1]) {
+      // the end card is already starting underneath as the booking card leaves
+      sceneEnd(A);
+      sceneBook(A);
     } else {
-      endCard(A);
+      sceneEnd(A);
     }
-    overlay(O);
-    U.uFade = 1 - smooth(prog(t, 0, 0.22));
-    // the frame itself relaxes: a tight vignette opens as the shoulders drop
-    if (t < C.morph[1]) U.uVig = lerp(0.42, 0.24, smooth(prog(t, C.hook.release, C.hook.release + 1.2)));
-    if (t >= C.portal.push[1]) U.uVig = 0.16;
-    return { U, useB };
+    // the fingertip that does the tapping
+    if (t >= C.menu.tapIn && t < C.menu.tap + 0.8) {
+      const r = CARD(PICK);
+      finger(O, [{ t: C.menu.tapIn, x: 900, y: 1700 }, { t: C.menu.tap - 0.12, x: 790, y: r.y + r.h / 2 + 10 }], [C.menu.tap], C.menu.tapIn, C.menu.tap + 0.7);
+      ripple(O, 790, r.y + r.h / 2 + 10, prog(t, C.menu.tap, C.menu.tap + 0.6));
+    }
+    if (t >= C.book.fill[1] && t < C.book.confirmTap + 0.8) {
+      finger(O, [
+        { t: C.book.fill[1], x: 900, y: 1650 },
+        { t: C.book.dateTap - 0.12, x: DATE_X(PICK_DATE), y: DATE_Y + 6 },
+        { t: C.book.timeTap - 0.12, x: TIME_X(PICK_TIME), y: TIME_Y + 6 },
+        { t: C.book.confirmTap - 0.12, x: BTN.cx + 80, y: BTN.cy + 6 },
+      ], [C.book.dateTap, C.book.timeTap, C.book.confirmTap], C.book.fill[1], C.book.confirmTap + 0.7);
+    }
+    if (t >= C.end.tapIn && t < C.end.tap + 0.8) {
+      finger(O, [{ t: C.end.tapIn, x: 860, y: 1640 }, { t: C.end.tap - 0.12, x: 690, y: CTA.cy + 8 }], [C.end.tap], C.end.tapIn, C.end.tap + 0.55);
+      ripple(O, 690, CTA.cy + 8, prog(t, C.end.tap, C.end.tap + 0.7), { r1: 190 });
+    }
+    return { U, useB: false };
   }
 
   return { duration: C.duration, render };

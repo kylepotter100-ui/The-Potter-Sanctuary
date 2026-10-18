@@ -1,8 +1,8 @@
 // Frame renderer: serves the repo over localhost (WebGL refuses file://
 // textures), drives headless Chromium, and captures every frame.
 //
-//   node render.mjs stills  --times 0.5,1.6,4.8 --out DIR
-//   node render.mjs frames  --fps 60 --out DIR [--from 0 --to 25] [--workers 4]
+//   node render.mjs stills  --times 0.5,1.6,4.8 --out DIR [--page index.html]
+//   node render.mjs frames  --fps 60 --out DIR [--from 0 --to 30] [--workers 4]
 //
 // Playwright is resolved from the global install the container ships with;
 // set PLAYWRIGHT_MODULE to point elsewhere.
@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(p).pipe(res);
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const url = `http://127.0.0.1:${server.address().port}/design/social-ad/src/index.html`;
+const url = `http://127.0.0.1:${server.address().port}/design/social-ad/src/${arg("page", "index.html")}`;
 
 async function openPage() {
   const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--disable-gpu-sandbox"] });
@@ -78,18 +78,24 @@ if (mode === "stills") {
   const skip = rest.includes("--resume");
   let next = first, done = 0;
   const t0 = Date.now();
+  // Workers take runs of consecutive frames, so per-page caches (the 3D
+  // imagery renders at 30 fps) are reused across neighbouring frames.
+  const CHUNK = 24;
   await Promise.all(
     Array.from({ length: workers }, async () => {
       const { browser, shot } = await openPage();
       for (;;) {
-        const f = next++;
-        if (f > last) break;
-        const file = path.join(out, `${String(f).padStart(5, "0")}.png`);
-        if (skip && fs.existsSync(file)) continue;
-        fs.writeFileSync(file, await shot(f / fps, f));
-        if (++done % 30 === 0) {
-          const rate = done / ((Date.now() - t0) / 1000);
-          console.log(`${done}/${last - first + 1} frames  ${rate.toFixed(2)} fps  eta ${((last - first + 1 - done) / rate).toFixed(0)}s`);
+        const start = next;
+        next += CHUNK;
+        if (start > last) break;
+        for (let f = start; f < Math.min(start + CHUNK, last + 1); f++) {
+          const file = path.join(out, `${String(f).padStart(5, "0")}.png`);
+          if (skip && fs.existsSync(file)) continue;
+          fs.writeFileSync(file, await shot(f / fps, f));
+          if (++done % 60 === 0) {
+            const rate = done / ((Date.now() - t0) / 1000);
+            console.log(`${done}/${last - first + 1} frames  ${rate.toFixed(2)} fps  eta ${((last - first + 1 - done) / rate).toFixed(0)}s`);
+          }
         }
       }
       await browser.close();
