@@ -1,0 +1,14 @@
+{
+  "duration": 25.0,
+  "hook": { "draw": [0.12, 1.05], "text": 0.38, "release": 1.55, "exit": 2.3, "breathe": 2.86, "breatheExit": 3.62 },
+  "morph": [3.2, 4.3],
+  "stones": { "eyebrow": 4.08, "land": [4.42, 4.64, 4.86, 5.08], "develop": [5.08, 6.15], "headline": 5.32, "zoomIn": [6.55, 7.0], "zoomOut": [7.0, 7.55], "exit": 8.3 },
+  "steam": { "wisp": [8.35, 9.0], "dissolve": [8.62, 9.62] },
+  "aroma": { "eyebrow": 9.3, "headline": 9.5, "exit": 12.1 },
+  "drop": { "thread": [12.28, 12.56], "form": [12.5, 12.76], "fall": [12.76, 13.16] },
+  "scalp": { "impact": 13.16, "eyebrow": 13.55, "headline": 13.72, "exit": 15.72 },
+  "split": { "blade": [15.94, 16.3], "open": [16.26, 16.98] },
+  "studio": { "eyebrow": 16.7, "lines": [16.86, 17.42, 17.98], "exit": 19.12 },
+  "portal": { "trace": [19.28, 19.86], "fill": [19.7, 20.0], "push": [19.74, 20.56] },
+  "end": { "connect": [20.3, 20.72], "grow": [20.5, 21.95], "wordmark": 21.5, "eyebrow": 22.05, "cta": 22.42, "glint": 23.35 }
+}
