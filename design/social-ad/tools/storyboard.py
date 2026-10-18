@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 BEATS = [
     (1.3, "The logo draws itself"), (3.3, "The Potter Sanctuary"), (4.55, "An arch fills with cream"), (7.6, "Relax. Restore. Glow."),
     (9.2, "The treatment menu"), (9.97, "A tap on Hot Stones"), (10.75, "The card opens"), (13.0, "Hot stones, rendered"),
-    (14.6, "The line closes the room"), (17.4, "Whipped, plant-based"), (20.6, "Clarins-trained"), (23.4, "Date and time"),
+    (14.6, "The line closes the room"), (17.5, "Whipped, plant-based"), (20.6, "Clarins-trained"), (23.4, "Date and time"),
     (24.95, "Booked"), (26.0, "The daffodil regrows"), (28.5, "Book your quiet hour"), (29.6, "End card"),
 ]
 

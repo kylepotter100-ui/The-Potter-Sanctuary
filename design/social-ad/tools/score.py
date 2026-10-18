@@ -274,7 +274,7 @@ MELODY = [
     (6, "F#5", 0.62), (7, "E5", 0.6), (8, "D5", 0.62), (9.5, "A4", 0.45),         # relax · restore · glow
     (10, "B4", 0.56), (11.5, "D5", 0.5), (12, "E5", 0.6), (13, "D5", 0.5),        # menu, the tap
     (14, "F#5", 0.66), (16, "E5", 0.55), (17, "C#5", 0.5),                        # the stone lands
-    (18.5, "D5", 0.56), (19.5, "E5", 0.56), (20.5, "F#5", 0.6),                    # whipped · plant-based · small-batch
+    (18.5, "D5", 0.56), (19.25, "E5", 0.56), (20.0, "F#5", 0.6),                   # whipped · plant-based · small-batch
     (22, "B5", 0.6), (24, "A5", 0.55), (25, "F#5", 0.5),                          # trust
     (26, "G5", 0.55), (27, "F#5", 0.57), (28, "E5", 0.57), (29, "D5", 0.6),       # date · time · confirm
     (30, "A5", 0.62), (33, "F#5", 0.5),                                           # the logo again
@@ -306,7 +306,7 @@ gliss(0.95, 1.62, "D4", 8)
 gliss(C["arch"]["fill"][0] + 0.1, C["arch"]["fill"][1] - 0.05, "F#4", 9)
 gliss(C["menu"]["expand"][0] + 0.05, C["menu"]["expand"][1] - 0.1, "A3", 9, amp=0.14)
 gliss(C["stones"]["iris"][0], C["stones"]["iris"][1] - 0.05, "D4", 9)
-gliss(C["book"]["out"][0], C["end"]["grow"][0] + 0.05, "F#4", 7, amp=0.14)
+gliss(C["book"]["check"][1] + 0.1, C["end"]["grow"][0] + 0.05, "F#4", 7, amp=0.14)
 
 # ----------------------------------------------------------- sound design
 H = C
@@ -325,7 +325,7 @@ add(ui_tap(hz("E5")), H["menu"]["tap"], 0.30, 0.15, 0.25)
 add(whoosh(0.85, 260, 2200, 0.9, 0.7), H["menu"]["expand"][0], 0.06, 0, 0.3)
 add(bell(hz("A6"), 2.6, 1.0), H["menu"]["expand"][1] - 0.1, 0.03, 0.3, 0.7)
 add(clack(), H["stones"]["drop"], 0.30, 0, 0.35)
-add(pop(hz("A5")), H["stones"]["card"] + 0.7, 0.08, 0.4, 0.3)
+add(pop(hz("A5")), H["stones"]["card"] + 0.55, 0.08, 0.4, 0.3)
 add(shimmer_line(0.55), H["stones"]["circle"][0], 0.015, 0, 0.6)
 add(whoosh(0.7, 2400, 300, 0.9, 0.35), H["stones"]["iris"][0], 0.06, 0, 0.3)
 add(bell(hz("F#6"), 3.0, 1.2), H["stones"]["iris"][1], 0.035, -0.2, 0.7)

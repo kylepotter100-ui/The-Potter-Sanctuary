@@ -6,7 +6,7 @@ involved.**
 
 | | |
 |---|---|
-| Master | `out/the-potter-sanctuary-reel-9x16.mp4` |
+| Master | `out/the-potter-sanctuary-reel-9x16.mp4` (34 MB) |
 | Cover frame | `out/the-potter-sanctuary-reel-9x16-cover.jpg` (the end card) |
 | Storyboard | `out/storyboard.jpg`: the sixteen key beats on one page, for sign-off |
 | Format | 1080 × 1920 (9:16), 30.0 s, 30 fps |
@@ -34,7 +34,7 @@ rendered in code. Picture and music share one 72 BPM grid
 | 10.3–11.1 | Card opens | The card grows to full screen, revealing the 3D set through its window | | |
 | 11.1–13.9 | **Hot stones** | | Rendered basalt stack on a cream plinth in a sage arched niche, under leaf shadows. The top stone lands on the downbeat and the camera drifts. A caption card springs up with a £60 price pill | HOT STONES · 60 MIN · *Heat travels where / pressure alone cannot reach.* |
 | 13.9–15.0 | Iris | The line draws a circle and the room closes to it, opening onto a whipped body butter seen from above | | |
-| 15.0–18.4 | **Products** | | Elastic words, one per beat; a pill slides in on a spring; the dish shrinks into a badge | *Whipped. Plant-based. Small-batch.* · MADE BY PRECYSE BY NATURE |
+| 15.0–18.4 | **Products** | | Elastic words, each landing on a melody note; a pill slides in on a spring; the dish shrinks into a badge | *Whipped. Plant-based. Small-batch.* · MADE BY PRECYSE BY NATURE |
 | 18.3–21.6 | **Trust** | The line draws the badge's rings, then underlines the headline | Rotating circular type, five stars that pop in one by one, masked headline, chips that spring in. The badge flies off as the next card is drawn | FIVE-STAR CARE · PLANT-BASED · ONE GUEST AT A TIME · *Clarins* TRAINED · *A trained hand, / a natural touch.* · 1:1 PRIVATE STUDIO · BY APPOINTMENT |
 | 21.2–25.3 | **Booking in three taps** | The line draws the booking card out from its top centre, then the check mark | Dates spring in and Fri 16 is tapped; time chips spring in and 11:30 is tapped; the summary rises in. The *Confirm booking* button is pressed, ripples, and morphs into a circle with a check | BOOK ONLINE · *Choose a time.* · Hot Stones Full Body £60 · *You're booked.* |
 | 25.0–30.0 | **The logo + CTA** | The check's stroke carries on upward into the stem and the daffodil grows again; then the line runs once around the CTA | The CTA springs in and is tapped on the downbeat. The press triggers an inner ripple, a halo, an arrow nudge and a burst of fluttering petals. The URL rises in, then a final pulse | *The Potter Sanctuary* · **BOOK YOUR QUIET HOUR →** · thepottersanctuary.co.uk |

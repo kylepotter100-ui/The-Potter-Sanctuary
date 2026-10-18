@@ -225,8 +225,8 @@ export function createFilm({ W, H, logo, cues: C, layers, b3, gobo, scale3d }) {
   }
 
   /** Fingertip choreography: glides between keys [{t,x,y}] in arcs, dips on taps,
-   *  then lifts away down-right after the last key so it never hides the result. */
-  function finger(ctx, keys, taps, tIn, tOut) {
+   *  then lifts away along `exit` after the last key so it never hides the result. */
+  function finger(ctx, keys, taps, tIn, tOut, exit = [150, 230]) {
     const a = env(t, tIn, tIn + 0.25, tOut - 0.25, tOut);
     if (a <= 0) return;
     let x = keys[0].x, y = keys[0].y;
@@ -243,8 +243,8 @@ export function createFilm({ W, H, logo, cues: C, layers, b3, gobo, scale3d }) {
       }
     }
     if (t > last.t) {
-      x += 150 * away;
-      y += 230 * away;
+      x += exit[0] * away;
+      y += exit[1] * away;
     }
     let press = 0;
     for (const tp of taps) press = Math.max(press, env(t, tp - 0.1, tp, tp + 0.04, tp + 0.22));
@@ -446,10 +446,10 @@ export function createFilm({ W, H, logo, cues: C, layers, b3, gobo, scale3d }) {
     ctx.globalAlpha = clamp(s * 2) * (1 - out);
     ctx.translate(0, (1 - s) * 220 + out * 160);
     card(ctx, 70, 1120, 940, 310, { r: 38, fill: COL.creamSoft, shadow: 0.25 });
-    eyebrow(ctx, TX.ebStones, 120, 1192, C.stones.card + 0.15, { color: COL.sageDeep, alpha: 1, align: "left", rules: false });
-    rise(ctx, TX.stonesLines[0], 118, 1290, C.stones.card + 0.3, { align: "left", color: COL.ink, word: true });
-    rise(ctx, TX.stonesLines[1], 118, 1372, C.stones.card + 0.45, { align: "left", color: COL.ink, word: true });
-    const ps = spring(t - (C.stones.card + 0.7), 2.0, 0.4);
+    eyebrow(ctx, TX.ebStones, 120, 1192, C.stones.card + 0.05, { color: COL.sageDeep, alpha: 1, align: "left", rules: false });
+    rise(ctx, TX.stonesLines[0], 118, 1290, C.stones.card + 0.15, { align: "left", color: COL.ink, word: true });
+    rise(ctx, TX.stonesLines[1], 118, 1372, C.stones.card + 0.27, { align: "left", color: COL.ink, word: true });
+    const ps = spring(t - (C.stones.card + 0.55), 2.0, 0.4);
     if (ps > 0.001) {
       ctx.translate(868, 1182);
       ctx.scale(ps, ps);
@@ -911,10 +911,10 @@ export function createFilm({ W, H, logo, cues: C, layers, b3, gobo, scale3d }) {
         { t: C.book.dateTap - 0.12, x: DATE_X(PICK_DATE), y: DATE_Y + 6 },
         { t: C.book.timeTap - 0.12, x: TIME_X(PICK_TIME), y: TIME_Y + 6 },
         { t: C.book.confirmTap - 0.12, x: BTN.cx + 80, y: BTN.cy + 6 },
-      ], [C.book.dateTap, C.book.timeTap, C.book.confirmTap], C.book.fill[1], C.book.confirmTap + 0.7);
+      ], [C.book.dateTap, C.book.timeTap, C.book.confirmTap], C.book.fill[1], C.book.confirmTap + 0.7, [260, 40]);
     }
     if (t >= C.end.tapIn && t < C.end.tap + 0.8) {
-      finger(O, [{ t: C.end.tapIn, x: 860, y: 1640 }, { t: C.end.tap - 0.12, x: 690, y: CTA.cy + 8 }], [C.end.tap], C.end.tapIn, C.end.tap + 0.55);
+      finger(O, [{ t: C.end.tapIn, x: 860, y: 1640 }, { t: C.end.tap - 0.12, x: 690, y: CTA.cy + 8 }], [C.end.tap], C.end.tapIn, C.end.tap + 0.55, [230, 160]);
       ripple(O, 690, CTA.cy + 8, prog(t, C.end.tap, C.end.tap + 0.7), { r1: 190 });
     }
     return { U, useB: false };
