@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { services } from "@/lib/services";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -29,6 +30,7 @@ function formatTime(t: string): string {
 
 type BookingRow = {
   id: string;
+  treatment_id: string;
   treatment_name: string;
   treatment_price: number | null;
   duration_minutes: number | null;
@@ -86,7 +88,7 @@ export default async function AccountPage({
     const { data: bookings } = await supabaseAdmin
       .from("bookings")
       .select(
-        "id, treatment_name, treatment_price, duration_minutes, booking_date, booking_time, status"
+        "id, treatment_id, treatment_name, treatment_price, duration_minutes, booking_date, booking_time, status"
       )
       .eq("customer_id", customer.id)
       .order("booking_date", { ascending: false })
@@ -237,11 +239,23 @@ export default async function AccountPage({
                     {cancelled ? " · cancelled" : ""}
                   </div>
                 </div>
-                {!cancelled && (
-                  <div className="bk-right">
+                <div className="bk-right">
+                  {!cancelled && (
                     <span className="pill pill-consult-ok">✓ Attended</span>
-                  </div>
-                )}
+                  )}
+                  {(() => {
+                    const svc = services.find((x) => x.bookingId === b.treatment_id);
+                    return svc ? (
+                      <Link
+                        href={`/services/${svc.slug}#booking`}
+                        className="btn btn-ghost btn-sm"
+                        data-testid="book-again"
+                      >
+                        Book again
+                      </Link>
+                    ) : null;
+                  })()}
+                </div>
               </div>
             );
           })

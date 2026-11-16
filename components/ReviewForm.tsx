@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { siteConfig } from "@/lib/site";
 
 type Props = {
   bookingId: string;
@@ -47,13 +48,39 @@ export default function ReviewForm({ bookingId }: Props) {
   }
 
   if (done) {
+    const askGoogle = rating >= 4 && !!siteConfig.googleReviewUrl;
     return (
       <div className="review-success">
         <div className="review-success-icon" aria-hidden="true">
           ✓
         </div>
         <h2>Thank you for your feedback.</h2>
-        <p>It helps us refine the sanctuary experience.</p>
+        {askGoogle ? (
+          <>
+            <p>
+              We&apos;re so glad you enjoyed it. Would you share a few words on
+              Google too? It makes a real difference to a small studio — and
+              helps others find us.
+            </p>
+            <a
+              href={siteConfig.googleReviewUrl}
+              className="login-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="google-review"
+              style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+            >
+              Leave a Google review
+            </a>
+          </>
+        ) : rating > 0 && rating <= 3 ? (
+          <p>
+            Thank you for being honest — we read every word, and we&apos;ll be
+            in touch personally.
+          </p>
+        ) : (
+          <p>It helps us refine the sanctuary experience.</p>
+        )}
       </div>
     );
   }

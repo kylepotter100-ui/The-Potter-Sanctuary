@@ -44,6 +44,9 @@ export const siteConfig = {
   // late changes are still allowed online until 15 minutes before, but are
   // flagged to the owner and shown to the client).
   noticeHours: 12,
+  // Google Business Profile "Ask for reviews" link. When set, clients who
+  // rate a visit 4–5 stars are invited to share it on Google. Empty = hidden.
+  googleReviewUrl: (process.env.NEXT_PUBLIC_GOOGLE_REVIEW_URL ?? "") as string,
   logo: "/sanctuary-logo.png",
   // Full studio address. Only ever shown to clients with a booking (emails,
   // calendar invites) — the public site says "address shared on booking".

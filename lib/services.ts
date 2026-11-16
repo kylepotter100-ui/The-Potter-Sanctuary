@@ -23,6 +23,8 @@ export type Service = {
   bookingId: string;
   /** schema.org serviceType — what a search engine should call this. */
   serviceType: string;
+  /** Short after-care tips sent after the visit (owner to review wording). */
+  aftercare: string[];
   seo: {
     title: string;
     description: string;
@@ -67,6 +69,12 @@ export const services: Service[] = [
     reverse: false,
     bookingId: "full-body-aromatherapy",
     serviceType: "Aromatherapy massage",
+    aftercare: [
+      "Drink plenty of water over the rest of the day.",
+      "If you can, leave the oils on your skin for a few hours before showering.",
+      "Some essential oils make skin more sensitive to sunlight — skip sunbeds and strong sun for the rest of the day.",
+      "Keep the evening quiet if you can; it helps the calm last.",
+    ],
     seo: {
       title:
         "Aromatherapy Massage in Beck Row, Suffolk",
@@ -117,6 +125,12 @@ export const services: Service[] = [
     reverse: true,
     bookingId: "back-neck-scalp",
     serviceType: "Back, neck and scalp massage",
+    aftercare: [
+      "Drink plenty of water over the rest of the day.",
+      "Any tenderness where we eased knots usually settles within a day or two.",
+      "To lift oil from your hair, massage shampoo into dry hair before wetting it.",
+      "Gentle shoulder rolls through the day help keep tension from creeping back.",
+    ],
     seo: {
       title:
         "Back, Neck & Scalp Massage in Beck Row",
@@ -166,6 +180,12 @@ export const services: Service[] = [
     reverse: false,
     bookingId: "hot-stones-full",
     serviceType: "Hot stone massage",
+    aftercare: [
+      "Drink plenty of water over the rest of the day.",
+      "Avoid hot baths, saunas and steam rooms for the rest of the day.",
+      "Heat therapy can leave you sleepy — give yourself an easy evening.",
+      "If you feel light-headed, sit for a moment and have a glass of water.",
+    ],
     seo: {
       title:
         "Hot Stone Massage in Beck Row, Suffolk",
@@ -214,6 +234,12 @@ export const services: Service[] = [
     reverse: true,
     bookingId: "hot-stones-back",
     serviceType: "Hot stone back massage",
+    aftercare: [
+      "Drink plenty of water over the rest of the day.",
+      "Avoid hot baths, saunas and steam rooms for the rest of the day.",
+      "Heat therapy can leave you sleepy — give yourself an easy evening.",
+      "Any tenderness in the back usually settles within a day or two.",
+    ],
     seo: {
       title:
         "Hot Stone Back Massage in Beck Row",
@@ -245,4 +271,13 @@ export function durationMinutesForTreatmentId(
 ): number | null {
   const match = services.find((s) => s.bookingId === treatmentId);
   return match ? match.durationMinutes : null;
+}
+
+/** Aftercare tips + a rebook link (treatment page, widget preselected). */
+export function postVisitExtras(treatmentId: string, siteUrl: string) {
+  const s = services.find((x) => x.bookingId === treatmentId);
+  return {
+    aftercare: s?.aftercare ?? [],
+    rebookUrl: s ? `${siteUrl}/services/${s.slug}#booking` : `${siteUrl}/#booking`,
+  };
 }
