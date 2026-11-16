@@ -6,6 +6,7 @@ import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
+import { postVisitExtras } from "@/lib/services";
 import { customerHasReviewed } from "@/lib/reviews";
 import { formatLongDate } from "@/lib/format";
 
@@ -172,6 +173,7 @@ export async function POST(
           visitDate: formatLongDate(booking.booking_date),
           bookingId: booking.id,
           siteUrl,
+          ...postVisitExtras(booking.treatment_id as string, siteUrl),
         })
       );
       const result = await sendCustomerEmail(resend, booking.id, {

@@ -5,7 +5,7 @@ import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
-import { durationMinutesForTreatmentId } from "@/lib/services";
+import { durationMinutesForTreatmentId, postVisitExtras } from "@/lib/services";
 import { customerHasReviewed } from "@/lib/reviews";
 import { addDaysIso, ukWallTimeToUtc } from "@/lib/uk-time";
 import { formatLongDate } from "@/lib/format";
@@ -135,6 +135,7 @@ export async function GET(req: Request) {
           visitDate: formatLongDate(b.booking_date),
           bookingId: b.id,
           siteUrl,
+          ...postVisitExtras(b.treatment_id as string, siteUrl),
         })
       );
       const result = await sendCustomerEmail(resend, b.id, {

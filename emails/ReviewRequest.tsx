@@ -5,6 +5,7 @@ import {
   INK_SOFT,
   Paragraph,
   SectionHeading,
+  Divider,
 } from "./_shared";
 
 type Props = {
@@ -13,6 +14,10 @@ type Props = {
   visitDate: string;
   bookingId: string;
   siteUrl: string;
+  /** Short after-care tips for this treatment (lib/services.ts). */
+  aftercare?: string[];
+  /** Link to rebook the same treatment (its page, booking widget preselected). */
+  rebookUrl?: string | null;
 };
 
 export default function ReviewRequest({
@@ -21,6 +26,8 @@ export default function ReviewRequest({
   visitDate,
   bookingId,
   siteUrl,
+  aftercare = [],
+  rebookUrl = null,
 }: Props) {
   const reviewUrl = `${siteUrl}/review?booking=${encodeURIComponent(
     bookingId
@@ -29,6 +36,17 @@ export default function ReviewRequest({
   return (
     <EmailLayout siteUrl={siteUrl} preview={`How was your ${treatmentName}?`}>
       <ContentSection>
+        {aftercare.length > 0 && (
+          <>
+            <SectionHeading>Looking after yourself today</SectionHeading>
+            <ul style={{ margin: "0 0 18px", paddingLeft: 20, color: INK_SOFT, fontSize: 15, lineHeight: 1.7 }}>
+              {aftercare.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            <Divider />
+          </>
+        )}
         <SectionHeading>How was your session?</SectionHeading>
         <Paragraph>
           Dear {firstName}, thank you for visiting The Potter Sanctuary on{" "}
@@ -50,6 +68,17 @@ export default function ReviewRequest({
         >
           It only takes a minute. Thank you.
         </p>
+        {rebookUrl && (
+          <>
+            <Divider />
+            <SectionHeading>When you&apos;re ready for the next one</SectionHeading>
+            <Paragraph>
+              Regular sessions help the benefits build. Your favourite times go
+              quickly — book your next {treatmentName} whenever suits you.
+            </Paragraph>
+            <CtaButton href={rebookUrl} label={`Book another ${treatmentName}`} variant="outline" />
+          </>
+        )}
       </ContentSection>
     </EmailLayout>
   );
