@@ -104,6 +104,10 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
               {customer.email ?? "No email"}
               {customer.phone_number ? ` · ${customer.phone_number}` : ""}
               {customer.gender ? ` · ${customer.gender}` : ""}
+              {" · "}
+              <span data-testid="marketing-status">
+                {profile.marketingOptIn ? "Opted in to offers & reminders" : "No marketing emails"}
+              </span>
             </p>
           </div>
           <Link href={`/admin/bookings/new?client=${customer.id}`} className="btn">

@@ -34,6 +34,8 @@ type Payload = {
   voucherCode?: string;
   // Cloudflare Turnstile token from the widget on step 3.
   turnstileToken?: string | null;
+  // Unticked-by-default "send me offers and a rebook reminder" box.
+  marketingOptIn?: boolean;
 };
 
 // Booking budgets. A real customer books once or twice; these stop a script
@@ -271,6 +273,7 @@ export async function POST(req: Request) {
         message: payload.message,
         detailsUnchanged: payload.detailsUnchanged ?? null,
         voucher: claimedVoucher,
+        marketingOptIn: payload.marketingOptIn === true,
       },
       {
         status: autoConfirm ? "confirmed" : "pending",

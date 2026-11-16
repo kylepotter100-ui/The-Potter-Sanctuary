@@ -70,6 +70,11 @@ export default {
       if (hour >= 6 && hour <= 8) {
         routes.push("/api/cron/morning-summary");
       }
+      // Marketing rebook nudges: once a day mid-morning (claim-then-send makes
+      // a repeat run in the same window a no-op).
+      if (hour === 10) {
+        routes.push("/api/cron/rebook-reminders");
+      }
 
       const results = await Promise.allSettled(
         routes.map((path) =>
