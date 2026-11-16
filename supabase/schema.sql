@@ -439,3 +439,11 @@ BEGIN
       CHECK (attendance IN ('attended', 'no_show') OR attendance IS NULL);
   END IF;
 END$$;
+
+-- ===== Marketing consent + rebook reminders (November 2026) =====
+-- Mirrors supabase/migrations/20261118_marketing_consent.sql.
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS marketing_opt_in boolean NOT NULL DEFAULT false;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS marketing_opt_in_at timestamptz;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS unsubscribe_token uuid NOT NULL DEFAULT gen_random_uuid();
+CREATE UNIQUE INDEX IF NOT EXISTS customers_unsubscribe_token_key ON public.customers (unsubscribe_token);
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS rebook_reminder_sent_at timestamptz;

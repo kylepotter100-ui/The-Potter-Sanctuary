@@ -118,6 +118,8 @@ export default function Booking({ preselectId }: Props) {
   const [turnstileReset, setTurnstileReset] = useState(0);
   // Instantly confirmed (owner's AUTO_CONFIRM setting) vs awaiting confirmation.
   const [confirmedNow, setConfirmedNow] = useState(false);
+  // Marketing consent — UNTICKED by default (UK PECR: opt-in only).
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [hasPriorConsultation, setHasPriorConsultation] = useState(false);
@@ -701,6 +703,7 @@ export default function Booking({ preselectId }: Props) {
           voucherCode:
             voucherStatus === "valid" ? voucherCode.trim() : undefined,
           turnstileToken: tsToken,
+          marketingOptIn,
         }),
       });
       // Voucher problems and throttling keep the customer on step 3 with their
@@ -1228,6 +1231,20 @@ export default function Booking({ preselectId }: Props) {
             </div>
           </div>
         )}
+
+        <label className="marketing-optin" style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5, margin: "14px 0 4px", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={(e) => setMarketingOptIn(e.target.checked)}
+            style={{ marginTop: 3 }}
+            data-testid="marketing-optin"
+          />
+          <span>
+            Yes, email me occasional offers and a gentle reminder when it&apos;s
+            time for my next treatment. (Optional — unsubscribe any time.)
+          </span>
+        </label>
 
         {submitError && (
           <div

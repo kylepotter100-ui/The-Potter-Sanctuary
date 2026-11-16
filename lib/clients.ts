@@ -180,6 +180,8 @@ export type ClientProfile = {
     created_at: string;
   };
   contactPreference: ContactPreference;
+  /** Opted in to marketing (offers + rebook reminders). False pre-migration. */
+  marketingOptIn: boolean;
   displayName: string;
   bookings: ClientBooking[];
   consultation: Record<string, unknown> | null;
@@ -251,6 +253,7 @@ export async function getClientProfile(
     contactPreference: contactPreferenceOf(
       (customer as { contact_preference?: string }).contact_preference
     ),
+    marketingOptIn: (customer as { marketing_opt_in?: boolean }).marketing_opt_in === true,
     displayName: displayName(customer as CustomerRow),
     bookings: bk,
     consultation: (consult as Record<string, unknown> | null) ?? null,

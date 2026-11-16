@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { sendCustomerEmail } from "@/lib/customer-email";
 import { emailCalendar, icsAttachment } from "@/lib/calendar";
+import { recordMarketingOptIn } from "@/lib/marketing";
 import { render } from "@react-email/render";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
@@ -47,6 +48,8 @@ export type CreateBookingInput = {
   // and CLAIMED (status flipped active -> redeemed) BEFORE calling this. The
   // caller owns releasing that claim if this function fails — see the route.
   voucher?: { id: string; code: string } | null;
+  /** Client ticked the (unticked-by-default) marketing consent box. */
+  marketingOptIn?: boolean;
 };
 
 export type CreateBookingOptions = {
@@ -175,6 +178,8 @@ export async function createBooking(
     ...prefPatch,
   };
 
+  // A record created by THIS request — consent given here can be stored for it.
+  const isNewCustomer = !customerId && !emailMatch;
   if (!customerId && emailLower) {
     // Genuinely new customer, or a trusted caller refreshing an existing one:
     // atomic upsert on the unique email so two concurrent first-time bookings
@@ -306,6 +311,10 @@ export async function createBooking(
   // detailsUnchanged === true → returning customer says nothing changed: copy
   // their most recent consultation_response onto this booking; email skips the
   // questionnaire CTA. false/null → keep the CTA.
+  if (input.marketingOptIn && customerId) {
+    await recordMarketingOptIn(supabaseAdmin, customerId, trusted || isNewCustomer);
+  }
+
   let includeConsultationCTA = true;
   // Copying consent forward is only allowed for a proven identity — otherwise
   // anyone could create a booking carrying someone else's signed consent.
