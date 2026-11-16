@@ -9,7 +9,10 @@ export default function JsonLd({ data, id }: Props) {
       type="application/ld+json"
       id={id}
       // eslint-disable-next-line react/no-danger
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Escape "<" so no value can ever close the script tag early.
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data).replace(/</g, "\\u003c"),
+      }}
     />
   );
 }

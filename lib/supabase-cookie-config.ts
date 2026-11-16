@@ -7,8 +7,8 @@ export const SUPABASE_COOKIE_ENCODING = "base64url" as const;
 export const SUPABASE_COOKIE_OPTIONS = {
   path: "/",
   sameSite: "lax" as const,
-  // We deliberately don't set `secure: true` here so cookies still work on
-  // http://localhost during dev. In production the site is served over https,
-  // and SameSite=Lax is enough to make the verifier survive the round-trip
-  // from Supabase back to /auth/callback.
+  // Secure in every production build (the deployed Worker, and `wrangler dev`
+  // which browsers treat as a secure context on localhost). Only `next dev`
+  // over plain http leaves it off, so local development still works.
+  secure: process.env.NODE_ENV === "production",
 };
