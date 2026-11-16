@@ -11,6 +11,7 @@ import { checkRateLimit, clientIpFrom, hashIp } from "@/lib/rate-limit";
 import { ukTodayIso } from "@/lib/uk-time";
 import { bookingFieldsProblem } from "@/lib/booking-validate";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { getCurrentUser } from "@/lib/supabase-server";
 
 type Payload = {
   date: string;
@@ -237,6 +238,14 @@ export async function POST(req: Request) {
   // Public booking: stays "pending" (the owner confirms it), uses the website's
   // availability rules, and notifies the owner. All creation logic lives in the
   // shared helper so the public and admin manual paths can't drift.
+  // A customer signed in with this exact email has proven who they are, so
+  // their booking may refresh their record and carry their consultation
+  // forward. Anyone else is linked to the customer but changes nothing.
+  const user = await getCurrentUser();
+  const trustedIdentity =
+    !!user?.email &&
+    user.email.toLowerCase() === payload.email.trim().toLowerCase();
+
   let result;
   try {
     result = await createBooking(
@@ -253,7 +262,12 @@ export async function POST(req: Request) {
         detailsUnchanged: payload.detailsUnchanged ?? null,
         voucher: claimedVoucher,
       },
-      { status: "pending", adminMode: false, sendOwnerNotification: true }
+      {
+        status: "pending",
+        adminMode: false,
+        sendOwnerNotification: true,
+        trustedIdentity,
+      }
     );
   } catch (err) {
     // createBooking is defensive and normally returns rather than throws, but
