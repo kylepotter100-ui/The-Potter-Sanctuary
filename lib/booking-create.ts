@@ -369,6 +369,7 @@ export async function createBooking(
     const customerHtml = await render(
       BookingConfirmation({
         calendar: emailCalendar(cal),
+        pending: options.status === "pending",
         voucherCode: input.voucher?.code ?? null,
         firstName: input.fname,
         treatmentName,
@@ -387,7 +388,10 @@ export async function createBooking(
         from: FROM,
         to: input.email ?? "",
         replyTo: OWNER_TO,
-        subject: "Your reservation at The Potter Sanctuary",
+        subject:
+          options.status === "pending"
+            ? "We've received your booking request — The Potter Sanctuary"
+            : "Your reservation at The Potter Sanctuary",
         html: customerHtml,
         attachments: [icsAttachment(cal)],
       }) as Promise<{ error: unknown }>,
@@ -396,6 +400,7 @@ export async function createBooking(
     if (options.sendOwnerNotification) {
       const ownerHtml = await render(
         OwnerNotification({
+          autoConfirmed: options.status === "confirmed",
           voucherCode: input.voucher?.code ?? null,
           firstName: input.fname,
           lastName: input.lname,
@@ -416,7 +421,7 @@ export async function createBooking(
           from: FROM,
           to: OWNER_TO,
           replyTo: input.email || undefined,
-          subject: `New booking — ${treatmentName} — ${input.fname} ${input.lname}`,
+          subject: `${options.status === "confirmed" ? "New booking (auto-confirmed)" : "New booking — please confirm"} — ${treatmentName} — ${input.fname} ${input.lname}`,
           html: ownerHtml,
         }) as Promise<{ error: unknown }>
       );

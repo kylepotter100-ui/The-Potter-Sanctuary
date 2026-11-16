@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizePhone } from "@/lib/phone";
+import { ukWallTimeToUtc } from "@/lib/uk-time";
+import { siteConfig } from "@/lib/site";
 
 // ============================================================================
 // Client (customer) read helpers for the admin Clients screens. Service-role
@@ -154,6 +156,8 @@ export type ClientBooking = {
   voucher_id: string | null;
   /** 'attended' | 'no_show' | null (not recorded / pre-migration). */
   attendance?: string | null;
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
 };
 
 export type ClientReview = {
@@ -185,6 +189,7 @@ export type ClientProfile = {
     lifetimeSpend: number; // sum of confirmed treatment_price
     clientSince: string; // YYYY-MM-DD
     noShows: number;
+    lateCancellations: number;
   };
 };
 
@@ -226,6 +231,13 @@ export async function getClientProfile(
   const bk = (bookings ?? []) as ClientBooking[];
   const visits = bk.filter((b) => b.status !== "cancelled" && b.attendance !== "no_show").length;
   const noShows = bk.filter((b) => b.attendance === "no_show").length;
+  // Client cancellations made with less than the requested notice (Terms:
+  // "repeated late cancellations may result in declined bookings").
+  const lateCancellations = bk.filter((b) => {
+    if (b.status !== "cancelled" || b.cancelled_by !== "customer" || !b.cancelled_at) return false;
+    const start = ukWallTimeToUtc(b.booking_date, b.booking_time).getTime();
+    return (start - new Date(b.cancelled_at).getTime()) / 3_600_000 < siteConfig.noticeHours;
+  }).length;
   // Voucher-funded bookings are excluded from SPEND but still count as VISITS:
   // the client did come in, they just paid when the voucher was bought rather
   // than on the day. Filtered here in the reduce rather than in the query above
@@ -247,6 +259,7 @@ export async function getClientProfile(
       visits,
       lifetimeSpend,
       noShows,
+      lateCancellations,
       clientSince: (customer.created_at as string).slice(0, 10),
     },
   };

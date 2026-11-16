@@ -12,6 +12,7 @@ import { ukTodayIso } from "@/lib/uk-time";
 import { bookingFieldsProblem } from "@/lib/booking-validate";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { getCurrentUser } from "@/lib/supabase-server";
+import { autoConfirmMode, isReturningClient } from "@/lib/auto-confirm";
 
 type Payload = {
   date: string;
@@ -246,6 +247,15 @@ export async function POST(req: Request) {
     !!user?.email &&
     user.email.toLowerCase() === payload.email.trim().toLowerCase();
 
+  // Owner's AUTO_CONFIRM setting (default off = every web booking waits for
+  // her confirmation, exactly as before).
+  const mode = autoConfirmMode();
+  const autoConfirm =
+    mode === "all" ||
+    (mode === "returning" &&
+      !!supabaseAdmin &&
+      (await isReturningClient(supabaseAdmin, payload.email, payload.phone, trustedIdentity)));
+
   let result;
   try {
     result = await createBooking(
@@ -263,7 +273,7 @@ export async function POST(req: Request) {
         voucher: claimedVoucher,
       },
       {
-        status: "pending",
+        status: autoConfirm ? "confirmed" : "pending",
         adminMode: false,
         sendOwnerNotification: true,
         trustedIdentity,
@@ -300,7 +310,11 @@ export async function POST(req: Request) {
   }
 
   if (result.ok) {
-    return NextResponse.json({ ok: true, id: result.id });
+    return NextResponse.json({
+      ok: true,
+      id: result.id,
+      status: autoConfirm ? "confirmed" : "pending",
+    });
   }
   // slot_unavailable / slot_taken carry a friendly message the calendar surfaces.
   return NextResponse.json(

@@ -13,6 +13,8 @@ import {
 } from "./_shared";
 
 type Props = {
+  /** True when the booking was auto-confirmed (AUTO_CONFIRM setting). */
+  autoConfirmed?: boolean;
   firstName: string;
   lastName: string;
   phone: string;
@@ -44,6 +46,7 @@ export default function OwnerNotification({
   timestamp,
   voucherCode = null,
   siteUrl,
+  autoConfirmed = false,
 }: Props) {
   return (
     <EmailLayout
@@ -53,7 +56,10 @@ export default function OwnerNotification({
       <ContentSection>
         <SectionHeading>New booking received</SectionHeading>
         <Paragraph>
-          {firstName} {lastName} has booked a session.
+          {firstName} {lastName} has booked a session.{" "}
+          {autoConfirmed
+            ? "It was confirmed automatically (returning client)."
+            : "It's waiting for you to confirm it in the admin."}
         </Paragraph>
 
         <Section

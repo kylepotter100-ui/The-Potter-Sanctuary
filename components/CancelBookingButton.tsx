@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { siteConfig } from "@/lib/site";
 
 type Props = {
   bookingId: string;
@@ -45,6 +46,11 @@ export default function CancelBookingButton({
   const withinCutoff =
     !!startsAt &&
     (new Date(startsAt).getTime() - Date.now()) / (60 * 1000) < 15;
+  // startsAt is a real UTC instant (ukWallTimeToUtc on the server), so this
+  // is elapsed-time maths, not UK wall-clock parsing (rule 3).
+  const isLate =
+    !!startsAt &&
+    (new Date(startsAt).getTime() - Date.now()) / 3_600_000 < siteConfig.noticeHours;
 
   if (withinCutoff) {
     return (
@@ -121,8 +127,15 @@ export default function CancelBookingButton({
             <p className="modal-body">
               Are you sure you want to cancel your{" "}
               <strong>{treatmentName}</strong> on {bookingDate} at {bookingTime}
-              ? We ask for at least 12 hours notice as a courtesy.
+              ? We ask for at least {siteConfig.noticeHours} hours&apos; notice as a courtesy.
             </p>
+            {isLate && (
+              <p className="modal-body" data-testid="late-notice" style={{ fontWeight: 500 }}>
+                This is less than {siteConfig.noticeHours} hours before your
+                appointment, so it counts as a late cancellation. You can still
+                cancel — thank you for letting us know.
+              </p>
+            )}
             <div className="field">
               <label htmlFor={`cancel-reason-${bookingId}`}>
                 Reason for cancellation (optional)
