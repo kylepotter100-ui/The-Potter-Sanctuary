@@ -191,9 +191,11 @@ export default async function DashboardPage({
     // Voucher-funded bookings are EXCLUDED: that money was already counted once
     // when the voucher was issued (see the vouchers query below), so counting
     // the booking too would bill the same payment twice.
+    // "*" so the attendance column is included once it exists (no-shows
+    // paid nothing) and the query still works before that migration.
     supabaseAdmin
       .from("bookings")
-      .select("treatment_price, booking_date")
+      .select("*")
       .eq("status", "confirmed")
       .is("voucher_id", null)
       .gte("booking_date", periodStart)
@@ -211,7 +213,7 @@ export default async function DashboardPage({
     // exactly this result set's length.)
     supabaseAdmin
       .from("bookings")
-      .select("treatment_price")
+      .select("*")
       .eq("status", "confirmed")
       .is("voucher_id", null)
       .gte("booking_date", prevStart)
@@ -238,9 +240,14 @@ export default async function DashboardPage({
       .lt("created_at", prevToUtc),
   ]);
 
-  const revenueRows = (revenueRes.data ?? []) as RevenueRow[];
+  // No-shows paid nothing: out of revenue, counted separately.
+  const allConfirmedRows = (revenueRes.data ?? []) as (RevenueRow & { attendance?: string | null })[];
+  const noShowCount = allConfirmedRows.filter((r) => r.attendance === "no_show").length;
+  const revenueRows = allConfirmedRows.filter((r) => r.attendance !== "no_show") as RevenueRow[];
   const popularityRows = (popularityRes.data ?? []) as PopularityRow[];
-  const prevRevenueRows = (prevRevenueRes.data ?? []) as { treatment_price: number }[];
+  const prevRevenueRows = ((prevRevenueRes.data ?? []) as { treatment_price: number; attendance?: string | null }[]).filter(
+    (r) => r.attendance !== "no_show"
+  );
   const ratingRows = (reviewsRes.error ? [] : reviewsRes.data ?? []) as RatingRow[];
   const voucherRows = (vouchersRes.error ? [] : vouchersRes.data ?? []) as VoucherRevenueRow[];
   const prevVoucherRows = (prevVouchersRes.error ? [] : prevVouchersRes.data ?? []) as { value: number }[];
@@ -399,6 +406,10 @@ export default async function DashboardPage({
           <div className="status-cell">
             <span className="label">Cancelled</span>
             <span className="value">{cancelledCount}</span>
+          </div>
+          <div className="status-cell" data-testid="no-shows">
+            <span className="label">No-shows</span>
+            <span className="value">{noShowCount}</span>
           </div>
         </div>
 

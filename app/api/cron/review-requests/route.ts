@@ -59,9 +59,8 @@ export async function GET(req: Request) {
 
   const { data: candidates, error } = await supabaseAdmin
     .from("bookings")
-    .select(
-      "id, customer_id, customer_first_name, customer_email, treatment_id, treatment_name, booking_date, booking_time, status, cancelled_at, review_email_sent_at"
-    )
+    // "*" so attendance is included once that column exists.
+    .select("*")
     .gte("booking_date", yesterdayIso)
     .lte("booking_date", todayIso)
     .eq("status", "confirmed")
@@ -80,6 +79,11 @@ export async function GET(req: Request) {
   let sent = 0;
   let skipped = 0;
   for (const b of rows) {
+    // The owner marked them a no-show — never ask for a review.
+    if ((b as { attendance?: string | null }).attendance === "no_show") {
+      skipped++;
+      continue;
+    }
     const durationMin = durationMinutesForTreatmentId(b.treatment_id) ?? 60;
     const startedAt = ukWallTimeToUtc(b.booking_date, b.booking_time);
     const endedAt = new Date(startedAt.getTime() + durationMin * 60 * 1000);

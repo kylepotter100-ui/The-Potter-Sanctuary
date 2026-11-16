@@ -152,6 +152,8 @@ export type ClientBooking = {
   status: "pending" | "confirmed" | "cancelled";
   /** Set when the booking was paid with a gift voucher — excluded from spend. */
   voucher_id: string | null;
+  /** 'attended' | 'no_show' | null (not recorded / pre-migration). */
+  attendance?: string | null;
 };
 
 export type ClientReview = {
@@ -182,6 +184,7 @@ export type ClientProfile = {
     visits: number; // non-cancelled
     lifetimeSpend: number; // sum of confirmed treatment_price
     clientSince: string; // YYYY-MM-DD
+    noShows: number;
   };
 };
 
@@ -202,9 +205,7 @@ export async function getClientProfile(
     await Promise.all([
       admin
         .from("bookings")
-        .select(
-          "id, booking_date, booking_time, treatment_name, treatment_price, status, voucher_id"
-        )
+        .select("*")
         .eq("customer_id", id)
         .order("booking_date", { ascending: false })
         .order("booking_time", { ascending: false }),
@@ -223,13 +224,14 @@ export async function getClientProfile(
     ]);
 
   const bk = (bookings ?? []) as ClientBooking[];
-  const visits = bk.filter((b) => b.status !== "cancelled").length;
+  const visits = bk.filter((b) => b.status !== "cancelled" && b.attendance !== "no_show").length;
+  const noShows = bk.filter((b) => b.attendance === "no_show").length;
   // Voucher-funded bookings are excluded from SPEND but still count as VISITS:
   // the client did come in, they just paid when the voucher was bought rather
   // than on the day. Filtered here in the reduce rather than in the query above
   // so the booking still appears in their history list.
   const lifetimeSpend = bk
-    .filter((b) => b.status === "confirmed" && !b.voucher_id)
+    .filter((b) => b.status === "confirmed" && !b.voucher_id && b.attendance !== "no_show")
     .reduce((sum, b) => sum + (b.treatment_price ?? 0), 0);
 
   return {
@@ -244,6 +246,7 @@ export async function getClientProfile(
     stats: {
       visits,
       lifetimeSpend,
+      noShows,
       clientSince: (customer.created_at as string).slice(0, 10),
     },
   };
