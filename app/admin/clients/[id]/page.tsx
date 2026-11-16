@@ -5,6 +5,7 @@ import { getClientProfile } from "@/lib/clients";
 import { requireAdminPage } from "@/lib/admin-auth";
 import ContactPreferenceControl from "@/components/ContactPreferenceControl";
 import ClientNotes from "@/components/ClientNotes";
+import ClientDataTools from "@/components/ClientDataTools";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -135,6 +136,7 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
           customerId={customer.id}
           initial={(customer as { notes?: string | null }).notes ?? null}
         />
+        <ClientDataTools customerId={customer.id} name={displayName} />
 
         {/* Booking history */}
         <section className="admin-card" style={{ marginBottom: 16 }}>
