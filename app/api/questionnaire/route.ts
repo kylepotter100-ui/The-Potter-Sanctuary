@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import {
+  sanitizeConsent,
+  sanitizeConsultation,
+  sanitizeCustomerProfile,
+} from "@/lib/consultation-validate";
 
 export const dynamic = "force-dynamic";
 
@@ -41,14 +46,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!payload.response?.consent_given) {
-    return NextResponse.json({ error: "Consent is required" }, { status: 400 });
+  const consent = sanitizeConsent(payload?.response);
+  if (!consent.ok) {
+    return NextResponse.json({ error: consent.error }, { status: 400 });
   }
-  if (!payload.response?.signature_name?.trim()) {
-    return NextResponse.json(
-      { error: "Signature is required" },
-      { status: 400 }
-    );
+  const consult = sanitizeConsultation(payload?.response, {
+    includeHadMassageBefore: true,
+  });
+  if (!consult.ok) {
+    return NextResponse.json({ error: consult.error }, { status: 400 });
+  }
+  const profile = sanitizeCustomerProfile(payload?.customer);
+  if (!profile.ok) {
+    return NextResponse.json({ error: profile.error }, { status: 400 });
+  }
+  if (
+    payload.booking_id != null &&
+    (typeof payload.booking_id !== "string" ||
+      !/^[0-9a-f-]{36}$/i.test(payload.booking_id))
+  ) {
+    return NextResponse.json({ error: "Invalid booking" }, { status: 400 });
   }
 
   const supabase = await createSupabaseServerClient();
@@ -81,15 +98,7 @@ export async function POST(req: Request) {
   // Update profile bits the form may have edited.
   await supabaseAdmin
     .from("customers")
-    .update({
-      full_name: payload.customer.full_name,
-      date_of_birth: payload.customer.date_of_birth,
-      phone_number: payload.customer.phone_number,
-      address: payload.customer.address,
-      emergency_contact_name: payload.customer.emergency_contact_name,
-      emergency_contact_phone: payload.customer.emergency_contact_phone,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ ...profile.value, updated_at: new Date().toISOString() })
     .eq("id", customer.id);
 
   // Verify the booking belongs to this customer if one was supplied.
@@ -97,12 +106,19 @@ export async function POST(req: Request) {
   if (payload.booking_id) {
     const { data: booking } = await supabaseAdmin
       .from("bookings")
-      .select("id, customer_id")
+      .select("id, customer_id, customer_email")
       .eq("id", payload.booking_id)
       .maybeSingle();
     if (booking && booking.customer_id === customer.id) {
       bookingId = booking.id;
-    } else if (booking && !booking.customer_id) {
+    } else if (
+      booking &&
+      !booking.customer_id &&
+      (booking.customer_email ?? "").toLowerCase() === emailLower
+    ) {
+      // Unlinked booking made with THIS person's email: claim it. Without the
+      // email match any signed-in customer could attach any unlinked booking
+      // (and its consultation) to themselves by guessing its id.
       // Backfill the link if the booking pre-dates the customer linkage.
       await supabaseAdmin
         .from("bookings")
@@ -112,37 +128,18 @@ export async function POST(req: Request) {
     }
   }
 
-  const r = payload.response;
-  // Upsert on booking_id (unique index consultation_one_per_booking): one
-  // consultation snapshot per booking — resubmitting the questionnaire for the
-  // same booking updates the existing row instead of stacking duplicates.
-  // Rows with booking_id = NULL never conflict (NULLs are distinct), so
-  // unlinked submissions still insert normally.
   const { error: insertErr } = await supabaseAdmin
     .from("consultation_responses")
     .upsert({
       customer_id: customer.id,
       booking_id: bookingId,
-      conditions: r.conditions ?? {},
-      allergies_specify: r.allergies_specify,
-      other_medical_conditions: r.other_medical_conditions,
-      under_medical_care: r.under_medical_care,
-      medical_care_explanation: r.medical_care_explanation,
-      focus_areas: r.focus_areas ?? [],
-      areas_to_avoid: r.areas_to_avoid,
-      pressure_preference: r.pressure_preference,
-      had_professional_massage_before: r.had_professional_massage_before,
-      experiences_stress_regularly: r.experiences_stress_regularly,
-      primary_reason: r.primary_reason,
-      additional_info: r.additional_info,
-      consent_given: r.consent_given,
-      signature_name: r.signature_name.trim(),
-      consent_date: r.consent_date,
+      ...consult.value,
+      ...consent.value,
     },
     { onConflict: "booking_id" });
 
   if (insertErr) {
-    console.error("[questionnaire] insert failed", insertErr);
+    console.error("[questionnaire] insert failed", insertErr.code, insertErr.message);
     return NextResponse.json(
       { error: "Could not save your consultation" },
       { status: 500 }

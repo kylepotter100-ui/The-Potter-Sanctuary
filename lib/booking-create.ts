@@ -50,6 +50,15 @@ export type CreateBookingOptions = {
   status: "pending" | "confirmed";
   adminMode?: boolean;
   sendOwnerNotification?: boolean;
+  /**
+   * True when the caller has PROVEN who the customer is: the owner (admin
+   * manual booking) or a customer signed in with this exact email. Only a
+   * trusted caller may overwrite an existing customer's name/phone/gender or
+   * copy their previous consultation (including their signed consent) onto a
+   * new booking. An anonymous web booking that happens to use an existing
+   * email is linked to that customer but changes nothing on their record.
+   */
+  trustedIdentity?: boolean;
 };
 
 export type CreateBookingResult =
@@ -108,6 +117,7 @@ export async function createBooking(
   // Phone reconciliation — a SECOND exact-match key. It only matters when this
   // email is brand new: a typo'd email won't match an existing row, but the
   // (correct) phone can, so we reuse that customer instead of creating a phantom.
+  const trusted = options.trustedIdentity === true;
   const phoneNorm = normalizePhone(input.phone);
   const { data: emailMatch } = await supabaseAdmin
     .from("customers")
@@ -115,22 +125,29 @@ export async function createBooking(
     .eq("email", emailLower)
     .maybeSingle();
 
+  if (emailMatch && !trusted) {
+    // Existing customer, unproven caller: link only. Never let an anonymous
+    // request rewrite someone's record by knowing their email address.
+    customerId = emailMatch.id;
+  }
+
   if (!emailMatch && phoneNorm) {
     const { data: phoneMatches } = await supabaseAdmin
       .from("customers")
       .select("id")
       .eq("phone_normalized", phoneNorm)
       .limit(2);
-    // Exactly one match → confident reuse. Two+ rows share this phone → ambiguous;
-    // fall through and create/refresh by email instead.
+    // Exactly one match → confident reuse (link only, nothing overwritten).
+    // Two+ rows share this phone → ambiguous; create by email instead.
     if (phoneMatches && phoneMatches.length === 1) {
       customerId = phoneMatches[0].id;
     }
   }
 
   if (!customerId) {
-    // Common path (genuinely new customer, or an existing email): atomic upsert
-    // on the unique email so two concurrent first-time bookings resolve to one row.
+    // Genuinely new customer, or a trusted caller refreshing an existing one:
+    // atomic upsert on the unique email so two concurrent first-time bookings
+    // resolve to one row.
     const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
       .from("customers")
       .upsert(
@@ -148,7 +165,7 @@ export async function createBooking(
       .select("id")
       .single();
     if (customerError) {
-      console.error("[booking] customer upsert failed", customerError);
+      console.error("[booking] customer upsert failed", customerError.code, customerError.message);
     } else {
       customerId = upsertedCustomer.id;
     }
@@ -180,7 +197,7 @@ export async function createBooking(
     .single();
 
   if (insertError) {
-    console.error("[booking] supabase insert failed", JSON.stringify(insertError));
+    console.error("[booking] supabase insert failed", insertError.code, insertError.message);
     // Voucher conflict FIRST. bookings_voucher_active_unique is also a 23505,
     // and the slot branch below matches on the generic text "duplicate key", so
     // if these were the other way round a voucher clash would be reported to
@@ -234,7 +251,9 @@ export async function createBooking(
   // their most recent consultation_response onto this booking; email skips the
   // questionnaire CTA. false/null → keep the CTA.
   let includeConsultationCTA = true;
-  if (input.detailsUnchanged === true && customerId) {
+  // Copying consent forward is only allowed for a proven identity — otherwise
+  // anyone could create a booking carrying someone else's signed consent.
+  if (input.detailsUnchanged === true && customerId && trusted) {
     const { data: prior, error: priorErr } = await supabaseAdmin
       .from("consultation_responses")
       .select(

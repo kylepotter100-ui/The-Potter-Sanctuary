@@ -81,6 +81,8 @@ export async function POST(req: Request) {
       status: "confirmed",
       adminMode: payload.bookAnytime === true,
       sendOwnerNotification: false,
+      // The owner is creating this booking — she vouches for the details.
+      trustedIdentity: true,
     }
   );
 

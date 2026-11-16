@@ -1,19 +1,10 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { csvCell } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
 
-
-function csvCell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const s = String(value);
-  // Quote and escape if the value contains comma, quote, or newline.
-  if (/[",\n\r]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
 

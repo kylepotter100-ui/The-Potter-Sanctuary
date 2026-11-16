@@ -52,7 +52,10 @@ export async function searchClients(
   admin: SupabaseClient,
   q: string
 ): Promise<ClientListRow[]> {
-  const term = (q ?? "").trim();
+  // The term is interpolated into a PostgREST `.or()` filter string, where
+  // `,` `(` `)` separate clauses and `*`/`%` are wildcards — strip them so a
+  // search can only ever be a search.
+  const term = (q ?? "").replace(/[,()*%\\"]/g, " ").trim().slice(0, 100);
   let query = admin
     .from("customers")
     .select("id, full_name, first_name, last_name, email, phone_number, gender")

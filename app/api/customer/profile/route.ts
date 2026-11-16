@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import {
+  sanitizeConsultation,
+  sanitizeCustomerProfile,
+} from "@/lib/consultation-validate";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +40,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const profile = sanitizeCustomerProfile(payload);
+  if (!profile.ok) {
+    return NextResponse.json({ error: profile.error }, { status: 400 });
+  }
+  let consultFields: ReturnType<typeof sanitizeConsultation> | null = null;
+  if (payload?.consultation) {
+    consultFields = sanitizeConsultation(payload.consultation);
+    if (!consultFields.ok) {
+      return NextResponse.json({ error: consultFields.error }, { status: 400 });
+    }
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -59,19 +75,11 @@ export async function POST(req: Request) {
 
   const { error } = await supabaseAdmin
     .from("customers")
-    .update({
-      full_name: payload.full_name,
-      date_of_birth: payload.date_of_birth,
-      phone_number: payload.phone_number,
-      address: payload.address,
-      emergency_contact_name: payload.emergency_contact_name,
-      emergency_contact_phone: payload.emergency_contact_phone,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ ...profile.value, updated_at: new Date().toISOString() })
     .eq("id", customer.id);
 
   if (error) {
-    console.error("[customer/profile] update failed", error);
+    console.error("[customer/profile] update failed", error.code, error.message);
     return NextResponse.json({ error: "Save failed" }, { status: 500 });
   }
 
@@ -79,21 +87,8 @@ export async function POST(req: Request) {
   // most-recent row, which is what booking creation copies forward). Update the
   // health/preference fields only — consent/signature stay per-visit and aren't
   // touched here. Insert a fresh booking_id-NULL row if they have none yet.
-  if (payload.consultation) {
-    const c = payload.consultation;
-    const fields = {
-      conditions: c.conditions ?? {},
-      allergies_specify: c.allergies_specify,
-      other_medical_conditions: c.other_medical_conditions,
-      under_medical_care: c.under_medical_care,
-      medical_care_explanation: c.medical_care_explanation,
-      focus_areas: c.focus_areas ?? [],
-      areas_to_avoid: c.areas_to_avoid,
-      pressure_preference: c.pressure_preference,
-      experiences_stress_regularly: c.experiences_stress_regularly,
-      primary_reason: c.primary_reason,
-      additional_info: c.additional_info,
-    };
+  if (consultFields?.ok) {
+    const fields = consultFields.value;
     const { data: latest } = await supabaseAdmin
       .from("consultation_responses")
       .select("id")
@@ -107,12 +102,12 @@ export async function POST(req: Request) {
         .from("consultation_responses")
         .update(fields)
         .eq("id", latest.id);
-      if (cErr) console.error("[customer/profile] consult update failed", cErr);
+      if (cErr) console.error("[customer/profile] consult update failed", cErr.code, cErr.message);
     } else {
       const { error: cErr } = await supabaseAdmin
         .from("consultation_responses")
         .insert({ customer_id: customer.id, booking_id: null, ...fields });
-      if (cErr) console.error("[customer/profile] consult insert failed", cErr);
+      if (cErr) console.error("[customer/profile] consult insert failed", cErr.code, cErr.message);
     }
   }
 
