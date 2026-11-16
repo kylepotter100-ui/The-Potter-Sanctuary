@@ -103,8 +103,8 @@ export const services: Service[] = [
     ],
     image: {
       src: "/back-neck-scalp.jpg",
-      width: 2500,
-      height: 1533,
+      width: 2400,
+      height: 1472,
       alt: "Back, neck and scalp massage being delivered at The Potter Sanctuary in Beck Row, Suffolk.",
     },
     images: {
