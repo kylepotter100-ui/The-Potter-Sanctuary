@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { render } from "@react-email/render";
 import MorningSummary, {
+  type CallItem,
   type SummaryBooking,
 } from "@/emails/MorningSummary";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
+import { COMMS_REASON_LABEL, customerCommsDecision } from "@/lib/customer-email";
+import { addDaysIso } from "@/lib/uk-time";
 import { ukWallTimeToUtc } from "@/lib/uk-time";
 
 export const dynamic = "force-dynamic";
@@ -158,6 +161,68 @@ export async function GET(req: Request) {
     );
   }
 
+  // Tomorrow's bookings for clients who get NO emailed reminder (phone-only,
+  // don't-contact, no address, or suppressed) — the owner phones them today.
+  const tomorrowIso = addDaysIso(dateIso, 1);
+  const { data: tomorrow } = await supabaseAdmin
+    .from("bookings")
+    .select("id, customer_id, customer_first_name, customer_last_name, customer_phone, treatment_name, booking_time")
+    .eq("booking_date", tomorrowIso)
+    .in("status", ["pending", "confirmed"])
+    .is("cancelled_at", null)
+    .order("booking_time", { ascending: true });
+  const callCandidates: Array<{
+    id: string;
+    customer_id: string | null;
+    name: string;
+    phone: string;
+    time: string;
+    treatment_name: string;
+    reason: string;
+  }> = [];
+  for (const b of tomorrow ?? []) {
+    const d = await customerCommsDecision(b.id as string);
+    if (!d.allowed) {
+      callCandidates.push({
+        id: b.id as string,
+        customer_id: (b.customer_id as string | null) ?? null,
+        name: `${b.customer_first_name} ${b.customer_last_name}`,
+        phone: (b.customer_phone as string) ?? "",
+        time: timeShort(b.booking_time as string),
+        treatment_name: b.treatment_name as string,
+        reason: COMMS_REASON_LABEL[d.reason],
+      });
+    }
+  }
+
+  // Owner's private client notes for everyone on today's sheet + call list.
+  // "*" so this works before the notes column exists.
+  const noteIds = Array.from(
+    new Set([
+      ...customerIds,
+      ...callCandidates.map((c) => c.customer_id).filter((x): x is string => !!x),
+    ])
+  );
+  const notesById = new Map<string, string>();
+  if (noteIds.length > 0) {
+    const { data: custs } = await supabaseAdmin
+      .from("customers")
+      .select("*")
+      .in("id", noteIds);
+    for (const c of (custs ?? []) as Array<{ id: string; notes?: string | null }>) {
+      if (c.notes) notesById.set(c.id, c.notes);
+    }
+  }
+  const callList: CallItem[] = callCandidates.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    when: `Tomorrow ${c.time}`,
+    treatment_name: c.treatment_name,
+    reason: c.reason,
+    notes: c.customer_id ? notesById.get(c.customer_id) ?? null : null,
+  }));
+
   const now = new Date();
   const decorated: SummaryBooking[] = (bookings ?? []).map((b) => {
     const completed = consultedSet.has(b.id);
@@ -172,6 +237,7 @@ export async function GET(req: Request) {
       treatment_name: b.treatment_name,
       booking_time: timeShort(b.booking_time),
       status: b.status as "pending" | "confirmed",
+      notes: b.customer_id ? notesById.get(b.customer_id) ?? null : null,
       consultation: completed
         ? "completed"
         : onFile
@@ -208,6 +274,7 @@ export async function GET(req: Request) {
         confirmed,
         pending,
         alerts,
+        callList,
         adminUrl,
         siteUrl,
       })

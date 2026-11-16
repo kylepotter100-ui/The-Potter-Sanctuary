@@ -212,6 +212,16 @@ export default async function AdminBookingDetailPage({
   // Can this client be emailed about this booking? (phone-only / don't
   // contact / no address). When not, email buttons give way to a call prompt.
   const comms = await customerCommsDecision(booking.id as string);
+  // Owner's private client notes ("*" so this works before the notes column exists).
+  const clientNotes = booking.customer_id
+    ? (((
+        await supabaseAdmin
+          .from("customers")
+          .select("*")
+          .eq("id", booking.customer_id as string)
+          .maybeSingle()
+      ).data as { notes?: string | null } | null)?.notes ?? null)
+    : null;
   const noEmailReason = comms.allowed ? null : COMMS_REASON_LABEL[comms.reason];
   const callPrompt = (what: string) => (
     <p className="info-text" style={{ marginTop: 10 }} data-testid="no-email-prompt">
@@ -244,6 +254,12 @@ export default async function AdminBookingDetailPage({
           {booking.treatment_name} · {fmtLongDate(booking.booking_date)} at{" "}
           {booking.booking_time.slice(0, 5)}
         </p>
+        {clientNotes && (
+          <p className="info-text" style={{ marginBottom: 16, whiteSpace: "pre-wrap" }} data-testid="booking-client-notes">
+            <strong>Your notes:</strong> {clientNotes}{" "}
+            <Link href={`/admin/clients/${booking.customer_id}`}>Edit</Link>
+          </p>
+        )}
         {noEmailReason && (
           <p className="info-text" style={{ marginBottom: 16 }} data-testid="no-email-banner">
             <strong>No automatic emails for this booking</strong> — {noEmailReason}.
@@ -341,6 +357,13 @@ export default async function AdminBookingDetailPage({
                 (noEmailReason
                   ? callPrompt("Go through the consultation with them before the visit")
                   : <NudgeQuestionnaireButton bookingId={booking.id} />)}
+              {booking.status !== "cancelled" && (
+                <p style={{ marginTop: 12 }}>
+                  <Link className="btn btn-ghost" href={`/admin/bookings/${booking.id}/consultation`} data-testid="record-consultation">
+                    Fill in the consultation with the client →
+                  </Link>
+                </p>
+              )}
             </>
           ) : (
             <div className="q-readonly">
@@ -353,9 +376,12 @@ export default async function AdminBookingDetailPage({
                   . This client rebooked without signing in, so it hasn&apos;t
                   been re-confirmed for this booking — confirm details with the
                   client, or nudge them to update it.
-                  {booking.status !== "cancelled" && !noEmailReason && (
+                  {booking.status !== "cancelled" && (
                     <div style={{ marginTop: 10 }}>
-                      <NudgeQuestionnaireButton bookingId={booking.id} />
+                      {!noEmailReason && <NudgeQuestionnaireButton bookingId={booking.id} />}
+                      <Link className="btn btn-ghost" style={{ marginTop: 8 }} href={`/admin/bookings/${booking.id}/consultation`} data-testid="record-consultation">
+                        Confirm the answers with the client →
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -458,6 +484,14 @@ export default async function AdminBookingDetailPage({
                 <dd>{fmtText(displayConsult.signature_name as string | null)}</dd>
                 <dt>Signed on</dt>
                 <dd>{fmtShortDate(displayConsult.consent_date as string | null)}</dd>
+                <dt>How consent was given</dt>
+                <dd data-testid="consent-method">
+                  {displayConsult.consent_method === "verbal"
+                    ? "Verbally — recorded by you"
+                    : displayConsult.consent_method === "paper"
+                      ? "Paper form signed — recorded by you (keep the form on file)"
+                      : "Online — completed by the client"}
+                </dd>
               </dl>
               <p className="q-readonly-meta">
                 {isCarried ? "Carried over — originally submitted " : "Submitted "}

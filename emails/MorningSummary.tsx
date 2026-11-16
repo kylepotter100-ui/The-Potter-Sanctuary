@@ -19,6 +19,19 @@ export type SummaryBooking = {
   booking_time: string;
   status: "pending" | "confirmed";
   consultation: "completed" | "pending" | "risk" | "onfile";
+  /** Owner's private client notes, if any. */
+  notes?: string | null;
+};
+
+/** A client who gets no automatic emails — the owner rings them instead. */
+export type CallItem = {
+  id: string;
+  name: string;
+  phone: string;
+  when: string; // e.g. "Tomorrow 10:30"
+  treatment_name: string;
+  reason: string;
+  notes?: string | null;
 };
 
 type Props = {
@@ -26,6 +39,8 @@ type Props = {
   confirmed: SummaryBooking[];
   pending: SummaryBooking[];
   alerts: SummaryBooking[];
+  /** Clients to phone today (no emailed reminder). Optional for back-compat. */
+  callList?: CallItem[];
   adminUrl: string;
   siteUrl: string;
 };
@@ -66,6 +81,14 @@ function row(b: SummaryBooking) {
         <span style={{ fontSize: 13, color: INK_SOFT }}>
           {b.treatment_name}
         </span>
+        {b.notes ? (
+          <>
+            <br />
+            <span style={{ fontSize: 13, color: INK_SOFT, fontStyle: "italic" }}>
+              Note: {b.notes}
+            </span>
+          </>
+        ) : null}
       </td>
       <td
         style={{
@@ -106,6 +129,7 @@ export default function MorningSummary({
   confirmed,
   pending,
   alerts,
+  callList = [],
   adminUrl,
   siteUrl,
 }: Props) {
@@ -227,6 +251,59 @@ export default function MorningSummary({
             >
               Bookings within 12 hours where the consultation hasn&apos;t been
               completed.
+            </p>
+          </Section>
+        )}
+
+        {callList.length > 0 && (
+          <Section
+            style={{
+              border: `1px solid ${SAGE}`,
+              borderRadius: 10,
+              padding: "16px 20px",
+              margin: "0 0 18px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: SAGE,
+                margin: "0 0 8px",
+              }}
+            >
+              Phone today ({callList.length})
+            </p>
+            <table role="presentation" cellPadding={0} cellSpacing={0} style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {callList.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ padding: "8px 12px 8px 0", fontSize: 16, color: INK, verticalAlign: "top" }}>
+                      {c.name}
+                      <br />
+                      <span style={{ fontSize: 13, color: INK_SOFT }}>
+                        {c.when} · {c.treatment_name}
+                      </span>
+                      {c.notes ? (
+                        <>
+                          <br />
+                          <span style={{ fontSize: 13, color: INK_SOFT, fontStyle: "italic" }}>Note: {c.notes}</span>
+                        </>
+                      ) : null}
+                    </td>
+                    <td style={{ padding: "8px 0", fontSize: 16, color: INK, verticalAlign: "top", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
+                      <a href={`tel:${c.phone.replace(/\s/g, "")}`} style={{ color: SAGE }}>
+                        {c.phone}
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p style={{ fontSize: 13, fontStyle: "italic", color: INK_SOFT, margin: 0 }}>
+              These clients don&apos;t get email reminders — a quick call to
+              confirm tomorrow&apos;s appointment.
             </p>
           </Section>
         )}

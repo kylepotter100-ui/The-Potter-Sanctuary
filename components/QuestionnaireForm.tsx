@@ -7,7 +7,7 @@ export type CustomerSeed = {
   full_name: string | null;
   date_of_birth: string | null;
   phone_number: string | null;
-  email: string;
+  email: string | null;
   address: string | null;
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
@@ -32,7 +32,15 @@ type Props = {
   bookingId: string | null;
   customer: CustomerSeed;
   previous: ConsultationSeed | null;
+  /**
+   * Owner mode: the owner is filling this in WITH a client who can't use the
+   * web form (by phone or in person). Posts to the admin API and records how
+   * consent was obtained (read aloud and agreed, or paper form signed).
+   */
+  ownerMode?: boolean;
 };
+
+type ConsentMethod = "verbal" | "paper";
 
 const HEALTH_CONDITIONS: Array<{ key: string; label: string }> = [
   { key: "high_blood_pressure", label: "High blood pressure" },
@@ -69,7 +77,9 @@ export default function QuestionnaireForm({
   bookingId,
   customer,
   previous,
+  ownerMode = false,
 }: Props) {
+  const [consentMethod, setConsentMethod] = useState<ConsentMethod | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +149,10 @@ export default function QuestionnaireForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (ownerMode && !consentMethod) {
+      setError("Please choose how the client gave consent.");
+      return;
+    }
     if (!consentGiven) {
       setError("Please confirm consent before submitting.");
       return;
@@ -150,7 +164,10 @@ export default function QuestionnaireForm({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/questionnaire", {
+      const endpoint = ownerMode
+        ? `/api/admin/bookings/${bookingId}/consultation`
+        : "/api/questionnaire";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -183,11 +200,19 @@ export default function QuestionnaireForm({
             signature_name: signature.trim(),
             consent_date: consentDate,
           },
+          ...(ownerMode ? { consent_method: consentMethod } : {}),
         }),
       });
       if (!res.ok) {
-        const body = await res.text();
-        throw new Error(body || "Submission failed");
+        const raw = await res.text();
+        let msg = raw;
+        try {
+          const j = JSON.parse(raw) as { message?: string; error?: string };
+          msg = j.message || j.error || raw;
+        } catch {
+          /* plain text */
+        }
+        throw new Error(msg || "Submission failed");
       }
       setSubmitted(true);
     } catch (err) {
@@ -195,6 +220,26 @@ export default function QuestionnaireForm({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (submitted && ownerMode) {
+    return (
+      <div className="q-success">
+        <div className="icon" aria-hidden="true">✓</div>
+        <h1>Consultation saved.</h1>
+        <p>
+          Recorded on the client&apos;s file with consent{" "}
+          {consentMethod === "paper" ? "on a signed paper form" : "given verbally"}.
+        </p>
+        <a
+          href={`/admin/bookings/${bookingId}`}
+          className="q-submit"
+          style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+        >
+          Back to the booking
+        </a>
+      </div>
+    );
   }
 
   if (submitted) {
@@ -256,7 +301,7 @@ export default function QuestionnaireForm({
             <input
               id="q-email"
               type="email"
-              value={customer.email}
+              value={customer.email ?? ""}
               readOnly
             />
           </div>
@@ -480,6 +525,29 @@ export default function QuestionnaireForm({
           provided accurate health information and will inform my therapist of
           any changes.
         </div>
+        {ownerMode && (
+          <fieldset className="q-field" style={{ border: 0, padding: 0, marginBottom: 14 }}>
+            <label>How did the client give consent?</label>
+            <label className="q-check">
+              <input
+                type="radio"
+                name="consent-method"
+                checked={consentMethod === "verbal"}
+                onChange={() => setConsentMethod("verbal")}
+              />
+              I read the statement above to the client and they agreed
+            </label>
+            <label className="q-check">
+              <input
+                type="radio"
+                name="consent-method"
+                checked={consentMethod === "paper"}
+                onChange={() => setConsentMethod("paper")}
+              />
+              The client signed a paper consultation form (kept on file)
+            </label>
+          </fieldset>
+        )}
         <label className="q-check" style={{ marginBottom: 16 }}>
           <input
             type="checkbox"
@@ -487,11 +555,15 @@ export default function QuestionnaireForm({
             onChange={(e) => setConsentGiven(e.target.checked)}
             required
           />
-          I confirm and consent
+          {ownerMode
+            ? "The client confirmed these answers and consents"
+            : "I confirm and consent"}
         </label>
         <div className="q-grid">
           <div className="q-field">
-            <label htmlFor="q-signature">Type your full name as signature</label>
+            <label htmlFor="q-signature">
+              {ownerMode ? "Client's full name (as confirmed)" : "Type your full name as signature"}
+            </label>
             <input
               id="q-signature"
               type="text"
@@ -515,9 +587,9 @@ export default function QuestionnaireForm({
         <button
           type="submit"
           className="q-submit"
-          disabled={submitting || !consentGiven}
+          disabled={submitting || !consentGiven || (ownerMode && !consentMethod)}
         >
-          {submitting ? "Submitting…" : "Submit consultation"}
+          {submitting ? "Submitting…" : ownerMode ? "Save consultation" : "Submit consultation"}
         </button>
       </section>
     </form>
