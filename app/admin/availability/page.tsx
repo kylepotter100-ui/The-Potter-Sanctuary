@@ -1,4 +1,5 @@
 import AdminHeader from "@/components/AdminHeader";
+import TimeBlockForm from "@/components/admin/TimeBlockForm";
 import AvailabilityPanel from "@/components/AvailabilityPanel";
 import { supabaseAdmin } from "@/lib/supabase";
 import { HORIZON_DAYS, fetchSlotOverridesInWindow } from "@/lib/availability";
@@ -72,6 +73,7 @@ export default async function AvailabilityPage() {
       <main className="admin-main">
         <h1>Availability</h1>
         <p className="lede">Manage opening days, time slots, and blackout dates.</p>
+        <TimeBlockForm />
         {overridesErr && (
           <div className="admin-card" style={{ marginBottom: 16 }}>
             <strong>Schema update needed:</strong> the{" "}
