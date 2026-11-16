@@ -3,6 +3,7 @@ import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { supabaseAdmin } from "@/lib/supabase";
 import { voucherValueLabel } from "@/lib/vouchers";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -54,6 +55,7 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export default async function VoucherDetailPage({ params }: { params: Params }) {
+  await requireAdminPage();
   const { id } = await params;
   const back = "/admin/bookings?tab=vouchers";
 

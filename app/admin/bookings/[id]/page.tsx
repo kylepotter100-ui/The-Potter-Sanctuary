@@ -7,6 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { customerHasReviewed } from "@/lib/reviews";
 import { getLatestConsultationForCustomer } from "@/lib/consultation";
 import { resolveBack } from "@/lib/admin-back";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -91,6 +92,7 @@ export default async function AdminBookingDetailPage({
   params: Params;
   searchParams: SearchParams;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const { from } = await searchParams;
   const back = resolveBack(from);

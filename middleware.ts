@@ -1,25 +1,26 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   ADMIN_SESSION_COOKIE,
-  ADMIN_SESSION_VALUE,
   adminSessionCookie,
+  adminSessionSecret,
+  createAdminSessionToken,
+  verifyAdminSessionToken,
 } from "@/lib/admin-session";
 
-export function middleware(req: NextRequest) {
-  const session = req.cookies.get(ADMIN_SESSION_COOKIE);
-  if (!session || session.value !== ADMIN_SESSION_VALUE) {
+export async function middleware(req: NextRequest) {
+  const secret = adminSessionSecret();
+  const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  if (!secret || !(await verifyAdminSessionToken(secret, token))) {
     const loginUrl = new URL("/admin", req.url);
     loginUrl.searchParams.set("reason", "expired");
-    // Unauthenticated: redirect to login and NEVER set a session cookie. This is
-    // the only gate, and it stays intact.
+    // Unauthenticated: redirect to login and NEVER set a session cookie.
     return NextResponse.redirect(loginUrl);
   }
-  // Authenticated: rolling session — re-issue the cookie with a fresh 30-day
-  // expiry so the clock resets on every visit (sliding window). Reached only
-  // after the valid-session check above, so this refreshes an existing session
-  // and can never create one.
+  // Authenticated: rolling session — re-issue a freshly signed token with a
+  // new 30-day expiry. Reached only after the signature check above, so this
+  // refreshes a valid session and can never create one.
   const res = NextResponse.next();
-  res.cookies.set(adminSessionCookie());
+  res.cookies.set(adminSessionCookie(await createAdminSessionToken(secret)));
   return res;
 }
 

@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { searchClients } from "@/lib/clients";
-import {
-  ADMIN_SESSION_COOKIE,
-  ADMIN_SESSION_VALUE,
-} from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
-}
 
 // Admin-only client search (name / email / phone) used by the manual-booking
 // page's "find existing client" typeahead.

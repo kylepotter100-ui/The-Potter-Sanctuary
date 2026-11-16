@@ -4,6 +4,7 @@ import DashboardMonthNav from "@/components/DashboardMonthNav";
 import ExportBookingsButton from "@/components/ExportBookingsButton";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ukYearMonth, ukWallTimeToUtc, addDaysIso } from "@/lib/uk-time";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -90,6 +91,7 @@ export default async function DashboardPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAdminPage();
   const params = await searchParams;
 
   const ukNow = ukYearMonth();

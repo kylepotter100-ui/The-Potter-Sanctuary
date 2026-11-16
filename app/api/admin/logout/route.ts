@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { clearAdminSessionCookie } from "@/lib/admin-session";
 
-function clearCookie(res: NextResponse) {
-  res.cookies.set(clearAdminSessionCookie());
-  return res;
-}
-
+// POST only (the admin header submits a form). A GET handler let any page
+// sign the owner out with an <img src="/api/admin/logout">.
 export async function POST(req: Request) {
   const url = new URL("/admin", req.url);
-  return clearCookie(NextResponse.redirect(url, { status: 303 }));
-}
-
-export async function GET(req: Request) {
-  return POST(req);
+  const res = NextResponse.redirect(url, { status: 303 });
+  res.cookies.set(clearAdminSessionCookie());
+  return res;
 }

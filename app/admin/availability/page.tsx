@@ -3,11 +3,13 @@ import AvailabilityPanel from "@/components/AvailabilityPanel";
 import { supabaseAdmin } from "@/lib/supabase";
 import { HORIZON_DAYS, fetchSlotOverridesInWindow } from "@/lib/availability";
 import { addDaysIso, ukTodayIso } from "@/lib/uk-time";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function AvailabilityPage() {
+  await requireAdminPage();
   if (!supabaseAdmin) {
     return (
       <>

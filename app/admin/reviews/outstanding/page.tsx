@@ -4,6 +4,7 @@ import OutstandingReviewsList from "@/components/OutstandingReviewsList";
 import { supabaseAdmin } from "@/lib/supabase";
 import { listOutstandingReviewClients } from "@/lib/reviews";
 import { ukTodayIso } from "@/lib/uk-time";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,6 +13,7 @@ export const revalidate = 0;
 // session who haven't reviewed. Reached from the banner at the top of Bookings;
 // kept separate from /admin/reviews (submitted reviews).
 export default async function OutstandingReviewsPage() {
+  await requireAdminPage();
   if (!supabaseAdmin) {
     return (
       <>

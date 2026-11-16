@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/admin-auth";
 import { createBooking } from "@/lib/booking-create";
-import {
-  ADMIN_SESSION_COOKIE,
-  ADMIN_SESSION_VALUE,
-} from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
-}
 
 type Payload = {
   date: string;

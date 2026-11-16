@@ -6,6 +6,7 @@ import AdminNewBooking, {
 import { supabaseAdmin } from "@/lib/supabase";
 import { getClientProfile } from "@/lib/clients";
 import { resolveBack } from "@/lib/admin-back";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,6 +18,7 @@ export default async function NewBookingPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAdminPage();
   const { client, from } = await searchParams;
   // Where "← Back" / Cancel / Done return to: explicit ?from= wins; otherwise,
   // if launched from a client profile (?client=), go back there; else Bookings.
