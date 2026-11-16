@@ -386,3 +386,9 @@ BEGIN
 END$$;
 REVOKE ALL ON ALL TABLES    IN SCHEMA public FROM anon, authenticated;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
+
+-- ===== One review per booking (November 2026) =====
+-- Mirrors supabase/migrations/20261116_reviews_one_per_booking.sql (which
+-- guards against pre-existing duplicates before creating it).
+CREATE UNIQUE INDEX IF NOT EXISTS reviews_one_per_booking
+  ON public.reviews (booking_id);

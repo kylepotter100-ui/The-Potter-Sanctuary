@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-auth";
 import { createBooking } from "@/lib/booking-create";
+import { bookingFieldsProblem } from "@/lib/booking-validate";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,13 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json(
       { error: "Missing or invalid required fields" },
+      { status: 400 }
+    );
+  }
+  const fieldProblem = bookingFieldsProblem(payload);
+  if (fieldProblem) {
+    return NextResponse.json(
+      { error: "invalid_fields", message: fieldProblem },
       { status: 400 }
     );
   }

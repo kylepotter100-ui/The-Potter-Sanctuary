@@ -9,6 +9,8 @@ import {
 import { revertVoucherRedemption } from "@/lib/voucher-revert";
 import { checkRateLimit, clientIpFrom, hashIp } from "@/lib/rate-limit";
 import { ukTodayIso } from "@/lib/uk-time";
+import { bookingFieldsProblem } from "@/lib/booking-validate";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 type Payload = {
   date: string;
@@ -28,7 +30,25 @@ type Payload = {
   // Optional gift-voucher code from step 3. Re-validated here from scratch —
   // the client having called /api/voucher/check proves nothing.
   voucherCode?: string;
+  // Cloudflare Turnstile token from the widget on step 3.
+  turnstileToken?: string | null;
 };
+
+// Booking budgets. A real customer books once or twice; these stop a script
+// filling the diary with pending holds or using the studio as an email relay.
+const BOOKING_PER_IP = { limit: 6, windowMinutes: 60 };
+const BOOKING_PER_EMAIL = { limit: 4, windowMinutes: 24 * 60 };
+
+function rateLimited() {
+  return NextResponse.json(
+    {
+      error: "booking_rate_limited",
+      message:
+        "We've had several booking attempts from you in a short time. Please wait a little, or email hello@thepottersanctuary.co.uk and we'll book you in.",
+    },
+    { status: 429 }
+  );
+}
 
 // Same generic wording as /api/voucher/check, for the same reason: "no such
 // code" and "already used" must be indistinguishable.
@@ -69,6 +89,41 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Missing or invalid required fields" },
       { status: 400 }
+    );
+  }
+
+  const fieldProblem = bookingFieldsProblem(payload);
+  if (fieldProblem) {
+    return NextResponse.json(
+      { error: "invalid_fields", message: fieldProblem },
+      { status: 400 }
+    );
+  }
+
+  // ---- Abuse protection: rate limits, then the bot check ----------------
+  const ip = clientIpFrom(req);
+  if (supabaseAdmin) {
+    const [byIp, byEmail] = await Promise.all([
+      checkRateLimit(supabaseAdmin, "booking", await hashIp(ip), BOOKING_PER_IP),
+      checkRateLimit(
+        supabaseAdmin,
+        "booking-email",
+        await hashIp(`email:${payload.email.trim().toLowerCase()}`),
+        BOOKING_PER_EMAIL
+      ),
+    ]);
+    if (!byIp.allowed || !byEmail.allowed) return rateLimited();
+  }
+
+  const human = await verifyTurnstile(payload.turnstileToken, ip);
+  if (!human.ok) {
+    return NextResponse.json(
+      {
+        error: "verification_failed",
+        message:
+          "We couldn't confirm this booking came from a person. Please wait a moment and press the button again — or email hello@thepottersanctuary.co.uk.",
+      },
+      { status: 403 }
     );
   }
 

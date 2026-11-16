@@ -40,6 +40,10 @@ export const siteConfig = {
     times: null,
   },
   priceRange: "££",
+  // Cloudflare Turnstile SITE key (public by design). NEXT_PUBLIC_* is inlined
+  // at build time, so the literal is the real safety net (CLAUDE.md rule 4).
+  turnstileSiteKey:
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAAGDX2jhLiZDM7Mfh",
 } as const;
 
 export const ogDefaults = {

@@ -34,7 +34,7 @@ export default function ReviewForm({ bookingId }: Props) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Could not save your review.");
+        throw new Error(data.message || data.error || "Could not save your review.");
       }
       setDone(true);
     } catch (err) {
@@ -89,6 +89,7 @@ export default function ReviewForm({ bookingId }: Props) {
       <textarea
         id="review-comment"
         rows={4}
+        maxLength={2000}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="Your words help us, and other guests."
