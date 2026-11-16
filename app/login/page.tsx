@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { safeNext } from "@/lib/safe-next";
 import LoginForm from "@/components/LoginForm";
 import SageBrandedHeader from "@/components/SageBrandedHeader";
 
@@ -23,10 +24,7 @@ export default async function LoginPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const next =
-    typeof params.next === "string" && params.next.startsWith("/")
-      ? params.next
-      : "/account";
+  const next = safeNext(typeof params.next === "string" ? params.next : null);
   const expired = params.expired === "1";
   // Map known error codes to friendly copy; fall back to the raw value.
   const ERROR_MESSAGES: Record<string, string> = {

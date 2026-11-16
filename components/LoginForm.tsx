@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { safeNext } from "@/lib/safe-next";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Props = {
@@ -158,9 +159,7 @@ export default function LoginForm({ next }: Props) {
         }
         return;
       }
-      const safeNext =
-        next.startsWith("/") && !next.startsWith("//") ? next : "/account";
-      router.replace(safeNext);
+      router.replace(safeNext(next));
       router.refresh();
     } catch (err) {
       setError(

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { safeNext } from "@/lib/safe-next";
 
 export const dynamic = "force-dynamic";
 
@@ -9,17 +10,6 @@ export const dynamic = "force-dynamic";
 // LoginForm, which doesn't pass through this route at all. If anything
 // fails here we just send the user back to /login?expired=1 with a
 // friendly message inviting them to request a fresh code.
-
-function safeNext(raw: string | null): string {
-  if (!raw) return "/account";
-  // Only allow same-origin relative paths. Reject protocol-relative ("//foo")
-  // and absolute URLs to avoid open-redirect.
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/account";
-  // Strip URL fragments — Supabase's verifier sometimes decodes `%23` to
-  // a literal `#`, which then chews up the appended `&code=…`.
-  const hashIdx = raw.indexOf("#");
-  return hashIdx >= 0 ? raw.slice(0, hashIdx) : raw;
-}
 
 function expiredRedirect(origin: string) {
   return NextResponse.redirect(new URL("/login?expired=1", origin));
