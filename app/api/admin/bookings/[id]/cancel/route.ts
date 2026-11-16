@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
+import { sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import CustomerCancellationByOwner from "@/emails/CustomerCancellationByOwner";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -117,9 +118,9 @@ export async function POST(
           siteUrl,
         })
       );
-      const result = await resend.emails.send({
+      const result = await sendCustomerEmail(resend, booking.id, {
         from: FROM,
-        to: booking.customer_email,
+        to: booking.customer_email ?? "",
         replyTo: REPLY_TO,
         subject: "Your booking has been cancelled — The Potter Sanctuary",
         html,

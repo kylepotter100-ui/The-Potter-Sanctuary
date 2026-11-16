@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -155,9 +156,9 @@ export async function GET(req: Request) {
           returning,
         })
       );
-      const result = await resend.emails.send({
+      const result = await sendCustomerEmail(resend, b.id, {
         from: FROM,
-        to: b.customer_email,
+        to: b.customer_email ?? "",
         replyTo: REPLY_TO,
         subject: returning
           ? "A friendly reminder — please review your consultation details"
@@ -170,6 +171,12 @@ export async function GET(req: Request) {
           JSON.stringify(result.error)
         );
         await unclaim();
+        continue;
+      }
+      if (result.skipped) {
+        // Phone-only / do-not-email client: leave the claim in place so the
+        // hourly run doesn't keep re-evaluating it.
+        skipped++;
         continue;
       }
       sent++;

@@ -3,6 +3,7 @@ import AdminHeader from "@/components/AdminHeader";
 import AdminBookingActions from "@/components/AdminBookingActions";
 import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
 import RequestReviewButton from "@/components/RequestReviewButton";
+import { COMMS_REASON_LABEL, customerCommsDecision } from "@/lib/customer-email";
 import { supabaseAdmin } from "@/lib/supabase";
 import { customerHasReviewed } from "@/lib/reviews";
 import { getLatestConsultationForCustomer } from "@/lib/consultation";
@@ -206,8 +207,21 @@ export default async function AdminBookingDetailPage({
   //   "none"      → neither — the review can still be requested
   const reviewLeft = await customerHasReviewed(supabaseAdmin, {
     customerId: (booking.customer_id as string | null) ?? null,
-    email: booking.customer_email as string,
+    email: (booking.customer_email as string | null) ?? "",
   });
+  // Can this client be emailed about this booking? (phone-only / don't
+  // contact / no address). When not, email buttons give way to a call prompt.
+  const comms = await customerCommsDecision(booking.id as string);
+  const noEmailReason = comms.allowed ? null : COMMS_REASON_LABEL[comms.reason];
+  const callPrompt = (what: string) => (
+    <p className="info-text" style={{ marginTop: 10 }} data-testid="no-email-prompt">
+      No email will be sent ({noEmailReason}). {what} — call{" "}
+      <a href={`tel:${String(booking.customer_phone ?? "").replace(/\s/g, "")}`}>
+        {booking.customer_phone}
+      </a>
+      .
+    </p>
+  );
   const reviewState: "left" | "requested" | "none" = reviewLeft
     ? "left"
     : booking.review_email_sent_at
@@ -230,6 +244,13 @@ export default async function AdminBookingDetailPage({
           {booking.treatment_name} · {fmtLongDate(booking.booking_date)} at{" "}
           {booking.booking_time.slice(0, 5)}
         </p>
+        {noEmailReason && (
+          <p className="info-text" style={{ marginBottom: 16 }} data-testid="no-email-banner">
+            <strong>No automatic emails for this booking</strong> — {noEmailReason}.
+            Confirmations, reminders and questionnaire links won&apos;t be sent;
+            contact the client by phone.
+          </p>
+        )}
 
         {/* Section 1 — Booking details */}
         <section className="admin-card" style={{ marginBottom: 16 }}>
@@ -265,7 +286,7 @@ export default async function AdminBookingDetailPage({
             {booking.customer_last_name}
           </p>
           <p>
-            <strong>Email:</strong> {booking.customer_email}
+            <strong>Email:</strong> {booking.customer_email ?? "—"}
           </p>
           <p>
             <strong>Phone:</strong> {booking.customer_phone}
@@ -316,9 +337,10 @@ export default async function AdminBookingDetailPage({
               <p className="lede" style={{ margin: 0 }}>
                 No consultation submitted yet.
               </p>
-              {booking.status !== "cancelled" && (
-                <NudgeQuestionnaireButton bookingId={booking.id} />
-              )}
+              {booking.status !== "cancelled" &&
+                (noEmailReason
+                  ? callPrompt("Go through the consultation with them before the visit")
+                  : <NudgeQuestionnaireButton bookingId={booking.id} />)}
             </>
           ) : (
             <div className="q-readonly">
@@ -331,7 +353,7 @@ export default async function AdminBookingDetailPage({
                   . This client rebooked without signing in, so it hasn&apos;t
                   been re-confirmed for this booking — confirm details with the
                   client, or nudge them to update it.
-                  {booking.status !== "cancelled" && (
+                  {booking.status !== "cancelled" && !noEmailReason && (
                     <div style={{ marginTop: 10 }}>
                       <NudgeQuestionnaireButton bookingId={booking.id} />
                     </div>
@@ -346,7 +368,7 @@ export default async function AdminBookingDetailPage({
                   {booking.customer_first_name} {booking.customer_last_name}
                 </dd>
                 <dt>Email</dt>
-                <dd>{booking.customer_email}</dd>
+                <dd>{booking.customer_email ?? "—"}</dd>
                 <dt>Phone</dt>
                 <dd>{booking.customer_phone}</dd>
               </dl>
@@ -455,6 +477,11 @@ export default async function AdminBookingDetailPage({
               ? "This customer has left you a review."
               : "This customer hasn't left a review yet."}
           </p>
+          {noEmailReason ? (
+            reviewState !== "left" && booking.status !== "cancelled"
+              ? callPrompt("Ask for feedback in person or by phone")
+              : null
+          ) : (
           <RequestReviewButton
             bookingId={booking.id}
             reviewState={reviewState}
@@ -466,6 +493,7 @@ export default async function AdminBookingDetailPage({
                 : "/admin/reviews"
             }
           />
+          )}
         </section>
 
         {/* Section 4 — Actions */}

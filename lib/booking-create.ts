@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
@@ -35,7 +36,8 @@ export type CreateBookingInput = {
   fname: string;
   lname: string;
   phone: string;
-  email: string;
+  /** Optional only for owner-made bookings for clients who don't use email. */
+  email: string | null;
   message?: string | null;
   // Returning customers tell us whether their consultation details are still
   // current. true = no change, false = needs new questionnaire, null = first-time.
@@ -59,6 +61,16 @@ export type CreateBookingOptions = {
    * email is linked to that customer but changes nothing on their record.
    */
   trustedIdentity?: boolean;
+  /**
+   * Owner's "don't email this client" switch for this booking. Every client
+   * email about the booking then goes nowhere (lib/customer-email.ts).
+   */
+  suppressComms?: boolean;
+  /**
+   * Owner-chosen contact preference to store on the client ('phone' = owner
+   * phones them, 'none' = no automatic contact). Trusted callers only.
+   */
+  contactPreference?: "email" | "phone" | "none";
 };
 
 export type CreateBookingResult =
@@ -79,7 +91,7 @@ export async function createBooking(
 
   const adminMode = options.adminMode === true;
   const slotTime = input.time.length === 5 ? `${input.time}:00` : input.time;
-  const emailLower = input.email.toLowerCase();
+  const emailLower = input.email ? input.email.trim().toLowerCase() : null;
   const fullName = `${input.fname} ${input.lname}`.trim();
 
   // The services list is the source of truth for treatment id, display name,
@@ -119,11 +131,13 @@ export async function createBooking(
   // (correct) phone can, so we reuse that customer instead of creating a phantom.
   const trusted = options.trustedIdentity === true;
   const phoneNorm = normalizePhone(input.phone);
-  const { data: emailMatch } = await supabaseAdmin
-    .from("customers")
-    .select("id")
-    .eq("email", emailLower)
-    .maybeSingle();
+  const { data: emailMatch } = emailLower
+    ? await supabaseAdmin
+        .from("customers")
+        .select("id")
+        .eq("email", emailLower)
+        .maybeSingle()
+    : { data: null };
 
   if (emailMatch && !trusted) {
     // Existing customer, unproven caller: link only. Never let an anonymous
@@ -144,24 +158,29 @@ export async function createBooking(
     }
   }
 
-  if (!customerId) {
+  // Only written when it differs from the default, so this code keeps working
+  // before migration 20261117_contact_preferences adds the column.
+  const prefPatch =
+    trusted && options.contactPreference && options.contactPreference !== "email"
+      ? { contact_preference: options.contactPreference }
+      : {};
+  const customerFields = {
+    full_name: fullName,
+    first_name: input.fname,
+    last_name: input.lname,
+    phone_number: input.phone,
+    gender: input.gender ?? null,
+    updated_at: new Date().toISOString(),
+    ...prefPatch,
+  };
+
+  if (!customerId && emailLower) {
     // Genuinely new customer, or a trusted caller refreshing an existing one:
     // atomic upsert on the unique email so two concurrent first-time bookings
     // resolve to one row.
     const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
       .from("customers")
-      .upsert(
-        {
-          email: emailLower,
-          full_name: fullName,
-          first_name: input.fname,
-          last_name: input.lname,
-          phone_number: input.phone,
-          gender: input.gender ?? null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "email" }
-      )
+      .upsert({ email: emailLower, ...customerFields }, { onConflict: "email" })
       .select("id")
       .single();
     if (customerError) {
@@ -169,6 +188,30 @@ export async function createBooking(
     } else {
       customerId = upsertedCustomer.id;
     }
+  } else if (!customerId) {
+    // No email (owner booking a phone-only client) and no phone match: new
+    // client record keyed on name + phone.
+    const { data: created, error: createErr } = await supabaseAdmin
+      .from("customers")
+      .insert({ email: null, ...customerFields })
+      .select("id")
+      .single();
+    if (createErr) {
+      console.error("[booking] customer insert failed", createErr.code, createErr.message);
+      return {
+        ok: false,
+        status: 500,
+        error: "customer_create_failed",
+        message:
+          ["23502", "PGRST204", "42703"].includes(createErr.code ?? "")
+            ? "Booking without an email needs the latest database update (migration 20261117_contact_preferences)."
+            : "Could not create the client record. Please try again.",
+      };
+    }
+    customerId = created.id;
+  } else if (trusted && Object.keys(prefPatch).length > 0) {
+    // Existing client matched by phone: the owner's preference still applies.
+    await supabaseAdmin.from("customers").update(prefPatch).eq("id", customerId);
   }
 
   const { data: inserted, error: insertError } = await supabaseAdmin
@@ -177,7 +220,7 @@ export async function createBooking(
       customer_id: customerId,
       customer_first_name: input.fname,
       customer_last_name: input.lname,
-      customer_email: input.email,
+      customer_email: input.email ? input.email.trim() : null,
       customer_phone: input.phone,
       customer_gender: input.gender ?? null,
       treatment_id: service.bookingId,
@@ -192,6 +235,8 @@ export async function createBooking(
       voucher_id: input.voucher?.id ?? null,
       message: input.message?.trim() || null,
       status: options.status,
+      // Only sent when true so pre-migration databases keep accepting inserts.
+      ...(options.suppressComms ? { suppress_comms: true } : {}),
     })
     .select("id")
     .single();
@@ -208,6 +253,16 @@ export async function createBooking(
     // hitting this index means a LIVE booking already links this voucher, so
     // the voucher is legitimately redeemed. Releasing would leave an active
     // voucher attached to a live booking — the very state the index prevents.
+    const code = (insertError as { code?: string }).code ?? "";
+    if (code === "PGRST204" || code === "42703" || code === "23502") {
+      return {
+        ok: false,
+        status: 500,
+        error: "migration_required",
+        message:
+          "This kind of booking needs the latest database update (migration 20261117_contact_preferences). Ask your developer, or book with an email address for now.",
+      };
+    }
     if (
       /bookings_voucher_active_unique/i.test(insertError.message ?? "") ||
       /bookings_voucher_active_unique/i.test(
@@ -319,9 +374,9 @@ export async function createBooking(
     );
 
     const sends: Promise<{ error: unknown }>[] = [
-      resend.emails.send({
+      sendCustomerEmail(resend, inserted.id, {
         from: FROM,
-        to: input.email,
+        to: input.email ?? "",
         replyTo: OWNER_TO,
         subject: "Your reservation at The Potter Sanctuary",
         html: customerHtml,
@@ -335,7 +390,7 @@ export async function createBooking(
           firstName: input.fname,
           lastName: input.lname,
           phone: input.phone,
-          customerEmail: input.email,
+          customerEmail: input.email ?? "—",
           treatmentName,
           bookingDate: dateLong,
           bookingTime: timeNice,
@@ -350,7 +405,7 @@ export async function createBooking(
         resend.emails.send({
           from: FROM,
           to: OWNER_TO,
-          replyTo: input.email,
+          replyTo: input.email || undefined,
           subject: `New booking — ${treatmentName} — ${input.fname} ${input.lname}`,
           html: ownerHtml,
         }) as Promise<{ error: unknown }>

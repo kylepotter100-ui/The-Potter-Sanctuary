@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
+import { COMMS_REASON_LABEL, customerCommsDecision, sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -54,6 +55,18 @@ export async function POST(
 
   if (bookingError || !booking) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  }
+
+  // Phone-only / do-not-email clients: say so instead of silently not sending.
+  const comms = await customerCommsDecision(booking.id);
+  if (!comms.allowed) {
+    return NextResponse.json(
+      {
+        error: "not_emailable",
+        message: `Not sent — ${COMMS_REASON_LABEL[comms.reason]}.`,
+      },
+      { status: 409 }
+    );
   }
 
   if (booking.status === "cancelled") {
@@ -157,9 +170,9 @@ export async function POST(
           siteUrl,
         })
       );
-      const result = await resend.emails.send({
+      const result = await sendCustomerEmail(resend, booking.id, {
         from: FROM,
-        to: booking.customer_email,
+        to: booking.customer_email ?? "",
         replyTo: REPLY_TO,
         subject: `How was your ${booking.treatment_name}? — The Potter Sanctuary`,
         html,

@@ -67,9 +67,10 @@ export default function RequestReviewButton({
         alreadyReviewed?: boolean;
         alreadyRequested?: boolean;
         error?: string;
+        message?: string;
       } | null;
       if (!res.ok) {
-        throw new Error(data?.error || "Could not request review");
+        throw new Error(data?.message || data?.error || "Could not request review");
       }
       setConfirming(false);
       setMsg(resend ? "Another request sent" : "Review requested");

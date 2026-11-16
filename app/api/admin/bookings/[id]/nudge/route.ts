@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
+import { COMMS_REASON_LABEL, customerCommsDecision, sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import ConsultationReminder from "@/emails/ConsultationReminder";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -48,6 +49,18 @@ export async function POST(
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
   }
 
+  // Phone-only / do-not-email clients: say so instead of silently not sending.
+  const comms = await customerCommsDecision(booking.id);
+  if (!comms.allowed) {
+    return NextResponse.json(
+      {
+        error: "not_emailable",
+        message: `Not sent — ${COMMS_REASON_LABEL[comms.reason]}.`,
+      },
+      { status: 409 }
+    );
+  }
+
   // Re-check at send time: if the questionnaire is already complete (a
   // consultation_responses row exists for this booking), don't send.
   const { count: consultCount, error: consultError } = await supabaseAdmin
@@ -92,9 +105,9 @@ export async function POST(
         siteUrl,
       })
     );
-    const result = await resend.emails.send({
+    const result = await sendCustomerEmail(resend, booking.id, {
       from: FROM,
-      to: booking.customer_email,
+      to: booking.customer_email ?? "",
       replyTo: REPLY_TO,
       subject: "A friendly reminder — please complete your consultation",
       html,

@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import RescheduleConfirmation from "@/emails/RescheduleConfirmation";
 import OwnerRescheduleNotice from "@/emails/OwnerRescheduleNotice";
@@ -176,9 +177,9 @@ export async function rescheduleBooking(
         })
       );
       const sends: Promise<{ error: unknown }>[] = [
-        resend.emails.send({
+        sendCustomerEmail(resend, booking.id, {
           from: FROM,
-          to: booking.customer_email,
+          to: booking.customer_email ?? "",
           replyTo: OWNER_TO,
           subject: "Your appointment has been rescheduled — The Potter Sanctuary",
           html: customerHtml,
@@ -204,7 +205,7 @@ export async function rescheduleBooking(
           resend.emails.send({
             from: FROM,
             to: OWNER_TO,
-            replyTo: booking.customer_email,
+            replyTo: booking.customer_email ?? undefined,
             subject: `Rescheduled — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
             html: ownerHtml,
           }) as Promise<{ error: unknown }>

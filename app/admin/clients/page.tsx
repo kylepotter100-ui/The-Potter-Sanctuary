@@ -106,7 +106,7 @@ export default async function ClientsPage({
                   </td>
                   <td data-label="Contact">
                     <span className="muted">
-                      {c.email}
+                      {c.email ?? (c.contactPreference !== "email" ? "Phone only" : "No email")}
                       {c.phone ? (
                         <>
                           <br />

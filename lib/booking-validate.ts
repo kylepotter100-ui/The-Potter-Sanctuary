@@ -26,7 +26,10 @@ export type BookingFields = {
 };
 
 /** Returns a customer-friendly error message, or null when the fields are fine. */
-export function bookingFieldsProblem(f: BookingFields): string | null {
+export function bookingFieldsProblem(
+  f: BookingFields,
+  opts: { emailOptional?: boolean } = {}
+): string | null {
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
   const fname = str(f.fname);
   const lname = str(f.lname);
@@ -41,8 +44,10 @@ export function bookingFieldsProblem(f: BookingFields): string | null {
   if (URLISH.test(fname) || URLISH.test(lname)) {
     return "Please enter just your name (no links or symbols).";
   }
-  if (!email || email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return "Please enter a valid email address.";
+  if (email || !opts.emailOptional) {
+    if (!email || email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return "Please enter a valid email address.";
+    }
   }
   const digits = phone.replace(/\D/g, "");
   if (!phone || phone.length > LIMITS.phone || digits.length < 7 || !/^[0-9+()\-\s.]+$/.test(phone)) {

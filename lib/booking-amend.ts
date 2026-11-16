@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import TreatmentChanged from "@/emails/TreatmentChanged";
 import OwnerTreatmentChangeNotice from "@/emails/OwnerTreatmentChangeNotice";
@@ -230,9 +231,9 @@ export async function changeBookingTreatment(
         })
       );
       const results = await Promise.all([
-        resend.emails.send({
+        sendCustomerEmail(resend, booking.id, {
           from: FROM,
-          to: booking.customer_email,
+          to: booking.customer_email ?? "",
           replyTo: OWNER_TO,
           subject: "Your booking has been updated — The Potter Sanctuary",
           html: customerHtml,
@@ -240,7 +241,7 @@ export async function changeBookingTreatment(
         resend.emails.send({
           from: FROM,
           to: OWNER_TO,
-          replyTo: booking.customer_email,
+          replyTo: booking.customer_email ?? undefined,
           subject: `Treatment changed — ${newName} — ${booking.customer_first_name} ${booking.customer_last_name}`,
           html: ownerHtml,
         }) as Promise<{ error: unknown }>,
