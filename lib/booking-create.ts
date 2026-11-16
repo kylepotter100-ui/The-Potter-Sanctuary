@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { sendCustomerEmail } from "@/lib/customer-email";
+import { emailCalendar, icsAttachment } from "@/lib/calendar";
 import { render } from "@react-email/render";
 import BookingConfirmation from "@/emails/BookingConfirmation";
 import OwnerNotification from "@/emails/OwnerNotification";
@@ -358,8 +359,16 @@ export async function createBooking(
   }
 
   try {
+    const cal = {
+      bookingId: inserted.id as string,
+      date: input.date,
+      time: slotTime,
+      durationMinutes,
+      treatmentName,
+    };
     const customerHtml = await render(
       BookingConfirmation({
+        calendar: emailCalendar(cal),
         voucherCode: input.voucher?.code ?? null,
         firstName: input.fname,
         treatmentName,
@@ -380,6 +389,7 @@ export async function createBooking(
         replyTo: OWNER_TO,
         subject: "Your reservation at The Potter Sanctuary",
         html: customerHtml,
+        attachments: [icsAttachment(cal)],
       }) as Promise<{ error: unknown }>,
     ];
 

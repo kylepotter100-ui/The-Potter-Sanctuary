@@ -10,9 +10,14 @@ import {
   LINE,
   Paragraph,
   SectionHeading,
+  AppointmentExtras,
+  type EmailCalendar,
+  STUDIO_ADDRESS,
 } from "./_shared";
 
 type Props = {
+  /** Calendar links + directions; the .ics is attached by the sender. */
+  calendar?: EmailCalendar | null;
   firstName: string;
   treatmentName: string; // new
   treatmentPrice: number; // new, pounds
@@ -31,6 +36,7 @@ type Props = {
 };
 
 export default function TreatmentChanged({
+  calendar = null,
   firstName,
   treatmentName,
   treatmentPrice,
@@ -83,10 +89,11 @@ export default function TreatmentChanged({
           />
           <DetailRow
             label="Location"
-            value="22 Lockheed Close, Beck Row, IP28 3AB"
+            value={STUDIO_ADDRESS}
             last
           />
         </Section>
+        <AppointmentExtras calendar={calendar} />
 
         <Divider />
         <SectionHeading>Payment</SectionHeading>

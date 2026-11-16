@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { sendCustomerEmail } from "@/lib/customer-email";
+import { emailCalendar, icsAttachment } from "@/lib/calendar";
 import { render } from "@react-email/render";
 import RescheduleConfirmation from "@/emails/RescheduleConfirmation";
 import OwnerRescheduleNotice from "@/emails/OwnerRescheduleNotice";
@@ -165,8 +166,19 @@ export async function rescheduleBooking(
     const newDateLong = formatLongDate(input.newDate);
     const newTimeNice = formatTime12h(input.newTime);
     try {
+      // Same UID as the original invite + a higher SEQUENCE, so calendars MOVE
+      // the existing event instead of adding a second one.
+      const cal = {
+        bookingId: booking.id as string,
+        date: input.newDate,
+        time: input.newTime,
+        durationMinutes: duration,
+        treatmentName: booking.treatment_name as string,
+        sequence: Math.floor(Date.now() / 1000),
+      };
       const customerHtml = await render(
         RescheduleConfirmation({
+          calendar: emailCalendar(cal),
           firstName: booking.customer_first_name,
           treatmentName: booking.treatment_name,
           bookingDate: newDateLong,
@@ -183,6 +195,7 @@ export async function rescheduleBooking(
           replyTo: OWNER_TO,
           subject: "Your appointment has been rescheduled — The Potter Sanctuary",
           html: customerHtml,
+          attachments: [icsAttachment(cal)],
         }) as Promise<{ error: unknown }>,
       ];
       if (input.by === "customer") {

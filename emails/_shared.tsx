@@ -11,6 +11,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { ReactNode } from "react";
+import { siteConfig } from "@/lib/site";
 
 // Shared design tokens. Every transactional email uses these so the visual
 // language stays consistent with the magic-link template.
@@ -28,6 +29,8 @@ export const SANS = "Georgia, 'Times New Roman', serif";
 export const STUDIO_NAME = "The Potter Sanctuary";
 export const STUDIO_LOCATION = "The Potter Sanctuary, Beck Row, Suffolk";
 export const SUPPORT_EMAIL = "hello@thepottersanctuary.co.uk";
+// Full address — clients with a booking only. Single source: lib/site.ts.
+export const STUDIO_ADDRESS = siteConfig.privateAddress;
 
 type LayoutProps = {
   preview: string;
@@ -336,5 +339,75 @@ export function DetailRow({
         </tr>
       </tbody>
     </table>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Add to calendar" + "Finding us" — shared by every email that describes an
+// upcoming appointment. The .ics file itself is attached by the sender.
+// ---------------------------------------------------------------------------
+const linkStyle = { color: SAGE_DEEP, textDecoration: "underline" } as const;
+
+export function AddToCalendar({
+  googleUrl,
+  outlookUrl,
+}: {
+  googleUrl: string;
+  outlookUrl: string;
+}) {
+  return (
+    <Section style={{ margin: "4px 0 6px" }}>
+      <Text style={{ fontSize: 15, lineHeight: 1.6, color: INK_SOFT, margin: "0 0 6px" }}>
+        <strong style={{ color: INK }}>Add it to your calendar:</strong>{" "}
+        <a href={googleUrl} style={linkStyle}>Google</a>
+        {" · "}
+        <a href={outlookUrl} style={linkStyle}>Outlook</a>
+        {" · "}
+        Apple &amp; others — open the attached invite.
+      </Text>
+    </Section>
+  );
+}
+
+export function FindingUs({
+  address,
+  directionsUrl,
+  notes,
+}: {
+  address: string;
+  directionsUrl: string;
+  notes?: string | null;
+}) {
+  return (
+    <>
+      <Divider />
+      <SectionHeading>Finding us</SectionHeading>
+      <Text style={{ fontSize: 16, lineHeight: 1.6, color: INK, margin: "0 0 8px" }}>
+        {address}
+      </Text>
+      <Text style={{ fontSize: 15, lineHeight: 1.6, color: INK_SOFT, margin: "0 0 12px" }}>
+        <a href={directionsUrl} style={linkStyle}>Get directions</a>
+        {notes ? <> · {notes}</> : null}
+      </Text>
+    </>
+  );
+}
+
+export type EmailCalendar = {
+  googleUrl: string;
+  outlookUrl: string;
+  directionsUrl: string;
+  address: string;
+  notes?: string | null;
+};
+
+/** Calendar links + Finding us, rendered only when the sender passes them. */
+export function AppointmentExtras({ calendar }: { calendar?: EmailCalendar | null }) {
+  if (!calendar) return null;
+  return (
+    <>
+      <AddToCalendar googleUrl={calendar.googleUrl} outlookUrl={calendar.outlookUrl} />
+      <FindingUs address={calendar.address} directionsUrl={calendar.directionsUrl} notes={calendar.notes} />
+    </>
   );
 }

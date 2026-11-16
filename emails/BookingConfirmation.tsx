@@ -13,9 +13,14 @@ import {
   SERIF,
   BONE,
   LINE,
+  AppointmentExtras,
+  type EmailCalendar,
+  STUDIO_ADDRESS,
 } from "./_shared";
 
 type Props = {
+  /** Calendar links + directions; the .ics is attached by the sender. */
+  calendar?: EmailCalendar | null;
   firstName: string;
   treatmentName: string;
   bookingDate: string;
@@ -34,6 +39,7 @@ type Props = {
 };
 
 export default function BookingConfirmation({
+  calendar = null,
   firstName,
   treatmentName,
   bookingDate,
@@ -82,10 +88,11 @@ export default function BookingConfirmation({
           ) : null}
           <DetailRow
             label="Location"
-            value="22 Lockheed Close, Beck Row, IP28 3AB"
+            value={STUDIO_ADDRESS}
             last
           />
         </Section>
+        <AppointmentExtras calendar={calendar} />
 
         {/* Payment */}
         <Divider />

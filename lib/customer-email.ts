@@ -1,4 +1,5 @@
 import type { Resend } from "resend";
+import { toPlainText } from "@react-email/render";
 import { supabaseAdmin } from "@/lib/supabase";
 
 // THE gate for every automated email to a CLIENT about a booking
@@ -60,7 +61,13 @@ export async function sendCustomerEmail(
     console.log(`[customer-email] not sent (${decision.reason}) booking=${bookingId}`);
     return { error: null, skipped: decision.reason };
   }
-  const r = (await resend.emails.send(msg)) as { error: unknown };
+  // Plain-text alternative: better deliverability (spam filters favour
+  // multipart mail) and readable in text-only clients and screen readers.
+  const withText =
+    typeof (msg as { html?: unknown }).html === "string" && !(msg as { text?: unknown }).text
+      ? ({ ...msg, text: toPlainText((msg as { html: string }).html) } as SendArgs)
+      : msg;
+  const r = (await resend.emails.send(withText)) as { error: unknown };
   return { error: r.error };
 }
 
