@@ -10,7 +10,7 @@ import { ukTodayIso, ukWallTimeToUtc } from "@/lib/uk-time";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Your account — The Potter Sanctuary",
+  title: "Your account",
   robots: { index: false, follow: false },
 };
 

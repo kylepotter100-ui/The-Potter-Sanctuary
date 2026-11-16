@@ -21,6 +21,8 @@ export type Service = {
   };
   reverse: boolean;
   bookingId: string;
+  /** schema.org serviceType — what a search engine should call this. */
+  serviceType: string;
   seo: {
     title: string;
     description: string;
@@ -64,9 +66,10 @@ export const services: Service[] = [
     },
     reverse: false,
     bookingId: "full-body-aromatherapy",
+    serviceType: "Aromatherapy massage",
     seo: {
       title:
-        "Full Body Aromatherapy Massage Suffolk | The Potter Sanctuary, Beck Row",
+        "Aromatherapy Massage in Beck Row, Suffolk",
       description:
         "A 60-minute full body aromatherapy massage in Suffolk, with bespoke plant-based essential oil blends. Led personally by a fully trained Clarins therapist in our private Beck Row studio.",
       h1: "Full Body Aromatherapy Massage in Suffolk",
@@ -113,9 +116,10 @@ export const services: Service[] = [
     },
     reverse: true,
     bookingId: "back-neck-scalp",
+    serviceType: "Back, neck and scalp massage",
     seo: {
       title:
-        "Back, Neck & Scalp Massage Suffolk | Tension Relief in Beck Row",
+        "Back, Neck & Scalp Massage in Beck Row",
       description:
         "A 30-minute back, neck and scalp massage in Suffolk — focused tension relief delivered by a fully trained Clarins therapist in a private Beck Row studio.",
       h1: "Back, Neck & Scalp Massage in Suffolk",
@@ -161,9 +165,10 @@ export const services: Service[] = [
     },
     reverse: false,
     bookingId: "hot-stones-full",
+    serviceType: "Hot stone massage",
     seo: {
       title:
-        "Hot Stone Massage Suffolk | Full Body Hot Stones in Beck Row",
+        "Hot Stone Massage in Beck Row, Suffolk",
       description:
         "A 60-minute hot stones full body treatment in Beck Row, Suffolk. Heated basalt stones, plant-based oils, delivered by a fully trained Clarins therapist.",
       h1: "Hot Stones Full Body Massage in Suffolk",
@@ -208,9 +213,10 @@ export const services: Service[] = [
     },
     reverse: true,
     bookingId: "hot-stones-back",
+    serviceType: "Hot stone back massage",
     seo: {
       title:
-        "Hot Stone Back Massage Suffolk | The Potter Sanctuary, Beck Row",
+        "Hot Stone Back Massage in Beck Row",
       description:
         "A 30-minute hot stone back massage in Suffolk. Targeted heat and pressure through the lower, mid and upper back, in a private Beck Row studio.",
       h1: "Hot Stone Back Massage in Suffolk",

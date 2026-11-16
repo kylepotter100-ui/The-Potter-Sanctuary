@@ -11,7 +11,7 @@ import QuestionnaireForm, {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Consultation — The Potter Sanctuary",
+  title: "Consultation",
   description: "Complete your consultation form before your session.",
   robots: { index: false, follow: false },
 };

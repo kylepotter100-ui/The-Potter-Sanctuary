@@ -40,6 +40,21 @@ export const siteConfig = {
     times: null,
   },
   priceRange: "££",
+  logo: "/sanctuary-logo.png",
+  // Search-engine listing link for "Get directions" and JSON-LD hasMap.
+  // Town + postcode rather than the unconfirmed coordinates below.
+  mapUrl:
+    "https://www.google.com/maps/search/?api=1&query=Beck+Row%2C+Suffolk+IP28+3AB",
+  // The therapist. Leave `name` empty until the owner confirms how she wants
+  // to be named publicly — the Person schema is only emitted when it's set.
+  practitioner: {
+    name: "" as string,
+    jobTitle: "Massage & body therapist",
+    credential: "Clarins-trained therapist",
+  },
+  // Cloudflare Web Analytics beacon token (cookie-free). Empty = no beacon.
+  // NEXT_PUBLIC_* is inlined at build, so set it in the build env or here.
+  analyticsToken: (process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN ?? "") as string,
   // Cloudflare Turnstile SITE key (public by design). NEXT_PUBLIC_* is inlined
   // at build time, so the literal is the real safety net (CLAUDE.md rule 4).
   turnstileSiteKey:

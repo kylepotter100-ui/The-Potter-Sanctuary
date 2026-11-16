@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Share your feedback — The Potter Sanctuary",
+  title: "Share your feedback",
   robots: { index: false, follow: false },
 };
 

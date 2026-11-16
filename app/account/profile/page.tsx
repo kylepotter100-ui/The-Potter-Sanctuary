@@ -11,7 +11,7 @@ import ProfileForm, {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Your profile — The Potter Sanctuary",
+  title: "Your profile",
   robots: { index: false, follow: false },
 };
 

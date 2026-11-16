@@ -12,7 +12,7 @@ import HeroCta from "@/components/HeroCta";
 import ServiceCardLink from "@/components/ServiceCardLink";
 import JsonLd from "@/components/JsonLd";
 import { services } from "@/lib/services";
-import { localBusinessJsonLd, pageMetadata } from "@/lib/seo";
+import { localBusinessJsonLd, pageMetadata, websiteJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
@@ -32,8 +32,12 @@ export default function HomePage() {
         {/* HERO */}
         <section className="hero" id="top">
           <div className="hero-text">
-            <div className="hero-eyebrow">A Sanctuary for the Senses</div>
             <h1>
+              {/* The small line above the display heading is part of the h1 so
+                  the page's main heading says WHAT and WHERE. */}
+              <span className="hero-eyebrow hero-eyebrow-in-h1">
+                Massage in Beck Row, Suffolk
+              </span>
               Stillness, distilled
               <br />
               <em>into ritual.</em>
@@ -192,7 +196,7 @@ export default function HomePage() {
                         className="svc-book"
                         style={{ textDecoration: "none" }}
                       >
-                        Read more →
+                        Read more<span className="sr-only"> about {s.name} {s.nameEm}</span> →
                       </Link>
                       <ServiceCardLink bookingId={s.bookingId} />
                     </div>
@@ -328,7 +332,8 @@ export default function HomePage() {
 
         <Footer />
       </div>
-      <JsonLd data={localBusinessJsonLd()} id="ld-local-business" />
+      <JsonLd data={localBusinessJsonLd(services)} id="ld-local-business" />
+      <JsonLd data={websiteJsonLd()} id="ld-website" />
     </>
   );
 }
