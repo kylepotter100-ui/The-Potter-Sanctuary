@@ -10,9 +10,14 @@ import {
   SectionHeading,
   BONE,
   LINE,
+  AppointmentExtras,
+  type EmailCalendar,
+  STUDIO_ADDRESS,
 } from "./_shared";
 
 type Props = {
+  /** Calendar links + directions; the .ics is attached by the sender. */
+  calendar?: EmailCalendar | null;
   firstName: string;
   treatmentName: string;
   bookingDate: string; // new date (long)
@@ -23,6 +28,7 @@ type Props = {
 };
 
 export default function RescheduleConfirmation({
+  calendar = null,
   firstName,
   treatmentName,
   bookingDate,
@@ -62,10 +68,11 @@ export default function RescheduleConfirmation({
           />
           <DetailRow
             label="Location"
-            value="22 Lockheed Close, Beck Row, IP28 3AB"
+            value={STUDIO_ADDRESS}
             last
           />
         </Section>
+        <AppointmentExtras calendar={calendar} />
 
         <Divider />
         <p

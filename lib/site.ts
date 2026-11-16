@@ -41,6 +41,12 @@ export const siteConfig = {
   },
   priceRange: "££",
   logo: "/sanctuary-logo.png",
+  // Full studio address. Only ever shown to clients with a booking (emails,
+  // calendar invites) — the public site says "address shared on booking".
+  privateAddress: "22 Lockheed Close, Beck Row, IP28 3AB",
+  // Optional arrival note for confirmation emails (parking, door, etc.).
+  // Empty = section shows only the address and map link.
+  arrivalNotes: "" as string,
   // Search-engine listing link for "Get directions" and JSON-LD hasMap.
   // Town + postcode rather than the unconfirmed coordinates below.
   mapUrl:

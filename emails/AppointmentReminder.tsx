@@ -10,6 +10,7 @@ import {
   SectionHeading,
   BONE,
   LINE,
+  STUDIO_ADDRESS,
 } from "./_shared";
 
 type Props = {
@@ -57,7 +58,7 @@ export default function AppointmentReminder({
           <DetailRow label="Time" value={bookingTime} />
           <DetailRow
             label="Location"
-            value="22 Lockheed Close, Beck Row, IP28 3AB"
+            value={STUDIO_ADDRESS}
             last
           />
         </Section>

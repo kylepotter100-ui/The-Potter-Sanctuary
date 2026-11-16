@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
 import { sendCustomerEmail } from "@/lib/customer-email";
+import { emailCalendar, icsAttachment } from "@/lib/calendar";
 import { render } from "@react-email/render";
 import BookingConfirmed from "@/emails/BookingConfirmed";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -71,7 +72,7 @@ export async function POST(
   }
 
   const { data: rows, error } = await query.select(
-    "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, status, voucher_id"
+    "id, customer_first_name, customer_email, treatment_name, treatment_price, booking_date, booking_time, duration_minutes, status, voucher_id"
   );
 
   if (error) {
@@ -115,8 +116,16 @@ export async function POST(
       const resend = new Resend(apiKey);
       const siteUrl = siteConfig.url;
       try {
+        const cal = {
+          bookingId: data.id as string,
+          date: data.booking_date as string,
+          time: data.booking_time as string,
+          durationMinutes: data.duration_minutes as number,
+          treatmentName: data.treatment_name as string,
+        };
         const html = await render(
           BookingConfirmed({
+            calendar: emailCalendar(cal),
             firstName: data.customer_first_name,
             treatmentName: data.treatment_name,
             bookingDate: formatLongDate(data.booking_date),
@@ -132,6 +141,7 @@ export async function POST(
           replyTo: REPLY_TO,
           subject: "Your booking is confirmed — The Potter Sanctuary",
           html,
+          attachments: [icsAttachment(cal)],
         });
         if (result.error) {
           console.error("[admin status] Resend error:", JSON.stringify(result.error));
