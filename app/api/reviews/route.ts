@@ -5,6 +5,8 @@ import OwnerReviewNotification from "@/emails/OwnerReviewNotification";
 import { supabaseAdmin } from "@/lib/supabase";
 import { siteConfig } from "@/lib/site";
 import { formatLongDate } from "@/lib/format";
+import { checkRateLimit, clientIpFrom, hashIp } from "@/lib/rate-limit";
+import { LIMITS } from "@/lib/booking-validate";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,25 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
+  if (comment && comment.length > LIMITS.reviewComment) {
+    return NextResponse.json(
+      { error: `Please keep your comment under ${LIMITS.reviewComment} characters.` },
+      { status: 400 }
+    );
+  }
+
+  const { allowed } = await checkRateLimit(
+    supabaseAdmin,
+    "review",
+    await hashIp(clientIpFrom(req)),
+    { limit: 10, windowMinutes: 60 }
+  );
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
 
   // Validate the booking exists and that a review was actually requested
   // for it (review_email_sent_at IS NOT NULL) — stops drive-by submissions.
@@ -64,6 +85,21 @@ export async function POST(req: Request) {
     );
   }
 
+  // One review per booking. Checked here for a friendly message; the unique
+  // index reviews_one_per_booking (migration 20261116_reviews_one_per_booking)
+  // is the race-proof backstop, surfaced as the same 409 below.
+  const { data: existing } = await supabaseAdmin
+    .from("reviews")
+    .select("id")
+    .eq("booking_id", booking.id)
+    .limit(1);
+  if (existing && existing.length > 0) {
+    return NextResponse.json(
+      { error: "already_reviewed", message: "Thank you — we already have your review for this visit." },
+      { status: 409 }
+    );
+  }
+
   const { error: insertErr } = await supabaseAdmin.from("reviews").insert({
     booking_id: booking.id,
     customer_id: booking.customer_id,
@@ -71,6 +107,12 @@ export async function POST(req: Request) {
     comment,
   });
 
+  if (insertErr && (insertErr as { code?: string }).code === "23505") {
+    return NextResponse.json(
+      { error: "already_reviewed", message: "Thank you — we already have your review for this visit." },
+      { status: 409 }
+    );
+  }
   if (insertErr) {
     console.error("[reviews] insert failed", JSON.stringify(insertErr));
     return NextResponse.json(

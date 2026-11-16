@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { checkRateLimit, clientIpFrom, hashIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +34,30 @@ export async function POST(req: Request) {
   }
 
   const email = (body.email ?? "").trim().toLowerCase();
-  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+  if (!email || email.length > 254 || !/\S+@\S+\.\S+/.test(email)) {
     return NextResponse.json({ exists: false });
+  }
+
+  // Each successful call is followed by a sign-in code email, so cap both
+  // per IP (enumeration) and per address (inbox flooding).
+  const [byIp, byEmail] = await Promise.all([
+    checkRateLimit(supabaseAdmin, "signin-ip", await hashIp(clientIpFrom(req)), {
+      limit: 10,
+      windowMinutes: 15,
+    }),
+    checkRateLimit(supabaseAdmin, "signin-email", await hashIp(`email:${email}`), {
+      limit: 5,
+      windowMinutes: 60,
+    }),
+  ]);
+  if (!byIp.allowed || !byEmail.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many sign-in attempts. Please wait a few minutes and try again.",
+      },
+      { status: 429, headers: { "Cache-Control": "private, no-cache, no-store" } }
+    );
   }
 
   try {

@@ -9,6 +9,7 @@ import {
 } from "@/lib/availability";
 import { ukNow } from "@/lib/uk-time";
 import InlineSignInModal from "@/components/InlineSignInModal";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 // Shortest treatment on offer — a start time is only worth showing if at least
 // this duration fits there.
@@ -109,6 +110,12 @@ export default function Booking({ preselectId }: Props) {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Cloudflare Turnstile bot check: token from the widget on step 3. Single
+  // use — bumped resetKey fetches a fresh one after any failed submission.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<string | null>(null);
+  turnstileRef.current = turnstileToken;
+  const [turnstileReset, setTurnstileReset] = useState(0);
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [hasPriorConsultation, setHasPriorConsultation] = useState(false);
@@ -662,6 +669,13 @@ export default function Booking({ preselectId }: Props) {
     if (!date || !time || !service) return;
     setSubmitting(true);
     setSubmitError(null);
+    // The invisible check usually finishes within a second of reaching this
+    // step; give a fast clicker up to ~6s for the token before sending.
+    for (let i = 0; i < 24 && !turnstileRef.current; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    const tsToken = turnstileRef.current;
+    let ok = false;
     try {
       const res = await fetch("/api/booking", {
         method: "POST",
@@ -684,6 +698,7 @@ export default function Booking({ preselectId }: Props) {
           // scratch regardless — this is a UX guard, not a security one.
           voucherCode:
             voucherStatus === "valid" ? voucherCode.trim() : undefined,
+          turnstileToken: tsToken,
         }),
       });
       // Voucher problems and throttling keep the customer on step 3 with their
@@ -759,6 +774,7 @@ export default function Booking({ preselectId }: Props) {
       } catch {
         // non-fatal — header just keeps showing "Sign in"
       }
+      ok = true;
       setStep(4);
     } catch (err) {
       setSubmitError(
@@ -766,6 +782,8 @@ export default function Booking({ preselectId }: Props) {
       );
     } finally {
       setSubmitting(false);
+      // Tokens are single-use: any attempt that didn't book needs a new one.
+      if (!ok) setTurnstileReset((n) => n + 1);
     }
   }
 
@@ -1045,6 +1063,7 @@ export default function Booking({ preselectId }: Props) {
             <label htmlFor="fname">First name</label>
             <input
               id="fname"
+              maxLength={60}
               type="text"
               placeholder="Your first name"
               value={fname}
@@ -1055,6 +1074,7 @@ export default function Booking({ preselectId }: Props) {
             <label htmlFor="lname">Last name</label>
             <input
               id="lname"
+              maxLength={60}
               type="text"
               placeholder="Your last name"
               value={lname}
@@ -1067,6 +1087,7 @@ export default function Booking({ preselectId }: Props) {
             <label htmlFor="phone">Phone</label>
             <input
               id="phone"
+              maxLength={30}
               type="tel"
               placeholder="07000 000 000"
               value={phone}
@@ -1077,6 +1098,7 @@ export default function Booking({ preselectId }: Props) {
             <label htmlFor="email">Email</label>
             <input
               id="email"
+              maxLength={254}
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -1167,6 +1189,7 @@ export default function Booking({ preselectId }: Props) {
           </label>
           <textarea
             id="message"
+            maxLength={1000}
             placeholder="Anything we should know — pregnancy, allergies, areas to avoid, scent preferences…"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -1217,6 +1240,13 @@ export default function Booking({ preselectId }: Props) {
           >
             {submitError}
           </div>
+        )}
+
+        {step === 3 && (
+          <TurnstileWidget
+            onToken={setTurnstileToken}
+            resetKey={turnstileReset}
+          />
         )}
 
         <div className="step-actions">
