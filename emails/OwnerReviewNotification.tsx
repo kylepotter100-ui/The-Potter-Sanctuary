@@ -66,6 +66,7 @@ export default function OwnerReviewNotification({
         {hasComment ? (
           <p
             style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
               fontSize: 15,
               lineHeight: 1.7,
               color: INK,
@@ -78,6 +79,7 @@ export default function OwnerReviewNotification({
         ) : (
           <p
             style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
               fontSize: 15,
               lineHeight: 1.7,
               color: INK_SOFT,

@@ -52,6 +52,7 @@ export default function OwnerCancellationByCustomer({
             <SectionHeading>Reason</SectionHeading>
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 15,
                 lineHeight: 1.6,
                 color: INK,
@@ -72,10 +73,10 @@ export default function OwnerCancellationByCustomer({
             padding: "14px 16px",
           }}
         >
-          <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 4px" }}>
+          <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14, color: INK_SOFT, margin: "0 0 4px" }}>
             <strong style={{ color: INK }}>Email:</strong> {customerEmail}
           </p>
-          <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>
+          <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14, color: INK_SOFT, margin: 0 }}>
             <strong style={{ color: INK }}>Phone:</strong> {customerPhone}
           </p>
         </Section>

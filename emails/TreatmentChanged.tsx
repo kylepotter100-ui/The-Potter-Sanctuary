@@ -109,6 +109,7 @@ export default function TreatmentChanged({
         <Divider />
         <p
           style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 14,
             lineHeight: 1.6,
             color: INK_SOFT,

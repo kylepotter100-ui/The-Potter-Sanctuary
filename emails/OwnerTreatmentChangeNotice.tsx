@@ -94,10 +94,10 @@ export default function OwnerTreatmentChangeNotice({
             padding: "14px 16px",
           }}
         >
-          <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 6px" }}>
+          <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14, color: INK_SOFT, margin: "0 0 6px" }}>
             <strong>Email:</strong> {customerEmail}
           </p>
-          <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>
+          <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14, color: INK_SOFT, margin: 0 }}>
             <strong>Phone:</strong> {customerPhone}
           </p>
         </Section>

@@ -78,13 +78,13 @@ function row(b: SummaryBooking) {
       >
         {b.customer_first_name} {b.customer_last_name}
         <br />
-        <span style={{ fontSize: 13, color: INK_SOFT }}>
+        <span style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, color: INK_SOFT }}>
           {b.treatment_name}
         </span>
         {b.notes ? (
           <>
             <br />
-            <span style={{ fontSize: 13, color: INK_SOFT, fontStyle: "italic" }}>
+            <span style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, color: INK_SOFT, fontStyle: "italic" }}>
               Note: {b.notes}
             </span>
           </>
@@ -92,6 +92,7 @@ function row(b: SummaryBooking) {
       </td>
       <td
         style={{
+          fontFamily: "Georgia, 'Times New Roman', serif",
           padding: "8px 0",
           fontSize: 12,
           letterSpacing: "0.04em",
@@ -159,6 +160,7 @@ export default function MorningSummary({
             >
               <p
                 style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
                   fontSize: 11,
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
@@ -169,7 +171,7 @@ export default function MorningSummary({
                 Confirmed bookings ({confirmed.length})
               </p>
               {confirmed.length === 0 ? (
-                <p style={{ margin: 0, fontSize: 14, color: INK_SOFT }}>
+                <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", margin: 0, fontSize: 14, color: INK_SOFT }}>
                   None confirmed yet.
                 </p>
               ) : (
@@ -188,6 +190,7 @@ export default function MorningSummary({
             >
               <p
                 style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
                   fontSize: 11,
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
@@ -198,7 +201,7 @@ export default function MorningSummary({
                 Pending bookings ({pending.length})
               </p>
               {pending.length === 0 ? (
-                <p style={{ margin: 0, fontSize: 14, color: INK_SOFT }}>
+                <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", margin: 0, fontSize: 14, color: INK_SOFT }}>
                   Nothing pending — everything confirmed.
                 </p>
               ) : (
@@ -206,6 +209,7 @@ export default function MorningSummary({
                   <BookingsTable rows={pending} />
                   <p
                     style={{
+                      fontFamily: "Georgia, 'Times New Roman', serif",
                       fontSize: 13,
                       fontStyle: "italic",
                       color: INK_SOFT,
@@ -231,6 +235,7 @@ export default function MorningSummary({
           >
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 11,
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
@@ -243,6 +248,7 @@ export default function MorningSummary({
             <BookingsTable rows={alerts} />
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 13,
                 fontStyle: "italic",
                 color: INK_SOFT,
@@ -266,6 +272,7 @@ export default function MorningSummary({
           >
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 11,
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
@@ -279,20 +286,20 @@ export default function MorningSummary({
               <tbody>
                 {callList.map((c) => (
                   <tr key={c.id}>
-                    <td style={{ padding: "8px 12px 8px 0", fontSize: 16, color: INK, verticalAlign: "top" }}>
+                    <td style={{ fontFamily: "Georgia, 'Times New Roman', serif", padding: "8px 12px 8px 0", fontSize: 16, color: INK, verticalAlign: "top" }}>
                       {c.name}
                       <br />
-                      <span style={{ fontSize: 13, color: INK_SOFT }}>
+                      <span style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, color: INK_SOFT }}>
                         {c.when} · {c.treatment_name}
                       </span>
                       {c.notes ? (
                         <>
                           <br />
-                          <span style={{ fontSize: 13, color: INK_SOFT, fontStyle: "italic" }}>Note: {c.notes}</span>
+                          <span style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, color: INK_SOFT, fontStyle: "italic" }}>Note: {c.notes}</span>
                         </>
                       ) : null}
                     </td>
-                    <td style={{ padding: "8px 0", fontSize: 16, color: INK, verticalAlign: "top", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
+                    <td style={{ fontFamily: "Georgia, 'Times New Roman', serif", padding: "8px 0", fontSize: 16, color: INK, verticalAlign: "top", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
                       <a href={`tel:${c.phone.replace(/\s/g, "")}`} style={{ color: SAGE }}>
                         {c.phone}
                       </a>
@@ -301,14 +308,14 @@ export default function MorningSummary({
                 ))}
               </tbody>
             </table>
-            <p style={{ fontSize: 13, fontStyle: "italic", color: INK_SOFT, margin: 0 }}>
+            <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, fontStyle: "italic", color: INK_SOFT, margin: 0 }}>
               These clients don&apos;t get email reminders — a quick call to
               confirm tomorrow&apos;s appointment.
             </p>
           </Section>
         )}
 
-        <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>
+        <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14, color: INK_SOFT, margin: 0 }}>
           Manage all bookings in your admin panel:{" "}
           <a href={adminUrl} style={{ color: SAGE }}>
             {adminUrl}
