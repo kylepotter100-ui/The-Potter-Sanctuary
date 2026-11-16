@@ -427,3 +427,15 @@ BEGIN
   END IF;
 END$$;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS notes text;
+
+-- ===== Attendance (November 2026) =====
+-- Mirrors supabase/migrations/20261118_attendance.sql.
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS attendance text;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS attendance_marked_at timestamptz;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'bookings_attendance_check') THEN
+    ALTER TABLE public.bookings ADD CONSTRAINT bookings_attendance_check
+      CHECK (attendance IN ('attended', 'no_show') OR attendance IS NULL);
+  END IF;
+END$$;

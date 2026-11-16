@@ -1,6 +1,8 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import AdminBookingActions from "@/components/AdminBookingActions";
+import AttendanceButtons from "@/components/AttendanceButtons";
+import { minutesUntilUk } from "@/lib/uk-time";
 import NudgeQuestionnaireButton from "@/components/NudgeQuestionnaireButton";
 import RequestReviewButton from "@/components/RequestReviewButton";
 import { COMMS_REASON_LABEL, customerCommsDecision } from "@/lib/customer-email";
@@ -529,6 +531,14 @@ export default async function AdminBookingDetailPage({
           />
           )}
         </section>
+
+        {booking.status === "confirmed" &&
+          minutesUntilUk(booking.booking_date as string, booking.booking_time as string) <= 0 && (
+            <AttendanceButtons
+              bookingId={booking.id as string}
+              initial={((booking as { attendance?: string | null }).attendance ?? null) as "attended" | "no_show" | null}
+            />
+          )}
 
         {/* Section 4 — Actions */}
         {canAct && (

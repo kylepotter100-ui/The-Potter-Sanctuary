@@ -47,9 +47,7 @@ export async function POST(
 
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
-    .select(
-      "id, customer_id, customer_first_name, customer_email, treatment_name, booking_date, status, review_email_sent_at"
-    )
+    .select("*")
     .eq("id", id)
     .maybeSingle();
 
@@ -69,6 +67,12 @@ export async function POST(
     );
   }
 
+  if ((booking as { attendance?: string | null }).attendance === "no_show") {
+    return NextResponse.json(
+      { error: "no_show", message: "This booking is marked as a no-show, so no review request was sent." },
+      { status: 409 }
+    );
+  }
   if (booking.status === "cancelled") {
     return NextResponse.json(
       { error: "Cannot request a review for a cancelled booking" },
