@@ -1,6 +1,6 @@
 # The Potter Sanctuary — agent/deployment constraints
 
-Single-studio booking site: Next.js 15 App Router, deployed to **Cloudflare
+Single-studio booking site: Next.js 16 App Router, deployed to **Cloudflare
 Workers via @opennextjs/cloudflare** (one Worker, `wrangler.jsonc`), Supabase
 (one project — the LIVE database, real customer bookings), Resend for email.
 The public site, the admin diary (`/admin`, PWA) and the crons all run in the

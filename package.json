@@ -7,7 +7,6 @@
     "dev": "next dev",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -17,31 +16,31 @@
     "wipe:vouchers": "node scripts/wipe-test-vouchers.mjs"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.19.4",
+    "@opennextjs/cloudflare": "^1.20.17",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.6",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
     "lucide-react": "^1.16.0",
-    "next": "15.5.15",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "resend": "^6.12.2"
   },
   "devDependencies": {
     "@types/node": "22.10.7",
-    "@types/react": "19.0.7",
-    "@types/react-dom": "19.0.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "autoprefixer": "10.4.20",
     "next-sitemap": "4.2.3",
     "postcss": "8.5.10",
     "tailwindcss": "3.4.17",
     "typescript": "5.7.3",
     "vitest": "^4.1.8",
-    "wrangler": "^4.85.0"
+    "wrangler": "^4.163.0"
   },
   "overrides": {
-    "next": "15.5.15"
+    "next": "$next"
   },
   "engines": {
     "node": ">=20.9.0"

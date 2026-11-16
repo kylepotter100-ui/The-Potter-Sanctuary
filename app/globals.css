@@ -57,7 +57,6 @@
   }
 }
 
-@layer components {
   .serif {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;
     font-weight: 400;
@@ -297,9 +296,7 @@
     letter-spacing: 0.02em;
   }
   .nav-overlay-links a:hover { opacity: 0.85; }
-}
 
-@layer components {
   /* ===== Hero ===== */
   .hero {
     min-height: 100vh;
@@ -627,9 +624,7 @@
     text-transform: uppercase;
     opacity: 0.75;
   }
-}
 
-@layer components {
   /* ===== Ribbon marquee ===== */
   .ribbon {
     padding: 28px 44px;
@@ -888,9 +883,7 @@
     line-height: 1.7;
     opacity: 0.82;
   }
-}
 
-@layer components {
   /* ===== Booking ===== */
   .booking-wrap {
     display: grid;
@@ -3121,4 +3114,3 @@
     .modal-actions .btn-secondary,
     .modal-actions .btn-danger-solid { width: 100%; }
   }
-}
