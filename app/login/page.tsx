@@ -7,7 +7,7 @@ import SageBrandedHeader from "@/components/SageBrandedHeader";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sign in — The Potter Sanctuary",
+  title: "Sign in",
   description: "Sign in to your client account at The Potter Sanctuary.",
   robots: { index: false, follow: false },
 };

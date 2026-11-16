@@ -9,7 +9,7 @@ import Booking from "@/components/Booking";
 import HeroCta from "@/components/HeroCta";
 import JsonLd from "@/components/JsonLd";
 import { services, getService, serviceSlugs } from "@/lib/services";
-import { pageMetadata, serviceJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
 
 type Params = { slug: string };
 
@@ -29,6 +29,8 @@ export async function generateMetadata({
     title: service.seo.title,
     description: service.seo.description,
     path: `/services/${service.slug}`,
+    ogImage: service.image.src,
+    ogImageSize: { width: service.image.width, height: service.image.height },
   });
 }
 
@@ -259,7 +261,7 @@ export default async function ServicePage({
                       className="svc-book"
                       style={{ textDecoration: "none" }}
                     >
-                      Read more →
+                      Read more<span className="sr-only"> about {s.name} {s.nameEm}</span> →
                     </Link>
                   </div>
                 </div>
@@ -271,6 +273,14 @@ export default async function ServicePage({
         <Footer />
       </div>
       <JsonLd data={serviceJsonLd(service)} id="ld-service" />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Treatments", path: "/#services" },
+          { name: `${service.name} ${service.nameEm}`.trim(), path: `/services/${service.slug}` },
+        ])}
+        id="ld-breadcrumb"
+      />
     </>
   );
 }

@@ -92,10 +92,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${serif.variable} ${sans.variable}`}>
+    <html lang="en-GB" className={`${serif.variable} ${sans.variable}`}>
       <body>
         {children}
         <CookieBanner />
+        {siteConfig.analyticsToken ? (
+          // Cloudflare Web Analytics: cookie-free, no personal data, so it
+          // needs no consent banner change. Only rendered once a token is set.
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: siteConfig.analyticsToken })}
+          />
+        ) : null}
       </body>
     </html>
   );

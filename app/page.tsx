@@ -12,7 +12,7 @@ import HeroCta from "@/components/HeroCta";
 import ServiceCardLink from "@/components/ServiceCardLink";
 import JsonLd from "@/components/JsonLd";
 import { services } from "@/lib/services";
-import { localBusinessJsonLd, pageMetadata } from "@/lib/seo";
+import { localBusinessJsonLd, pageMetadata, websiteJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
@@ -192,7 +192,7 @@ export default function HomePage() {
                         className="svc-book"
                         style={{ textDecoration: "none" }}
                       >
-                        Read more →
+                        Read more<span className="sr-only"> about {s.name} {s.nameEm}</span> →
                       </Link>
                       <ServiceCardLink bookingId={s.bookingId} />
                     </div>
@@ -328,7 +328,8 @@ export default function HomePage() {
 
         <Footer />
       </div>
-      <JsonLd data={localBusinessJsonLd()} id="ld-local-business" />
+      <JsonLd data={localBusinessJsonLd(services)} id="ld-local-business" />
+      <JsonLd data={websiteJsonLd()} id="ld-website" />
     </>
   );
 }

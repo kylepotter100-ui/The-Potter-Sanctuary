@@ -3114,3 +3114,16 @@
     .modal-actions .btn-secondary,
     .modal-actions .btn-danger-solid { width: 100%; }
   }
+
+/* Text for screen readers and search engines only (e.g. descriptive link text). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
