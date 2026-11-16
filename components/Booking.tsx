@@ -116,6 +116,8 @@ export default function Booking({ preselectId }: Props) {
   const turnstileRef = useRef<string | null>(null);
   turnstileRef.current = turnstileToken;
   const [turnstileReset, setTurnstileReset] = useState(0);
+  // Instantly confirmed (owner's AUTO_CONFIRM setting) vs awaiting confirmation.
+  const [confirmedNow, setConfirmedNow] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [hasPriorConsultation, setHasPriorConsultation] = useState(false);
@@ -774,6 +776,8 @@ export default function Booking({ preselectId }: Props) {
       } catch {
         // non-fatal — header just keeps showing "Sign in"
       }
+      const okBody = (await res.json().catch(() => null)) as { status?: string } | null;
+      setConfirmedNow(okBody?.status === "confirmed");
       ok = true;
       setStep(4);
     } catch (err) {
@@ -1268,10 +1272,11 @@ export default function Booking({ preselectId }: Props) {
       <div className={`step-pane${step === 4 ? " active" : ""}`} id="step-pane-4">
         <div className="confirm">
           <div className="check">✓</div>
-          <h3>Reservation received</h3>
+          <h3>{confirmedNow ? "You're booked in" : "Reservation received"}</h3>
           <p>
-            Thank you, {fname || "friend"} — we'll be in touch within the day to
-            confirm. Studio address and parking notes will follow by email.
+            {confirmedNow
+              ? <>Thank you, {fname || "friend"} — your appointment is confirmed. Your confirmation, calendar invite and directions are on their way by email.</>
+              : <>Thank you, {fname || "friend"} — we&apos;ll be in touch within the day to confirm. The studio address and directions are in your email.</>}
           </p>
           <p className="confirm-spam-note">
             Don&apos;t see the email? Please check your spam or junk folder —

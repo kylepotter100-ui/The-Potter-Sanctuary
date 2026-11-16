@@ -19,6 +19,8 @@ import {
 } from "./_shared";
 
 type Props = {
+  /** Web booking awaiting the owner's confirmation — say so honestly. */
+  pending?: boolean;
   /** Calendar links + directions; the .ics is attached by the sender. */
   calendar?: EmailCalendar | null;
   firstName: string;
@@ -39,6 +41,7 @@ type Props = {
 };
 
 export default function BookingConfirmation({
+  pending = false,
   calendar = null,
   firstName,
   treatmentName,
@@ -58,13 +61,14 @@ export default function BookingConfirmation({
   return (
     <EmailLayout
       siteUrl={siteUrl}
-      preview={`Your reservation at The Potter Sanctuary — ${bookingDate} at ${bookingTime}`}
+      preview={`${pending ? "Booking request received" : "Your reservation"} at The Potter Sanctuary — ${bookingDate} at ${bookingTime}`}
     >
       <ContentSection>
         <SectionHeading>Dear {firstName},</SectionHeading>
         <Paragraph>
-          Thank you for booking your time at The Potter Sanctuary. Your
-          reservation is confirmed.
+          {pending
+            ? "Thank you for booking your time at The Potter Sanctuary. We've received your request and will confirm it by email shortly — your time is held for you in the meantime."
+            : "Thank you for booking your time at The Potter Sanctuary. Your reservation is confirmed."}
         </Paragraph>
 
         {/* Booking details */}

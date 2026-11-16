@@ -84,6 +84,13 @@ export async function rescheduleBooking(
     };
   }
 
+  // Late notice on the ORIGINAL appointment (Terms: a courtesy, not a block).
+  const minsToOriginal = minutesUntilUk(booking.booking_date, booking.booking_time);
+  const lateLabel =
+    input.by === "customer" && minsToOriginal / 60 < siteConfig.noticeHours
+      ? `LATE (${minsToOriginal < 60 ? `${Math.round(minsToOriginal)} min` : `${Math.floor(minsToOriginal / 60)}h`} notice) — `
+      : "";
+
   const duration =
     (booking.duration_minutes as number | null) ??
     durationMinutesForTreatmentId(booking.treatment_id as string) ??
@@ -219,7 +226,7 @@ export async function rescheduleBooking(
             from: FROM,
             to: OWNER_TO,
             replyTo: booking.customer_email ?? undefined,
-            subject: `Rescheduled — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
+            subject: `${lateLabel}Rescheduled — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
             html: ownerHtml,
           }) as Promise<{ error: unknown }>
         );

@@ -114,6 +114,11 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
           Client since <b>{fmtMonthYear(stats.clientSince)}</b> · <b>{stats.visits}</b>{" "}
           visit{stats.visits === 1 ? "" : "s"} · <b>£{stats.lifetimeSpend}</b>{" "}
           lifetime spend (confirmed)
+          {stats.lateCancellations > 0 ? (
+            <>
+              {" "}· <b data-testid="client-late-cancels">{stats.lateCancellations}</b> late cancellation{stats.lateCancellations === 1 ? "" : "s"}
+            </>
+          ) : null}
           {stats.noShows > 0 ? (
             <>
               {" "}· <b data-testid="client-no-shows">{stats.noShows}</b> no-show{stats.noShows === 1 ? "" : "s"}

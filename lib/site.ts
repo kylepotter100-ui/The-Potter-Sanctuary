@@ -40,6 +40,10 @@ export const siteConfig = {
     times: null,
   },
   priceRange: "££",
+  // Cancellation/reschedule notice the studio asks for (Terms: a courtesy —
+  // late changes are still allowed online until 15 minutes before, but are
+  // flagged to the owner and shown to the client).
+  noticeHours: 12,
   logo: "/sanctuary-logo.png",
   // Full studio address. Only ever shown to clients with a booking (emails,
   // calendar invites) — the public site says "address shared on booking".

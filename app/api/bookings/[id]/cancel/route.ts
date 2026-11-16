@@ -90,6 +90,13 @@ export async function POST(
     );
   }
 
+  // Late notice (Terms: a courtesy, not a block) — flagged to the owner.
+  const hoursNotice = minutesUntil / 60;
+  const lateLabel =
+    hoursNotice < siteConfig.noticeHours
+      ? `LATE (${hoursNotice < 1 ? `${Math.round(minutesUntil)} min` : `${Math.floor(hoursNotice)}h`} notice) — `
+      : "";
+
   // Claim-based conditional update: only the request that actually flips the
   // row from non-cancelled → cancelled proceeds to send emails. Guards against
   // a simultaneous customer + owner cancellation both "winning".
@@ -185,7 +192,7 @@ export async function POST(
           from: FROM,
           to: OWNER_TO,
           replyTo: booking.customer_email ?? undefined,
-          subject: `Cancellation — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
+          subject: `${lateLabel}Cancellation — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
           html: ownerHtml,
         }),
       ]);
