@@ -362,3 +362,27 @@ DROP POLICY IF EXISTS "Anyone can insert bookings" ON public.bookings;
 -- the ON CONFLICT specification").
 CREATE UNIQUE INDEX IF NOT EXISTS consultation_one_per_booking
   ON public.consultation_responses (booking_id);
+
+-- ===== Deny-by-default hardening (November 2026) =====
+-- Mirrors supabase/migrations/20261116_rls_deny_by_default.sql. The live DB
+-- still carried the customer-facing policies from the old rls-policies.sql;
+-- they are dropped here and the client roles lose all table privileges.
+DROP POLICY IF EXISTS "Anyone can view availability"           ON public.availability;
+DROP POLICY IF EXISTS "Anyone can view blocked dates"          ON public.blocked_dates;
+DROP POLICY IF EXISTS "Anyone can view slot overrides"         ON public.slot_overrides;
+DROP POLICY IF EXISTS "Customers can view own bookings"        ON public.bookings;
+DROP POLICY IF EXISTS "Customers can insert own consultations" ON public.consultation_responses;
+DROP POLICY IF EXISTS "Customers can update own consultations" ON public.consultation_responses;
+DROP POLICY IF EXISTS "Customers can view own consultations"   ON public.consultation_responses;
+DROP POLICY IF EXISTS "Customers can insert own profile"       ON public.customers;
+DROP POLICY IF EXISTS "Customers can update own profile"       ON public.customers;
+DROP POLICY IF EXISTS "Customers can view own profile"         ON public.customers;
+DO $$
+DECLARE t record;
+BEGIN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.tablename);
+  END LOOP;
+END$$;
+REVOKE ALL ON ALL TABLES    IN SCHEMA public FROM anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
