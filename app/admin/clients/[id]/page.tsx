@@ -2,6 +2,7 @@ import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getClientProfile } from "@/lib/clients";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,6 +33,7 @@ function fmtShortDate(iso: string | null): string {
 }
 
 export default async function ClientProfilePage({ params }: { params: Params }) {
+  await requireAdminPage();
   const { id } = await params;
 
   if (!supabaseAdmin) {

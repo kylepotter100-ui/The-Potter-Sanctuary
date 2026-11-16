@@ -2,6 +2,7 @@ import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { supabaseAdmin } from "@/lib/supabase";
 import { searchClients } from "@/lib/clients";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,6 +23,7 @@ export default async function ClientsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAdminPage();
   const { q } = await searchParams;
   const query = (q ?? "").trim();
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
 import { render } from "@react-email/render";
 import BookingConfirmed from "@/emails/BookingConfirmed";
@@ -19,10 +19,6 @@ const VALID = new Set(["pending", "confirmed"]);
 const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
 const REPLY_TO = "hello@thepottersanctuary.co.uk";
 
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get("admin_session")?.value === "authenticated";
-}
 
 export async function POST(
   req: Request,

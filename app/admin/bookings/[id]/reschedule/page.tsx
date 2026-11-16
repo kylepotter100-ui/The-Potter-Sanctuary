@@ -3,6 +3,7 @@ import AdminHeader from "@/components/AdminHeader";
 import AdminRescheduleBooking from "@/components/AdminRescheduleBooking";
 import { supabaseAdmin } from "@/lib/supabase";
 import { durationMinutesForTreatmentId } from "@/lib/services";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,7 @@ export default async function AdminReschedulePage({
 }: {
   params: Params;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const backHref = `/admin/bookings/${id}`;
 

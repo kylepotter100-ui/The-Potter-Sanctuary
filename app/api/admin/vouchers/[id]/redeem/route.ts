@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ADMIN_SESSION_COOKIE, ADMIN_SESSION_VALUE } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
-}
 
 // Mark a voucher redeemed — single-use. The conditional update (status='active')
 // is the guard: a second redeem matches zero rows and returns 409, so a

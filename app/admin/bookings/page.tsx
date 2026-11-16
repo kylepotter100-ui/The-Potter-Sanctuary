@@ -15,6 +15,7 @@ import {
   type ConsultationState,
 } from "@/lib/consultation";
 import { ukTodayIso } from "@/lib/uk-time";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -107,6 +108,7 @@ export default async function BookingsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAdminPage();
   const params = await searchParams;
   const status = (params.status as Status | undefined) ?? "active";
   const range = ((params.range as Range | undefined) ?? "upcoming") as Range;

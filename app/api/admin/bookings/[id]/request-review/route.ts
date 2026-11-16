@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
 import { render } from "@react-email/render";
 import ReviewRequest from "@/emails/ReviewRequest";
@@ -13,10 +13,6 @@ export const dynamic = "force-dynamic";
 const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
 const REPLY_TO = "hello@thepottersanctuary.co.uk";
 
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get("admin_session")?.value === "authenticated";
-}
 
 // Manual "Request review" — sends the branded review-request email and sets
 // review_email_sent_at on the booking. That flag is REQUIRED: /review and

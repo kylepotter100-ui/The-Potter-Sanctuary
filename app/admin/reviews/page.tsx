@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminHeader from "@/components/AdminHeader";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requireAdminPage } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -63,6 +64,7 @@ export default async function ReviewsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAdminPage();
   // Back link is context-aware: reached from the Outstanding-reviews page it
   // returns there; reached from the dashboard rating tile (no param) it returns
   // to the dashboard.

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/admin-auth";
 import { Resend } from "resend";
 import { render } from "@react-email/render";
 import VoucherDelivery from "@/emails/VoucherDelivery";
@@ -9,17 +9,12 @@ import { services } from "@/lib/services";
 import { generateVoucherCode } from "@/lib/vouchers";
 import { ukTodayIso, addDaysIso } from "@/lib/uk-time";
 import { formatLongDate } from "@/lib/format";
-import { ADMIN_SESSION_COOKIE, ADMIN_SESSION_VALUE } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
 const FROM = "The Potter Sanctuary <hello@thepottersanctuary.co.uk>";
 const REPLY_TO = "hello@thepottersanctuary.co.uk";
 
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
-}
 
 type Body = {
   treatmentId?: string;
