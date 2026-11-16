@@ -150,6 +150,9 @@
   .page.show {
     opacity: 1;
   }
+  /* Intro already seen this session / reduced motion: no overlay, no fade. */
+  .intro-skip #intro { display: none; }
+  .intro-skip .page { opacity: 1; transition: none; }
 
   /* ===== Nav ===== */
   nav.top {
