@@ -29,3 +29,13 @@ describe("bookingFieldsProblem", () => {
     expect(bookingFieldsProblem({ ...ok, message: 42 })).not.toBeNull();
   });
 });
+
+describe("bookingFieldsProblem — email optional (owner phone-only bookings)", () => {
+  it("allows a blank email only when told to", () => {
+    expect(bookingFieldsProblem({ ...ok, email: "" }, { emailOptional: true })).toBeNull();
+    expect(bookingFieldsProblem({ ...ok, email: "" })).toMatch(/email/);
+  });
+  it("still validates an email that IS given", () => {
+    expect(bookingFieldsProblem({ ...ok, email: "not-an-email" }, { emailOptional: true })).toMatch(/email/);
+  });
+});

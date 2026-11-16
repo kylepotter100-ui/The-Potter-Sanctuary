@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { sendCustomerEmail } from "@/lib/customer-email";
 import { render } from "@react-email/render";
 import CustomerCancellationConfirmation from "@/emails/CustomerCancellationConfirmation";
 import OwnerCancellationByCustomer from "@/emails/OwnerCancellationByCustomer";
@@ -173,9 +174,9 @@ export async function POST(
       ]);
 
       const results = await Promise.all([
-        resend.emails.send({
+        sendCustomerEmail(resend, booking.id, {
           from: FROM,
-          to: booking.customer_email,
+          to: booking.customer_email ?? "",
           replyTo: OWNER_TO,
           subject: "Your booking has been cancelled — The Potter Sanctuary",
           html: customerHtml,
@@ -183,7 +184,7 @@ export async function POST(
         resend.emails.send({
           from: FROM,
           to: OWNER_TO,
-          replyTo: booking.customer_email,
+          replyTo: booking.customer_email ?? undefined,
           subject: `Cancellation — ${booking.treatment_name} — ${booking.customer_first_name} ${booking.customer_last_name}`,
           html: ownerHtml,
         }),

@@ -30,9 +30,10 @@ export default function NudgeQuestionnaireButton({ bookingId }: Props) {
         ok?: boolean;
         alreadyCompleted?: boolean;
         error?: string;
+        message?: string;
       } | null;
       if (!res.ok) {
-        throw new Error(data?.error || "Could not send reminder");
+        throw new Error(data?.message || data?.error || "Could not send reminder");
       }
       setMsg(data?.alreadyCompleted ? "Already completed" : "Reminder sent");
       window.setTimeout(() => setMsg(null), 60000);

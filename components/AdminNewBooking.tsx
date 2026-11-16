@@ -11,12 +11,21 @@ import {
 import { normalizePhone } from "@/lib/phone";
 import { ukNow } from "@/lib/uk-time";
 
+export type ContactPref = "email" | "phone" | "none";
+
+const CONTACT_OPTIONS: { v: ContactPref; label: string; hint: string }[] = [
+  { v: "email", label: "Email", hint: "Confirmation, reminders and questionnaire are emailed as usual." },
+  { v: "phone", label: "Phone only", hint: "No emails. You'll call them — they appear on your morning call list." },
+  { v: "none", label: "Don't contact", hint: "No emails or reminders of any kind." },
+];
+
 export type InitialClient = {
   id: string;
   fname: string;
   lname: string;
   email: string;
   phone: string;
+  contactPreference?: ContactPref;
   gender: string | null;
   visits: number;
   hasQuestionnaire: boolean;
@@ -27,8 +36,9 @@ type ClientHit = {
   fullName: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   phone: string | null;
+  contactPreference?: ContactPref;
   gender: string | null;
   visits: number;
   hasQuestionnaire: boolean;
@@ -103,6 +113,10 @@ export default function AdminNewBooking({
     initialClient?.gender ?? null
   );
   const [message, setMessage] = useState("");
+  const [contactPref, setContactPref] = useState<ContactPref>(
+    initialClient?.contactPreference ?? "email"
+  );
+  const emailing = contactPref === "email";
 
   const [matchedId, setMatchedId] = useState<string | null>(
     initialClient?.id ?? null
@@ -258,8 +272,9 @@ export default function AdminNewBooking({
     setMatchHasQ(hit.hasQuestionnaire);
     setFname(hit.firstName || hit.fullName.split(" ")[0] || "");
     setLname(hit.lastName || hit.fullName.split(" ").slice(1).join(" ") || "");
-    setEmail(hit.email);
+    setEmail(hit.email ?? "");
     setPhone(hit.phone || "");
+    setContactPref(hit.contactPreference ?? "email");
     if (hit.gender) setGender(hit.gender);
     setResults(null);
     setSearchQ(hit.fullName);
@@ -271,6 +286,7 @@ export default function AdminNewBooking({
     setMatchHasQ(false);
     setDetailsUnchanged(null);
     setFname(""); setLname(""); setEmail(""); setPhone(""); setGender(null);
+    setContactPref("email");
     setSearchQ("");
     setResults(null);
   }
@@ -304,11 +320,12 @@ export default function AdminNewBooking({
         .then((d: { clients: ClientHit[] }) => {
           const hit = (d.clients ?? []).find(
             (c) =>
-              c.email.toLowerCase() === e ||
+              (!!c.email && c.email.toLowerCase() === e) ||
               (c.phone && normalizePhone(c.phone) === p && p.length >= 10)
           );
           if (hit) {
             setMatchedId(hit.id);
+            if (hit.contactPreference) setContactPref(hit.contactPreference);
             setMatchVisits(hit.visits);
             setMatchHasQ(hit.hasQuestionnaire);
           }
@@ -324,12 +341,15 @@ export default function AdminNewBooking({
   const canStep1 = !!treatment;
   const canStep2 = !!date && !!time;
   const emailValid = /\S+@\S+\.\S+/.test(email);
+  // Email is only required when we're going to email them; if one is typed
+  // for a phone-only client it must still be a real address.
+  const emailOk = emailing ? emailValid : !email.trim() || emailValid;
   const canStep3 =
     !!gender &&
     !!fname.trim() &&
     !!lname.trim() &&
     !!phone.trim() &&
-    emailValid &&
+    emailOk &&
     (!(matchedId && matchHasQ) || detailsUnchanged !== null);
 
   function goStep(n: number) {
@@ -353,8 +373,9 @@ export default function AdminNewBooking({
           fname,
           lname,
           phone,
-          email,
+          email: email.trim() || null,
           message,
+          contactPreference: contactPref,
           detailsUnchanged: matchedId && matchHasQ ? detailsUnchanged : null,
           bookAnytime,
         }),
@@ -391,10 +412,21 @@ export default function AdminNewBooking({
         <div className="mb-check">✓</div>
         <h2 style={{ marginBottom: 6 }}>Booking confirmed</h2>
         <p className="lede" style={{ margin: "0 auto 18px", maxWidth: 420 }}>
-          Standard booking confirmation
-          {!matchedId || !matchHasQ ? " (with the questionnaire link)" : ""} sent
-          to <strong>{email}</strong>. It&apos;s now in the diary and removed from
-          website availability.
+          {emailing ? (
+            <>
+              Standard booking confirmation
+              {!matchedId || !matchHasQ ? " (with the questionnaire link)" : ""} sent
+              to <strong>{email}</strong>.
+            </>
+          ) : (
+            <>
+              <strong>No emails sent</strong> —{" "}
+              {contactPref === "phone"
+                ? `remember to ring ${fname} on ${phone} to confirm.`
+                : "this client won't be contacted automatically."}
+            </>
+          )}{" "}
+          It&apos;s now in the diary and removed from website availability.
         </p>
         <div className="btn-row" style={{ justifyContent: "center" }}>
           <button
@@ -643,7 +675,9 @@ export default function AdminNewBooking({
                 <div className="mb-banner mb-banner-new">
                   <div className="mb-banner-head">＋ New client — a record will be created on booking</div>
                   <div className="mb-banner-sub">
-                    No match for these details. The confirmation email will include the consultation questionnaire link.
+                    {emailing
+                      ? "No match for these details. The confirmation email will include the consultation questionnaire link."
+                      : "No match for these details. No emails will be sent to this client."}
                   </div>
                 </div>
               ) : null
@@ -674,13 +708,38 @@ export default function AdminNewBooking({
                 <input id="mb-lname" value={lname} onChange={(e) => setLname(e.target.value)} placeholder="Last name" />
               </div>
             </div>
+            <div className="field">
+              <label>How should we contact this client?</label>
+              <div className="pillrow" role="radiogroup" aria-label="Contact preference">
+                {CONTACT_OPTIONS.map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    role="radio"
+                    aria-checked={contactPref === o.v}
+                    className={`gender-pill${contactPref === o.v ? " active" : ""}`}
+                    onClick={() => setContactPref(o.v)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+                {CONTACT_OPTIONS.find((o) => o.v === contactPref)?.hint}
+              </p>
+            </div>
             <div className="mb-frow">
               <div className="field">
                 <label htmlFor="mb-phone">Phone</label>
                 <input id="mb-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07000 000 000" />
               </div>
               <div className="field">
-                <label htmlFor="mb-email">Email</label>
+                <label htmlFor="mb-email">
+                  Email{" "}
+                  {!emailing && (
+                    <span style={{ textTransform: "none", letterSpacing: 0, opacity: 0.6 }}>(optional)</span>
+                  )}
+                </label>
                 <input id="mb-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
               </div>
             </div>
@@ -708,18 +767,28 @@ export default function AdminNewBooking({
               <div className="row"><span className="l">When</span><span className="r">{dateLabel} · {time}</span></div>
               <div className="row"><span className="l">Duration</span><span className="r">{treatment.duration}</span></div>
               <div className="row"><span className="l">Price</span><span className="r">£{treatment.price} · cash on the day</span></div>
-              <div className="row"><span className="l">Client</span><span className="r">{fname} {lname}<br /><span className="muted" style={{ fontSize: 13 }}>{email} · {phone}</span></span></div>
+              <div className="row"><span className="l">Client</span><span className="r">{fname} {lname}<br /><span className="muted" style={{ fontSize: 13 }}>{email.trim() ? `${email} · ` : ""}{phone}</span></span></div>
+              <div className="row"><span className="l">Contact</span><span className="r">{CONTACT_OPTIONS.find((o) => o.v === contactPref)?.label}</span></div>
               <div className="row"><span className="l">Status</span><span className="r">{matchedId ? "Returning client" : "New client (record will be created)"}{bookAnytime ? " · booked anytime" : ""}</span></div>
             </div>
             <div className="info-text" style={{ marginBottom: 0 }}>
-              On confirm: the booking is saved as <strong>confirmed</strong> and the client is emailed the standard booking confirmation
-              {!matchedId || !matchHasQ ? " with the questionnaire link" : ""}. No owner email — you made this booking.
+              {emailing ? (
+                <>
+                  On confirm: the booking is saved as <strong>confirmed</strong> and the client is emailed the standard booking confirmation
+                  {!matchedId || !matchHasQ ? " with the questionnaire link" : ""}. No owner email — you made this booking.
+                </>
+              ) : (
+                <>
+                  On confirm: the booking is saved as <strong>confirmed</strong>. <strong>No emails</strong> will be sent to this client —
+                  no confirmation, reminders, questionnaire or review requests.
+                </>
+              )}
             </div>
           </div>
           <div className="mb-actions">
             <button type="button" className="btn btn-ghost" onClick={() => goStep(3)} disabled={submitting}>← Back</button>
             <button type="button" className="btn" onClick={submit} disabled={submitting}>
-              {submitting ? "Saving…" : "Confirm & send email →"}
+              {submitting ? "Saving…" : emailing ? "Confirm & send email →" : "Confirm booking →"}
             </button>
           </div>
         </>

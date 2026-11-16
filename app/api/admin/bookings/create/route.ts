@@ -14,8 +14,11 @@ type Payload = {
   fname: string;
   lname: string;
   phone: string;
-  email: string;
+  email?: string | null;
   message?: string;
+  // How this client wants to be contacted. Anything but "email" means no
+  // automatic emails, and the email address becomes optional.
+  contactPreference?: "email" | "phone" | "none";
   detailsUnchanged?: boolean | null;
   // "Book anytime" — bypass website availability rules (any day/time), clashes
   // still blocked.
@@ -41,11 +44,15 @@ export async function POST(req: Request) {
     payload?.fname,
     payload?.lname,
     payload?.phone,
-    payload?.email,
   ];
+  const pref =
+    payload?.contactPreference === "phone" || payload?.contactPreference === "none"
+      ? payload.contactPreference
+      : "email";
+  const email = typeof payload?.email === "string" ? payload.email.trim() : "";
   if (
     required.some((v) => !v) ||
-    !/\S+@\S+\.\S+/.test(payload.email) ||
+    (pref === "email" && !email) ||
     !/^\d{4}-\d{2}-\d{2}$/.test(payload.date) ||
     !/^\d{2}:\d{2}(:\d{2})?$/.test(payload.time)
   ) {
@@ -54,7 +61,10 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  const fieldProblem = bookingFieldsProblem(payload);
+  const fieldProblem = bookingFieldsProblem(
+    { ...payload, email },
+    { emailOptional: pref !== "email" }
+  );
   if (fieldProblem) {
     return NextResponse.json(
       { error: "invalid_fields", message: fieldProblem },
@@ -73,7 +83,7 @@ export async function POST(req: Request) {
       fname: payload.fname,
       lname: payload.lname,
       phone: payload.phone,
-      email: payload.email,
+      email: email || null,
       message: payload.message,
       detailsUnchanged: payload.detailsUnchanged ?? null,
     },
@@ -83,6 +93,8 @@ export async function POST(req: Request) {
       sendOwnerNotification: false,
       // The owner is creating this booking — she vouches for the details.
       trustedIdentity: true,
+      contactPreference: pref,
+      suppressComms: pref !== "email",
     }
   );
 

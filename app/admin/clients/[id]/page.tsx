@@ -3,6 +3,7 @@ import AdminHeader from "@/components/AdminHeader";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getClientProfile } from "@/lib/clients";
 import { requireAdminPage } from "@/lib/admin-auth";
+import ContactPreferenceControl from "@/components/ContactPreferenceControl";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -66,7 +67,7 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
     );
   }
 
-  const { customer, displayName, bookings, consultation, reviews, stats } =
+  const { customer, displayName, bookings, consultation, reviews, stats, contactPreference } =
     profile;
   const firstName = customer.first_name || displayName.split(" ")[0];
   // So booking-detail / questionnaire "← Back" returns to THIS profile.
@@ -99,7 +100,7 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
           <div>
             <h1>{displayName}</h1>
             <p className="profile-sub">
-              {customer.email}
+              {customer.email ?? "No email"}
               {customer.phone_number ? ` · ${customer.phone_number}` : ""}
               {customer.gender ? ` · ${customer.gender}` : ""}
             </p>
@@ -113,6 +114,8 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
           visit{stats.visits === 1 ? "" : "s"} · <b>£{stats.lifetimeSpend}</b>{" "}
           lifetime spend (confirmed)
         </p>
+
+        <ContactPreferenceControl customerId={customer.id} initial={contactPreference} />
 
         {/* Booking history */}
         <section className="admin-card" style={{ marginBottom: 16 }}>

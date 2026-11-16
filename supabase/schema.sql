@@ -392,3 +392,19 @@ REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
 -- guards against pre-existing duplicates before creating it).
 CREATE UNIQUE INDEX IF NOT EXISTS reviews_one_per_booking
   ON public.reviews (booking_id);
+
+-- ===== Contact preferences / email-free manual bookings (November 2026) =====
+-- Mirrors supabase/migrations/20261117_contact_preferences.sql.
+ALTER TABLE public.customers
+  ADD COLUMN IF NOT EXISTS contact_preference text NOT NULL DEFAULT 'email';
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'customers_contact_preference_check') THEN
+    ALTER TABLE public.customers ADD CONSTRAINT customers_contact_preference_check
+      CHECK (contact_preference IN ('email', 'phone', 'none'));
+  END IF;
+END$$;
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS suppress_comms boolean NOT NULL DEFAULT false;
+ALTER TABLE public.customers ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE public.bookings  ALTER COLUMN customer_email DROP NOT NULL;

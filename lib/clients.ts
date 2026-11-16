@@ -13,33 +13,42 @@ export type ClientListRow = {
   fullName: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   phone: string | null;
   gender: string | null;
+  /** 'email' | 'phone' | 'none' — 'email' when the column doesn't exist yet. */
+  contactPreference: ContactPreference;
   visits: number; // non-cancelled bookings
   lastVisit: string | null; // YYYY-MM-DD
   hasQuestionnaire: boolean;
 };
+
+export type ContactPreference = "email" | "phone" | "none";
 
 type CustomerRow = {
   id: string;
   full_name: string | null;
   first_name: string | null;
   last_name: string | null;
-  email: string;
+  email: string | null;
   phone_number: string | null;
   gender?: string | null;
+  contact_preference?: string | null;
 };
+
+export function contactPreferenceOf(v: unknown): ContactPreference {
+  return v === "phone" || v === "none" ? v : "email";
+}
 
 function displayName(c: {
   full_name: string | null;
   first_name: string | null;
   last_name: string | null;
-  email: string;
+  email: string | null;
 }): string {
   if (c.full_name && c.full_name.trim()) return c.full_name.trim();
   const fl = `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim();
-  return fl || c.email;
+  return fl || c.email || "Unnamed client";
 }
 
 /**
@@ -58,7 +67,9 @@ export async function searchClients(
   const term = (q ?? "").replace(/[,()*%\\"]/g, " ").trim().slice(0, 100);
   let query = admin
     .from("customers")
-    .select("id, full_name, first_name, last_name, email, phone_number, gender")
+    // "*" rather than a column list so this works before AND after migration
+    // 20261117_contact_preferences adds contact_preference.
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -124,6 +135,7 @@ export async function searchClients(
       email: c.email,
       phone: c.phone_number,
       gender: c.gender ?? null,
+      contactPreference: contactPreferenceOf(c.contact_preference),
       visits: visitCount.get(c.id) ?? 0,
       lastVisit: lastVisit.get(c.id) ?? null,
       hasQuestionnaire: hasQ.has(c.id),
@@ -156,11 +168,12 @@ export type ClientProfile = {
     full_name: string | null;
     first_name: string | null;
     last_name: string | null;
-    email: string;
+    email: string | null;
     phone_number: string | null;
     gender: string | null;
     created_at: string;
   };
+  contactPreference: ContactPreference;
   displayName: string;
   bookings: ClientBooking[];
   consultation: Record<string, unknown> | null;
@@ -179,9 +192,7 @@ export async function getClientProfile(
 ): Promise<ClientProfile | null> {
   const { data: customer, error } = await admin
     .from("customers")
-    .select(
-      "id, full_name, first_name, last_name, email, phone_number, gender, created_at"
-    )
+    .select("*")
     .eq("id", id)
     .maybeSingle();
   if (error) console.error("[clients] profile failed", JSON.stringify(error));
@@ -223,6 +234,9 @@ export async function getClientProfile(
 
   return {
     customer: customer as ClientProfile["customer"],
+    contactPreference: contactPreferenceOf(
+      (customer as { contact_preference?: string }).contact_preference
+    ),
     displayName: displayName(customer as CustomerRow),
     bookings: bk,
     consultation: (consult as Record<string, unknown> | null) ?? null,

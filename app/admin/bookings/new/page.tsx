@@ -39,8 +39,9 @@ export default async function NewBookingPage({
           p.customer.last_name ||
           p.displayName.split(" ").slice(1).join(" ") ||
           "",
-        email: p.customer.email,
+        email: p.customer.email || "",
         phone: p.customer.phone_number || "",
+        contactPreference: p.contactPreference,
         gender: p.customer.gender || null,
         visits: p.stats.visits,
         hasQuestionnaire: !!p.consultation,
@@ -58,8 +59,9 @@ export default async function NewBookingPage({
         <h1 style={{ marginTop: 10 }}>New booking</h1>
         <p className="lede">
           Take a booking for a client who can&apos;t use the website. It&apos;s
-          confirmed straight away and the client gets the usual confirmation
-          email.
+          confirmed straight away. Choose how the client is contacted — for
+          clients who don&apos;t use email, pick &ldquo;Phone only&rdquo; and no
+          automatic emails are sent.
         </p>
         <AdminNewBooking initialClient={initialClient} returnHref={back.href} />
       </main>
