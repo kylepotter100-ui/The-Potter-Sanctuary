@@ -53,7 +53,7 @@ export const siteConfig = {
   privateAddress: "22 Lockheed Close, Beck Row, IP28 3AB",
   // Optional arrival note for confirmation emails (parking, door, etc.).
   // Empty = section shows only the address and map link.
-  arrivalNotes: "" as string,
+  arrivalNotes: "There's a parking space right outside the property." as string,
   // Search-engine listing link for "Get directions" and JSON-LD hasMap.
   // Town + postcode rather than the unconfirmed coordinates below.
   mapUrl:

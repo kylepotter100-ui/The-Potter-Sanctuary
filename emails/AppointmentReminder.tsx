@@ -82,6 +82,7 @@ export default function AppointmentReminder({
         <Divider />
         <p
           style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 13,
             lineHeight: 1.6,
             color: INK_SOFT,

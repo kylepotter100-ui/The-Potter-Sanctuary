@@ -118,6 +118,7 @@ export function EmailLayout({ preview, siteUrl, children }: LayoutProps) {
           >
             <Text
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 13,
                 color: "#ffffff",
                 margin: "0 0 6px",
@@ -129,6 +130,7 @@ export function EmailLayout({ preview, siteUrl, children }: LayoutProps) {
             </Text>
             <Text
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 13,
                 color: "#ffffff",
                 margin: "0 0 8px",
@@ -146,6 +148,7 @@ export function EmailLayout({ preview, siteUrl, children }: LayoutProps) {
             </Text>
             <Text
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 12,
                 color: "#ffffff",
                 margin: 0,
@@ -210,6 +213,7 @@ export function Paragraph({ children }: { children: ReactNode }) {
   return (
     <Text
       style={{
+        fontFamily: SERIF,
         fontSize: 16,
         lineHeight: 1.6,
         color: INK,
@@ -225,6 +229,7 @@ export function MutedParagraph({ children }: { children: ReactNode }) {
   return (
     <Text
       style={{
+        fontFamily: SERIF,
         fontSize: 15,
         lineHeight: 1.6,
         color: INK_SOFT,
@@ -346,7 +351,7 @@ export function DetailRow({
 // "Add to calendar" + "Finding us" — shared by every email that describes an
 // upcoming appointment. The .ics file itself is attached by the sender.
 // ---------------------------------------------------------------------------
-const linkStyle = { color: SAGE_DEEP, textDecoration: "underline" } as const;
+const linkStyle = { color: SAGE_DEEP, textDecoration: "underline", fontFamily: SERIF } as const;
 
 export function AddToCalendar({
   googleUrl,
@@ -357,8 +362,8 @@ export function AddToCalendar({
 }) {
   return (
     <Section style={{ margin: "4px 0 6px" }}>
-      <Text style={{ fontSize: 15, lineHeight: 1.6, color: INK_SOFT, margin: "0 0 6px" }}>
-        <strong style={{ color: INK }}>Add it to your calendar:</strong>{" "}
+      <Text style={{ fontFamily: SERIF, fontSize: 15, lineHeight: 1.6, color: INK_SOFT, margin: "0 0 6px" }}>
+        <strong style={{ color: INK, fontFamily: SERIF }}>Add it to your calendar:</strong>{" "}
         <a href={googleUrl} style={linkStyle}>Google</a>
         {" · "}
         <a href={outlookUrl} style={linkStyle}>Outlook</a>
@@ -382,10 +387,10 @@ export function FindingUs({
     <>
       <Divider />
       <SectionHeading>Finding us</SectionHeading>
-      <Text style={{ fontSize: 16, lineHeight: 1.6, color: INK, margin: "0 0 8px" }}>
+      <Text style={{ fontFamily: SERIF, fontSize: 16, lineHeight: 1.6, color: INK, margin: "0 0 8px" }}>
         {address}
       </Text>
-      <Text style={{ fontSize: 15, lineHeight: 1.6, color: INK_SOFT, margin: "0 0 12px" }}>
+      <Text style={{ fontFamily: SERIF, fontSize: 15, lineHeight: 1.6, color: INK_SOFT, margin: "0 0 12px" }}>
         <a href={directionsUrl} style={linkStyle}>Get directions</a>
         {notes ? <> · {notes}</> : null}
       </Text>

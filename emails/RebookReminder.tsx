@@ -28,7 +28,7 @@ export default function RebookReminder({ firstName, treatmentName, rebookUrl, un
           you&apos;d like to come back, your favourite times are waiting.
         </Paragraph>
         <CtaButton href={rebookUrl} label={`Book your next ${treatmentName}`} />
-        <p style={{ fontSize: 12, lineHeight: 1.6, color: INK_SOFT, margin: "18px 0 0", textAlign: "center" as const }}>
+        <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 12, lineHeight: 1.6, color: INK_SOFT, margin: "18px 0 0", textAlign: "center" as const }}>
           You&apos;re receiving this because you asked for reminders when you booked.{" "}
           <a href={unsubscribeUrl} style={{ color: INK_SOFT }}>Unsubscribe</a>
         </p>

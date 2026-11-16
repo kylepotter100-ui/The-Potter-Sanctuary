@@ -54,6 +54,7 @@ export default function CustomerCancellationByOwner({
           >
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 11,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
@@ -65,6 +66,7 @@ export default function CustomerCancellationByOwner({
             </p>
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 15,
                 lineHeight: 1.6,
                 color: INK,

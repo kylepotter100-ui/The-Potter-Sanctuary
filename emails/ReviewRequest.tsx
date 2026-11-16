@@ -39,7 +39,7 @@ export default function ReviewRequest({
         {aftercare.length > 0 && (
           <>
             <SectionHeading>Looking after yourself today</SectionHeading>
-            <ul style={{ margin: "0 0 18px", paddingLeft: 20, color: INK_SOFT, fontSize: 15, lineHeight: 1.7 }}>
+            <ul style={{ fontFamily: "Georgia, 'Times New Roman', serif", margin: "0 0 18px", paddingLeft: 20, color: INK_SOFT, fontSize: 15, lineHeight: 1.7 }}>
               {aftercare.map((t) => (
                 <li key={t}>{t}</li>
               ))}
@@ -59,6 +59,7 @@ export default function ReviewRequest({
 
         <p
           style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 13,
             lineHeight: 1.6,
             color: INK_SOFT,

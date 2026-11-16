@@ -127,6 +127,7 @@ export default function BookingConfirmation({
             />
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 13,
                 fontStyle: "italic",
                 lineHeight: 1.6,

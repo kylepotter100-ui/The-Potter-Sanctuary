@@ -100,6 +100,7 @@ export default function OwnerNotification({
             <SectionHeading>Customer message</SectionHeading>
             <p
               style={{
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 15,
                 lineHeight: 1.7,
                 color: INK,
@@ -115,6 +116,7 @@ export default function OwnerNotification({
         <Divider />
         <p
           style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 12,
             color: INK_SOFT,
             margin: 0,
