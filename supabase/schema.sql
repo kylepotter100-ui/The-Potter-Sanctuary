@@ -408,3 +408,22 @@ ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS suppress_comms boolean NOT NULL DEFAULT false;
 ALTER TABLE public.customers ALTER COLUMN email DROP NOT NULL;
 ALTER TABLE public.bookings  ALTER COLUMN customer_email DROP NOT NULL;
+
+-- ===== Owner-recorded consultations + client notes (November 2026) =====
+-- Mirrors supabase/migrations/20261117_offline_consultation_notes.sql.
+ALTER TABLE public.consultation_responses
+  ADD COLUMN IF NOT EXISTS consent_method text NOT NULL DEFAULT 'online';
+ALTER TABLE public.consultation_responses
+  ADD COLUMN IF NOT EXISTS recorded_by text NOT NULL DEFAULT 'client';
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'consultation_consent_method_check') THEN
+    ALTER TABLE public.consultation_responses ADD CONSTRAINT consultation_consent_method_check
+      CHECK (consent_method IN ('online', 'verbal', 'paper'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'consultation_recorded_by_check') THEN
+    ALTER TABLE public.consultation_responses ADD CONSTRAINT consultation_recorded_by_check
+      CHECK (recorded_by IN ('client', 'owner'));
+  END IF;
+END$$;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS notes text;

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { getClientProfile } from "@/lib/clients";
 import { requireAdminPage } from "@/lib/admin-auth";
 import ContactPreferenceControl from "@/components/ContactPreferenceControl";
+import ClientNotes from "@/components/ClientNotes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -116,6 +117,10 @@ export default async function ClientProfilePage({ params }: { params: Params }) 
         </p>
 
         <ContactPreferenceControl customerId={customer.id} initial={contactPreference} />
+        <ClientNotes
+          customerId={customer.id}
+          initial={(customer as { notes?: string | null }).notes ?? null}
+        />
 
         {/* Booking history */}
         <section className="admin-card" style={{ marginBottom: 16 }}>
