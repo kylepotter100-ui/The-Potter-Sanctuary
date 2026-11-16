@@ -32,12 +32,8 @@ export default function HomePage() {
         {/* HERO */}
         <section className="hero" id="top">
           <div className="hero-text">
+            <div className="hero-eyebrow">A Sanctuary for the Senses</div>
             <h1>
-              {/* The small line above the display heading is part of the h1 so
-                  the page's main heading says WHAT and WHERE. */}
-              <span className="hero-eyebrow hero-eyebrow-in-h1">
-                Massage in Beck Row, Suffolk
-              </span>
               Stillness, distilled
               <br />
               <em>into ritual.</em>

@@ -350,12 +350,6 @@
     line-height: 0.96;
     letter-spacing: -0.005em;
   }
-  /* Eyebrow line rendered inside the h1 (SEO): keep the eyebrow look. */
-  .hero h1 .hero-eyebrow-in-h1 {
-    font-family: var(--font-sans), 'Lora', serif;
-    font-weight: 400;
-    line-height: 1.5; /* matches the standalone eyebrow (16.5px at 11px) */
-  }
   .hero h1 em {
     font-family: var(--font-serif), 'Cormorant', serif;
     font-style: italic;
